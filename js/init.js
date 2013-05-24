@@ -1,23 +1,30 @@
 "use strict";
 
 
-var CANVAS = null;
+var CAMERA = null,
+    CONTAINER = null,
+    CONTROLS = null,
+    MODEL = null,
+	RENDERER = null,
+	SCENE = null;
 
 
 /**
- * Resize the canvas to inner window dimensions.
+ * Start animation.
  */
-function resize() {
-	CANVAS.width = window.innerWidth;
-	CANVAS.height = window.innerHeight;
+function animate() {
+	requestAnimationFrame( animate );
+	CONTROLS.update();
 };
 
 
-window.addEventListener( "load", function() {
+/**
+ * Render.
+ */
+function render() {
+	RENDERER.render( SCENE, CAMERA );
+};
 
-	CANVAS = document.getElementById( "main" );
 
-	resize();
-	window.addEventListener( "resize", resize, false );
 
-} );
+window.addEventListener( "load", Init.all.bind( Init ), false );
