@@ -1,11 +1,25 @@
 @font-face {
-	font-family: "IconicFill";
+	font-family: "IconicFill Web";
 	font-style: normal;
 	font-weight: normal;
 	src: url( "fonts/iconic/iconic_fill.eot?" ) format( "eot" ),
 	     url( "fonts/iconic/iconic_fill.woff" ) format( "woff" ),
 	     url( "fonts/iconic/iconic_fill.ttf") format( "truetype" ),
 	     url( "fonts/iconic/iconic_fill.svg#iconic") format( "svg" );
+}
+
+@font-face {
+	font-family: "OpenSans Web";
+	font-style: normal;
+	font-weight: normal;
+	src: url( "fonts/open-sans/OpenSans-Regular.ttf") format( "truetype" );
+}
+
+@font-face {
+	font-family: "OpenSans Web";
+	font-style: normal;
+	font-weight: bold;
+	src: url( "fonts/open-sans/OpenSans-Bold.ttf") format( "truetype" );
 }
 
 
@@ -20,7 +34,7 @@ html, body {
 
 body {
 	background-color: #f2f2f2;
-	font-family: "Open Sans", Helvetica, Arial, sans-serif;
+	font-family: "OpenSans Web", "Open Sans", Helvetica, Arial, sans-serif;
 	font-size: 14px;
 }
 
@@ -70,7 +84,7 @@ canvas {
 		color: #ffffff;
 		cursor: default;
 		display: block;
-		font-family: "IconicFill";
+		font-family: "IconicFill Web";
 		font-size: 24px;
 		height: 60px;
 		left: 0;
