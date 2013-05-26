@@ -7,9 +7,11 @@
 	<link rel="stylesheet" href="screen.css" />
 	<script src="js/config.js"></script>
 	<script src="js/Init.js"></script>
-	<script src="js/Interact.js"></script>
+	<script src="js/UI.js"></script>
 	<script src="js/threeJS/three.min.js"></script>
 	<script src="js/threeJS/loaders/OBJLoader.js"></script>
+	<script src="js/threeJS/loaders/PLYLoader.js"></script>
+	<script src="js/threeJS/loaders/STLLoader.js"></script>
 	<script src="js/threeJS/controls/OrbitControls.js"></script>
 	<script src="js/init.js"></script>
 </head>
@@ -17,9 +19,45 @@
 
 <div id="container"></div>
 
-<div class="tools">
-	<input type="file" id="upload_file" />
-</div>
+<ul class="tools">
+	<li class="empty"></li>
+	<!-- import -->
+	<li>
+		<span class="icon icon-import"></span>
+		<fieldset>
+			<legend>Import</legend>
+			<input type="file" id="import_file" />
+		</fieldset>
+	</li>
+	<!-- rendering -->
+	<li>
+		<span class="icon icon-render"></span>
+		<fieldset>
+			<legend>Renderer</legend>
+		</div>
+	</li>
+	<!-- edit -->
+	<li>
+		<span class="icon icon-edit"></span>
+		<fieldset>
+			<legend>Hole Filling</legend>
+		</div>
+	</li>
+	<!-- controls -->
+	<li>
+		<span class="icon icon-controls"></span>
+		<fieldset>
+			<legend>Controls</legend>
+		</div>
+	</li>
+	<!-- export -->
+	<li>
+		<span class="icon icon-export"></span>
+		<fieldset>
+			<legend>Export</legend>
+		</fieldset>
+	</li>
+</ul>
 
 </body>
 </html>

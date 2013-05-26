@@ -1,10 +1,36 @@
+@font-face {
+	font-family: "IconicFill";
+	font-style: normal;
+	font-weight: normal;
+	src: url( "fonts/iconic/iconic_fill.eot?" ) format( "eot" ),
+	     url( "fonts/iconic/iconic_fill.woff" ) format( "woff" ),
+	     url( "fonts/iconic/iconic_fill.ttf") format( "truetype" ),
+	     url( "fonts/iconic/iconic_fill.svg#iconic") format( "svg" );
+}
+
+
 * {
 	margin: 0;
 	padding: 0;
 }
 
+html, body {
+	height: 100%;
+}
+
 body {
 	background-color: #f2f2f2;
+	font-family: "Open Sans", Helvetica, Arial, sans-serif;
+	font-size: 14px;
+}
+
+canvas {
+	background-image:    -moz-linear-gradient( top, #909090, #ffffff );
+	background-image:     -ms-linear-gradient( top, #909090, #ffffff );
+	background-image:      -o-linear-gradient( top, #909090, #ffffff );
+	background-image: -webkit-linear-gradient( top, #909090, #ffffff );
+	background-image:         linear-gradient( to bottom, #909090, #ffffff );
+	display: block;
 }
 
 #container {
@@ -12,6 +38,103 @@ body {
 	display: block;
 }
 
-canvas {
+
+/* Sidebar */
+/* ------- */
+
+.tools {
+	background-color: #303030;
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	color: #f0f0f0;
 	display: block;
+	height: 100%;
+	left: 0;
+	list-style-type: none;
+	position: absolute;
+	top: 0;
+	width: 60px;
+	z-index: 100;
+}
+
+	.tools li {
+		display: block;
+		height: 60px;
+		margin-bottom: 1px;
+		position: relative;
+		width: 100%;
+	}
+
+	.icon {
+		background-color: #101010;
+		color: #ffffff;
+		cursor: default;
+		display: block;
+		font-family: "IconicFill";
+		font-size: 24px;
+		height: 60px;
+		left: 0;
+		line-height: 60px;
+		position: absolute;
+		text-align: center;
+		top: 0;
+		width: 100%;
+	}
+
+	.icon-controls::before { content: "\e024"; }
+	.icon-edit::before { content: "\e005"; }
+	.icon-export::before { content: "\2935"; }
+	.icon-import::before { content: "\e065"; }
+	.icon-render::before { content: "\e025"; }
+
+		.tools fieldset {
+			background-color: #333748;
+			border: 0;
+			border-bottom-right-radius: 2px;
+			border-top-right-radius: 2px;
+			-moz-box-sizing: border-box;
+			     box-sizing: border-box;
+			display: none;
+			left: 60px;
+			padding: 50px 16px 16px;
+			position: absolute;
+			max-width: 600px;
+			min-height: 60px;
+			min-width: 200px;
+			z-index: 110;
+		}
+
+		.tools legend {
+			background-color: #101010;
+			-moz-box-sizing: border-box;
+			     box-sizing: border-box;
+			font-weight: bold;
+			left: 0;
+			padding: 8px 16px;
+			position: absolute;
+			top: 0;
+			width: 100%;
+		}
+
+		.tools li:hover fieldset {
+			display: block;
+		}
+
+
+/* Form fields */
+/* ----------- */
+
+input,
+select,
+textarea {
+	background-color: #ffffff;
+	border: 1px solid #d0d0d0;
+	border-radius: 1px;
+	color: #000000;
+	font-size: 100%;
+}
+
+input[type="checkbox"] {
+	margin-right: 4px;
+	vertical-align: middle;
 }

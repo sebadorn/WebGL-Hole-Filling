@@ -1,12 +1,14 @@
 "use strict";
 
 
-var CAMERA = null,
-    CONTAINER = null,
-    CONTROLS = null,
-    MODEL = null,
-	RENDERER = null,
-	SCENE = null;
+var GLOBAL = {
+	CAMERA: null,
+	CONTAINER: null,
+	CONTROLS: null,
+	MODEL: null,
+	RENDERER: null,
+	SCENE: null
+};
 
 
 /**
@@ -14,16 +16,18 @@ var CAMERA = null,
  */
 function animate() {
 	requestAnimationFrame( animate );
-	CONTROLS.update();
-};
+	GLOBAL.CONTROLS.update();
+}
 
 
 /**
  * Render.
  */
 function render() {
-	RENDERER.render( SCENE, CAMERA );
-};
+	var g = GLOBAL;
+
+	g.RENDERER.render( g.SCENE, g.CAMERA );
+}
 
 
 

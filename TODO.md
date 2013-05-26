@@ -1,4 +1,3 @@
 ## ToDo
 
-* `Feature` Support PLY.
-* `Feature` Support STL.
+* `Feature` Drag&Drop files to import them.
