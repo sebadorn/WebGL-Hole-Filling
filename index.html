@@ -20,8 +20,12 @@
 
 <div id="container"></div>
 
+
 <ul class="tools">
+
+	<!-- empty -->
 	<li class="tool tool-empty"></li>
+
 	<!-- import -->
 	<li class="tool tool-import">
 		<span class="icon icon-import"></span>
@@ -30,17 +34,30 @@
 			<input type="file" id="import_file" />
 		</fieldset>
 	</li>
+
 	<!-- rendering -->
 	<li class="tool tool-render">
 		<span class="icon icon-render"></span>
 		<fieldset>
 			<legend>Renderer</legend>
-			<input type="radio" name="render_mode" id="render_solid" value="solid" checked />
-			<label for="render_solid">Solid</label>
-			<input type="radio" name="render_mode" id="render_wireframe" value="wireframe" />
-			<label for="render_wireframe">Wireframe</label>
+
+			<section>
+				<input type="radio" name="render_mode" id="render_solid" value="solid" checked />
+				<label for="render_solid">Solid</label>
+				<input type="radio" name="render_mode" id="render_wireframe" value="wireframe" />
+				<label for="render_wireframe">Wireframe</label>
+			</section>
+
+			<section>
+				<input type="radio" name="shading" id="shading_flat" value="flat" />
+				<label for="shading_flat">Flat</label>
+				<input type="radio" name="shading" id="shading_phong" value="phong" checked />
+				<label for="shading_phong">Phong</label>
+				<span class="description">Shading</span>
+			</section>
 		</div>
 	</li>
+
 	<!-- edit -->
 	<li class="tool tool-edit">
 		<span class="icon icon-edit"></span>
@@ -48,6 +65,7 @@
 			<legend>Hole Filling</legend>
 		</div>
 	</li>
+
 	<!-- controls -->
 	<li class="tool tool-controls">
 		<span class="icon icon-controls"></span>
@@ -55,6 +73,7 @@
 			<legend>Controls</legend>
 		</div>
 	</li>
+
 	<!-- export -->
 	<li class="tool tool-export">
 		<span class="icon icon-export"></span>
@@ -62,8 +81,10 @@
 			<legend>Export</legend>
 		</fieldset>
 	</li>
+
 	<!-- empty -->
 	<li class="tool tool-empty"></li>
+
 	<!-- about -->
 	<li class="tool tool-about">
 		<span class="icon icon-about"></span>
@@ -74,6 +95,7 @@
 			<p>Font: <a href="http://opensans.com/">Open Sans</a></p>
 		</fieldset>
 	</li>
+
 </ul>
 
 </body>

@@ -112,6 +112,10 @@ var Loader = {
  */
 var Scene = {
 
+	MODE: CONFIG.MODE,
+	SHADING: CONFIG.SHADING,
+
+
 	/**
 	 * Center a mesh.
 	 * @param  {THREE.Mesh} mesh The mesh to center.
@@ -135,7 +139,7 @@ var Scene = {
 		var model = GLOBAL.MODEL,
 		    value = e.target.value;
 
-		if( !e.target.checked ) {
+		if( !e.target.checked || model === null ) {
 			return false;
 		}
 
@@ -146,8 +150,55 @@ var Scene = {
 			case "wireframe":
 				model.material.wireframe = true;
 				break;
+			default:
+				return false;
 		}
 
+		this.MODE = value;
+		render();
+	},
+
+
+	/**
+	 * Change the shading of the material: None, Flat or Phong.
+	 */
+	changeShading: function( e ) {
+		var g = GLOBAL,
+		    model = g.MODEL,
+		    value = e.target.value;
+		var material;
+
+		if( !e.target.checked || model === null ) {
+			return false;
+		}
+
+		switch( value ) {
+			case "none":
+				material = new THREE.MeshPhongMaterial( {
+					shading: THREE.NoShading,
+					wireframe: ( this.MODE == "wireframe" )
+				} );
+				break;
+			case "flat":
+				material = new THREE.MeshPhongMaterial( {
+					shading: THREE.FlatShading,
+					wireframe: ( this.MODE == "wireframe" )
+				} );
+				break;
+			case "phong":
+				material = new THREE.MeshPhongMaterial( {
+					shading: THREE.SmoothShading,
+					wireframe: ( this.MODE == "wireframe" )
+				} );
+				break;
+			default:
+				return false;
+		}
+
+		model.setMaterial( material );
+		model.geometry.normalsNeedUpdate = true;
+
+		this.SHADING = value;
 		render();
 	},
 
@@ -177,13 +228,36 @@ var Scene = {
 	 */
 	geometryToMesh: function( geometry ) {
 		var material = new THREE.MeshPhongMaterial(),
-		    mesh = new THREE.Mesh( geometry, material );
+		    mesh = new THREE.Mesh( geometry );
+
+		material.shading = this.getCurrentShading();
+		material.wireframe = ( this.MODE == "wireframe" );
+
+		mesh.setMaterial( material );
 
 		mesh.geometry.computeFaceNormals();
 		mesh.geometry.computeVertexNormals();
 		mesh.geometry.computeBoundingBox();
 
 		return mesh;
+	},
+
+
+	/**
+	 * Get the current shading type.
+	 * @return {int} THREE.NoShading, THREE.FlatShading or THREE.SmoothShading.
+	 */
+	getCurrentShading: function() {
+		switch( this.SHADING ) {
+			case "none":
+				return THREE.NoShading;
+			case "flat":
+				return THREE.FlatShading;
+			case "phong":
+				return THREE.SmoothShading;
+			default:
+				return false;
+		}
 	},
 
 

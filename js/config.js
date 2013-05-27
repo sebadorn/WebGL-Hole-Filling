@@ -19,6 +19,8 @@ var CONFIG = {
 		ZOOM_SPEED: 1.5
 	},
 	COLOR: {
-		BOUNDING_BOX: 0x8FD44C
-	}
+		BOUNDING_BOX: 0x37FEFE
+	},
+	MODE: "solid",
+	SHADING: "phong"
 };

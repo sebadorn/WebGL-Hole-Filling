@@ -92,7 +92,7 @@ label {
 		margin-bottom: 0;
 	}
 
-	.tools li {
+	.tool {
 		display: block;
 		height: 60px;
 		margin-bottom: 1px;
@@ -129,9 +129,30 @@ label {
 			width: 100%;
 		}
 
-		.tools li:hover fieldset {
+		.tool:hover fieldset {
 			display: block;
 		}
+
+
+.tool section {
+	border-bottom: 1px solid #101010;
+	display: block;
+	margin-bottom: 10px;
+	padding-bottom: 10px;
+}
+
+.tool section:last-of-type {
+	border-bottom: 0;
+	margin-bottom: 0;
+	padding-bottom: 0;
+}
+
+	.description {
+		display: inline-block;
+		margin-left: 8px;
+	}
+
+
 
 
 /* Tool specific */
@@ -158,10 +179,12 @@ label {
 	.tool-render label {
 		background-color: #101010;
 		border: 1px solid #101010;
-		border-radius: 3px;
+		border-left-color: #303030;
+		border-right: 0;
 		color: #b0b0b0;
 		cursor: default;
 		display: inline-block;
+		margin-right: -4px;
 		padding: 6px 16px;
 	}
 
@@ -169,16 +192,17 @@ label {
 		color: #ffffff;
 	}
 
-	.tool-render label:first-of-type {
-		border-right: 0;
-		border-bottom-right-radius: 0;
-		border-top-right-radius: 0;
-		margin-right: -4px;
+	.tool-render section label:first-of-type {
+		border-left-color: #101010;
+		border-bottom-left-radius: 3px;
+		border-top-left-radius: 3px;
 	}
 
-	.tool-render label:last-of-type {
-		border-bottom-left-radius: 0;
-		border-top-left-radius: 0;
+	.tool-render section label:last-of-type {
+		border-right: 1px solid #101010;
+		border-bottom-right-radius: 3px;
+		border-top-right-radius: 3px;
+		margin-right: 0;
 	}
 
 

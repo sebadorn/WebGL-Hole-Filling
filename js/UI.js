@@ -12,7 +12,7 @@ var UI = {
 	 */
 	registerEvents: function() {
 		var d = document;
-		var inputUpload, radioModeSolid, radioModeWireframe;
+		var inputUpload;
 
 		this.resize();
 		window.addEventListener( "resize", this.resize, false );
@@ -20,11 +20,38 @@ var UI = {
 		inputUpload = d.getElementById( "import_file" );
 		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
 
-		radioModeSolid = d.getElementById( "render_solid" );
-		radioModeSolid.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
+		this.registerModeOptions();
+		this.registerShadingOptions();
+	},
 
-		radioModeWireframe = d.getElementById( "render_wireframe" );
-		radioModeWireframe.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
+
+	/**
+	 * Listen to events of the mode options.
+	 */
+	registerModeOptions: function() {
+		var d = document,
+		    modeOptions = ["solid", "wireframe"];
+		var radio;
+
+		for( var i = 0; i < modeOptions.length; i++ ) {
+			radio = d.getElementById( "render_" + modeOptions[i] );
+			radio.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
+		}
+	},
+
+
+	/**
+	 * Listen to events of the shading options.
+	 */
+	registerShadingOptions: function() {
+		var d = document,
+		    shadingOptions = ["flat", "phong"];
+		var radio;
+
+		for( var i = 0; i < shadingOptions.length; i++ ) {
+			radio = d.getElementById( "shading_" + shadingOptions[i] );
+			radio.addEventListener( "change", Scene.changeShading.bind( Scene ), false );
+		}
 	},
 
 
