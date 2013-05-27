@@ -34,8 +34,19 @@ html, body {
 
 body {
 	background-color: #f2f2f2;
+	color: #f0f0f0;
 	font-family: "OpenSans Web", "Open Sans", Helvetica, Arial, sans-serif;
 	font-size: 14px;
+}
+
+a {
+	border-bottom: 1px solid #80A7A1;
+	color: #98D9CF;
+	text-decoration: none;
+}
+
+a:hover {
+	border-bottom: 0;
 }
 
 canvas {
@@ -52,6 +63,10 @@ canvas {
 	display: block;
 }
 
+p {
+	margin-bottom: 8px;
+}
+
 
 /* Sidebar */
 /* ------- */
@@ -60,7 +75,6 @@ canvas {
 	background-color: #303030;
 	-moz-box-sizing: border-box;
 	     box-sizing: border-box;
-	color: #f0f0f0;
 	display: block;
 	height: 100%;
 	left: 0;
@@ -78,28 +92,6 @@ canvas {
 		position: relative;
 		width: 100%;
 	}
-
-	.icon {
-		background-color: #101010;
-		color: #ffffff;
-		cursor: default;
-		display: block;
-		font-family: "IconicFill Web";
-		font-size: 24px;
-		height: 60px;
-		left: 0;
-		line-height: 60px;
-		position: absolute;
-		text-align: center;
-		top: 0;
-		width: 100%;
-	}
-
-	.icon-controls::before { content: "\e024"; }
-	.icon-edit::before { content: "\e005"; }
-	.icon-export::before { content: "\2935"; }
-	.icon-import::before { content: "\e065"; }
-	.icon-render::before { content: "\e025"; }
 
 		.tools fieldset {
 			background-color: #333748;
@@ -133,6 +125,45 @@ canvas {
 		.tools li:hover fieldset {
 			display: block;
 		}
+
+
+/* Tool specific */
+/* ------------- */
+
+.tool-about {
+	white-space: nowrap;
+}
+
+	.tool p:last-child {
+		margin-bottom: 0;
+	}
+
+
+/* Icons */
+/* ----- */
+
+.icon {
+	background-color: #101010;
+	color: #ffffff;
+	cursor: default;
+	display: block;
+	font-family: "IconicFill Web";
+	font-size: 24px;
+	height: 60px;
+	left: 0;
+	line-height: 60px;
+	position: absolute;
+	text-align: center;
+	top: 0;
+	width: 100%;
+}
+
+.icon-about::before { content: "\2139"; }
+.icon-controls::before { content: "\e024"; }
+.icon-edit::before { content: "\e005"; }
+.icon-export::before { content: "\2935"; }
+.icon-import::before { content: "\e065"; }
+.icon-render::before { content: "\e025"; }
 
 
 /* Form fields */

@@ -13,16 +13,16 @@
 	<script src="js/threeJS/loaders/PLYLoader.js"></script>
 	<script src="js/threeJS/loaders/STLLoader.js"></script>
 	<script src="js/threeJS/controls/OrbitControls.js"></script>
-	<script src="js/init.js"></script>
+	<script src="js/setup.js"></script>
 </head>
 <body>
 
 <div id="container"></div>
 
 <ul class="tools">
-	<li class="empty"></li>
+	<li class="tool tool-empty"></li>
 	<!-- import -->
-	<li>
+	<li class="tool tool-import">
 		<span class="icon icon-import"></span>
 		<fieldset>
 			<legend>Import</legend>
@@ -30,31 +30,43 @@
 		</fieldset>
 	</li>
 	<!-- rendering -->
-	<li>
+	<li class="tool tool-render">
 		<span class="icon icon-render"></span>
 		<fieldset>
 			<legend>Renderer</legend>
 		</div>
 	</li>
 	<!-- edit -->
-	<li>
+	<li class="tool tool-edit">
 		<span class="icon icon-edit"></span>
 		<fieldset>
 			<legend>Hole Filling</legend>
 		</div>
 	</li>
 	<!-- controls -->
-	<li>
+	<li class="tool tool-controls">
 		<span class="icon icon-controls"></span>
 		<fieldset>
 			<legend>Controls</legend>
 		</div>
 	</li>
 	<!-- export -->
-	<li>
+	<li class="tool tool-export">
 		<span class="icon icon-export"></span>
 		<fieldset>
 			<legend>Export</legend>
+		</fieldset>
+	</li>
+	<!-- empty -->
+	<li class="tool tool-empty"></li>
+	<!-- about -->
+	<li class="tool tool-about">
+		<span class="icon icon-about"></span>
+		<fieldset>
+			<legend>About</legend>
+			<p>WebGL Framework: <a href="http://threejs.org/">three.js</a></p>
+			<p>Icons: <a href="http://somerandomdude.com/work/iconic/">Iconic Icon Set by Some Random Dude</a></p>
+			<p>Font: <a href="http://opensans.com/">Open Sans</a></p>
 		</fieldset>
 	</li>
 </ul>
