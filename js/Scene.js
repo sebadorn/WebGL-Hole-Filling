@@ -291,16 +291,7 @@ var Scene = {
 	 * Reset the camera settings.
 	 */
 	resetCamera: function() {
-		var cam = GLOBAL.CAMERA,
-		    cc = CONFIG.CAMERA;
-
-		cam.fov = cc.ANGLE;
-		cam.aspect = window.innerWidth / window.innerHeight;
-		cam.znear = cc.ZNEAR;
-		cam.zfar = cc.ZFAR;
-		cam.position.x = cc.POSITION.X;
-		cam.position.y = cc.POSITION.Y;
-		cam.position.z = cc.POSITION.Z;
+		GLOBAL.CONTROLS.reset();
 	}
 
 };
