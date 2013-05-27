@@ -30,5 +30,4 @@ function render() {
 }
 
 
-
 window.addEventListener( "load", Init.all.bind( Init ), false );
