@@ -12,13 +12,19 @@ var UI = {
 	 */
 	registerEvents: function() {
 		var d = document;
-		var inputUpload;
+		var inputUpload, radioModeSolid, radioModeWireframe;
 
 		this.resize();
 		window.addEventListener( "resize", this.resize, false );
 
 		inputUpload = d.getElementById( "import_file" );
 		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
+
+		radioModeSolid = d.getElementById( "render_solid" );
+		radioModeSolid.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
+
+		radioModeWireframe = d.getElementById( "render_wireframe" );
+		radioModeWireframe.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
 	},
 
 

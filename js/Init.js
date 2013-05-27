@@ -38,7 +38,9 @@ var Init = {
 			cc.ZNEAR,
 			cc.ZFAR
 		);
-		g.CAMERA.position.z = 20;
+		g.CAMERA.position.x = cc.POSITION.X;
+		g.CAMERA.position.y = cc.POSITION.Y;
+		g.CAMERA.position.z = cc.POSITION.Z;
 	},
 
 
@@ -46,9 +48,19 @@ var Init = {
 	 * Initialize the controls.
 	 */
 	controls: function() {
-		var g = GLOBAL;
+		var g = GLOBAL,
+		    cc = CONFIG.CONTROLS;
 
-		g.CONTROLS = new THREE.OrbitControls( g.CAMERA );
+		g.CONTROLS = new THREE.TrackballControls( g.CAMERA );
+
+		g.CONTROLS.rotateSpeed = cc.ROT_SPEED;
+		g.CONTROLS.zoomSpeed = cc.ZOOM_SPEED;
+		g.CONTROLS.panSpeed = cc.PAN_SPEED;
+		g.CONTROLS.noZoom = false;
+		g.CONTROLS.noPan = false;
+		g.CONTROLS.staticMoving = true;
+		g.CONTROLS.dynamicDampingFactor = 0.3;
+
 		g.CONTROLS.addEventListener( "change", render, false );
 	},
 

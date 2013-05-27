@@ -8,24 +8,6 @@
 var Loader = {
 
 	/**
-	 * Clear the scene (except for the lights).
-	 */
-	clearScene: function() {
-		var scene = GLOBAL.SCENE;
-		var obj;
-
-		for( var i = scene.children.length - 1; i >= 0; i-- ) {
-			obj = scene.children[i];
-
-			if( obj instanceof THREE.Light || obj instanceof THREE.Camera ) {
-				continue;
-			}
-			scene.remove( obj );
-		}
-	},
-
-
-	/**
 	 * Get the extension part of a file name.
 	 * @param  {String} filename Name of the file.
 	 * @return {String}          Extension part of the file name.
@@ -66,7 +48,7 @@ var Loader = {
 	 */
 	loadModel: function( e, extension ) {
 		var g = GLOBAL;
-		var content, geometry, loader, material;
+		var content, geometry, loader;
 
 		switch( extension ) {
 			case "obj":
@@ -80,15 +62,15 @@ var Loader = {
 				break;
 		}
 
-		this.clearScene();
-
 		content = loader.parse( e.target.result );
 		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
 
-		g.MODEL = Model.geometryToMesh( geometry );
-		g.MODEL = Model.center( g.MODEL );
+		g.MODEL = Scene.geometryToMesh( geometry );
+		g.MODEL = Scene.centerModel( g.MODEL );
 
-		Model.renderBoundingBox( g.MODEL );
+		Scene.clearModels();
+		Scene.resetCamera();
+		Scene.renderBoundingBox( g.MODEL );
 
 		g.SCENE.add( g.MODEL );
 		render();
@@ -125,17 +107,17 @@ var Loader = {
 
 
 /**
- * Manipulating the model.
+ * Manipulating the scene (models, lights, camera).
  * @type {Object}
  */
-var Model = {
+var Scene = {
 
 	/**
 	 * Center a mesh.
 	 * @param  {THREE.Mesh} mesh The mesh to center.
 	 * @return {THREE.Mesh}      Centered mesh.
 	 */
-	center: function( mesh ) {
+	centerModel: function( mesh ) {
 		var center = mesh.geometry.boundingBox.center();
 
 		mesh.position.x -= center.x;
@@ -143,6 +125,48 @@ var Model = {
 		mesh.position.z -= center.z;
 
 		return mesh;
+	},
+
+
+	/**
+	 * Change the mode the model is rendered: Solid or Wireframe.
+	 */
+	changeMode: function( e ) {
+		var model = GLOBAL.MODEL,
+		    value = e.target.value;
+
+		if( !e.target.checked ) {
+			return false;
+		}
+
+		switch( value ) {
+			case "solid":
+				model.material.wireframe = false;
+				break;
+			case "wireframe":
+				model.material.wireframe = true;
+				break;
+		}
+
+		render();
+	},
+
+
+	/**
+	 * Clear the scene (except for the lights).
+	 */
+	clearModels: function() {
+		var scene = GLOBAL.SCENE;
+		var obj;
+
+		for( var i = scene.children.length - 1; i >= 0; i-- ) {
+			obj = scene.children[i];
+
+			if( obj instanceof THREE.Light || obj instanceof THREE.Camera ) {
+				continue;
+			}
+			scene.remove( obj );
+		}
 	},
 
 
@@ -186,6 +210,23 @@ var Model = {
 		cubeMesh.position.set( 0, 0, 0 );
 
 		GLOBAL.SCENE.add( cubeMesh );
+	},
+
+
+	/**
+	 * Reset the camera settings.
+	 */
+	resetCamera: function() {
+		var cam = GLOBAL.CAMERA,
+		    cc = CONFIG.CAMERA;
+
+		cam.fov = cc.ANGLE;
+		cam.aspect = window.innerWidth / window.innerHeight;
+		cam.znear = cc.ZNEAR;
+		cam.zfar = cc.ZFAR;
+		cam.position.x = cc.POSITION.X;
+		cam.position.y = cc.POSITION.Y;
+		cam.position.z = cc.POSITION.Z;
 	}
 
 };

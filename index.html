@@ -8,12 +8,12 @@
 	<script src="js/config.js"></script>
 	<script src="js/Init.js"></script>
 	<script src="js/UI.js"></script>
-	<script src="js/Model.js"></script>
+	<script src="js/Scene.js"></script>
 	<script src="js/threeJS/three.min.js"></script>
 	<script src="js/threeJS/loaders/OBJLoader.js"></script>
 	<script src="js/threeJS/loaders/PLYLoader.js"></script>
 	<script src="js/threeJS/loaders/STLLoader.js"></script>
-	<script src="js/threeJS/controls/OrbitControls.js"></script>
+	<script src="js/threeJS/controls/TrackballControls.js"></script>
 	<script src="js/setup.js"></script>
 </head>
 <body>
@@ -35,6 +35,10 @@
 		<span class="icon icon-render"></span>
 		<fieldset>
 			<legend>Renderer</legend>
+			<input type="radio" name="render_mode" id="render_solid" value="solid" checked />
+			<label for="render_solid">Solid</label>
+			<input type="radio" name="render_mode" id="render_wireframe" value="wireframe" />
+			<label for="render_wireframe">Wireframe</label>
 		</div>
 	</li>
 	<!-- edit -->
