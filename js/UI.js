@@ -22,6 +22,19 @@ var UI = {
 
 		this.registerModeOptions();
 		this.registerShadingOptions();
+		this.registerHoleFillingOptions();
+	},
+
+
+	/**
+	 * Listen to events of the hole filling options.
+	 */
+	registerHoleFillingOptions: function() {
+		var d = document;
+		var test;
+
+		test = d.getElementById( "hf_test" );
+		test.addEventListener( "click", HoleDetection.naive.bind( HoleDetection ), false );
 	},
 
 

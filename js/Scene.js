@@ -74,6 +74,21 @@ var Loader = {
 
 		g.SCENE.add( g.MODEL );
 		render();
+
+		// TODO
+		console.log( "Starting to create mesh ..." );
+		var mesh = new Mesh( g.MODEL.geometry );
+		console.log( "... Done." );
+		var bp = [];
+		for( var i in mesh.vertices ) {
+			if( !mesh.vertices.hasOwnProperty( i ) ) {
+				continue;
+			}
+			if( mesh.vertices[i].isBorderPoint() ) {
+				bp.push( mesh.vertices[i] );
+			}
+		}
+		console.log( bp );
 	},
 
 
