@@ -4,12 +4,12 @@
 /**
  * Mesh.
  * (Original Java code by Henning Tjaden.)
- * @param {Object} data
+ * @param {THREE.Geometry} data
  */
-function Mesh( data ) {
+function HalfEdgeMesh( data ) {
 	this.data = data;
-	this.edges = {};
-	this.vertices = {};
+	this.edges = [];
+	this.vertices = [];
 	this.borderEdges = [];
 
 	this.buildMesh();
@@ -19,8 +19,10 @@ function Mesh( data ) {
 /**
  * Build the mesh.
  */
-Mesh.prototype.buildMesh = function() {
-	var tempList = {};
+HalfEdgeMesh.prototype.buildMesh = function() {
+	var faces = this.data.faces,
+	    tempList = [];
+	var borderEdge, faceArr, v;
 
 	for( var i = 0; i < this.data.vertices.length; i++ ) {
 		this.vertices[i] = new Vertex( i );
@@ -31,19 +33,14 @@ Mesh.prototype.buildMesh = function() {
 		this.edges[f] = [];
 	}
 
-	var faces = this.data.faces;
+	for( var l = 0; l < faces.length; l++ ) {
+		this.createEdges( faces[l], l );
+		faceArr = [faces[l].a, faces[l].b, faces[l].c];
 
-	for( var j = 0; j < faces.length; j++ ) {
-		this.createEdges( faces[j], j );
-
-		for( var k = 0; k < faces[j].length; k++ ) {
-			var faceArr = [faces[j].x, faces[j].y, faces[j].z];
-
-			for( var m = 0; m < faceArr[k].length; m++ ) {
-				if( faceArr[k] < faceArr[m] ) {
-					var v = [faceArr[m], j];
-
-					tempList[faceArr[k]].push( v );
+		for( var i = 0; i < 3; i++ ) {
+			for( var j = 0; j < 3; j++ ) {
+				if( faceArr[i] < faceArr[j] ) {
+					tempList[faceArr[i]].push( [faceArr[j], l] );
 				}
 			}
 		}
@@ -52,17 +49,12 @@ Mesh.prototype.buildMesh = function() {
 	this.findAdjacency( tempList );
 	this.setFirstEdges();
 
-	for( var key in tempList ) {
-		if( !tempList.hasOwnProperty( key ) ) {
-			continue;
-		}
-
-		for( var i = 0; i < tempList[key].length; i++ ) {
-			var v = tempList[key];
+	for( var i = 0; i < tempList.length; i++ ) {
+		for( var j = 0; j < tempList[i].length; j++ ) {
+			v = tempList[i][j];
 
 			if( v[0] >= 0 ) {
-				var borderEdge = [parseInt( key, 10 ), v[0]];
-
+				borderEdge = [parseInt( i, 10 ), v[0]];
 				this.borderEdges.push( borderEdge );
 			}
 		}
@@ -77,7 +69,7 @@ Mesh.prototype.buildMesh = function() {
  * @param {int} f1
  * @param {int} f2
  */
-Mesh.prototype.connectEdges = function( v1, v2, f1, f2 ) {
+HalfEdgeMesh.prototype.connectEdges = function( v1, v2, f1, f2 ) {
 	var p1 = null,
 	    p2 = null;
 	var e;
@@ -92,7 +84,7 @@ Mesh.prototype.connectEdges = function( v1, v2, f1, f2 ) {
 	}
 
 	for( var i = 0; i < this.edges[f2].length; i++ ) {
-		e = this.edges[f1][i];
+		e = this.edges[f2][i];
 
 		if( Math.min( e.vertex.index, e.q.index ) == Math.min( v2, v1 )
 		    && Math.max( e.vertex.index, e.q.index ) == Math.max( v2, v1 ) ) {
@@ -107,19 +99,21 @@ Mesh.prototype.connectEdges = function( v1, v2, f1, f2 ) {
 
 /**
  * Create edges.
- * @param {Array} face
- * @param {int}   faceIndex
+ * @param {THREE.Face3} face
+ * @param {int}         faceIndex
  */
-Mesh.prototype.createEdges = function( face, faceIndex ) {
-	var firstEdge = new Edge( this.vertices[face.b], this.vertices[face.a], null, null, faceIndex, null );
-	var previous = firstEdge;
+HalfEdgeMesh.prototype.createEdges = function( face, faceIndex ) {
 	var faceArr = [face.a, face.b, face.c];
+	var current, firstEdge, ix, previous;
+
+	firstEdge = new Edge( this.vertices[face.b], this.vertices[face.a], faceIndex );
+	previous = firstEdge;
 
 	this.vertices[face.a].edges.push( firstEdge );
 
-	for( var i = 1; i < faceArr.length; i++ ) {
-		var ix = ( i + 1 ) % faceArr.length;
-		var current = new Edge( this.vertices[faceArr[ix]], this.vertices[faceArr[i]], null, null, faceIndex, null );
+	for( var i = 1; i < 3; i++ ) {
+		ix = ( i + 1 ) % 3;
+		current = new Edge( this.vertices[faceArr[ix]], this.vertices[faceArr[i]], faceIndex );
 
 		this.vertices[faceArr[i]].edges.push( current );
 		previous.next = current;
@@ -136,21 +130,15 @@ Mesh.prototype.createEdges = function( face, faceIndex ) {
  * Find adjacency.
  * @param {Dictionary} tempList
  */
-Mesh.prototype.findAdjacency = function( tempList ) {
-	var i, v1, v2;
+HalfEdgeMesh.prototype.findAdjacency = function( tempList ) {
+	var v1, v2;
 
-	for( var key in tempList ) {
-		if( !tempList.hasOwnProperty( key ) ) {
-			continue;
-		}
+	for( var i = 0; i < tempList.length; i++ ) {
+		for( var j = 0; j < tempList[i].length; j++ ) {
+			v1 = tempList[i][j];
 
-		i = parseInt( key, 10 );
-
-		for( var j = 0; j < tempList[key].length; j++ ) {
-			v1 = tempList[key][j];
-
-			for( var k = 0; k < tempList[key].length; k++ ) {
-				v2 = tempList[key][k];
+			for( var k = 0; k < tempList[i].length; k++ ) {
+				v2 = tempList[i][k];
 
 				if( v1[0] > 0 && v2[0] > 0 && v1[0] == v2[0] && v1[1] != v2[1] ) {
 					this.connectEdges( i, v1[0], v1[1], v2[1] );
@@ -169,7 +157,7 @@ Mesh.prototype.findAdjacency = function( tempList ) {
  * @param  {Array} b Vector.
  * @return {float}   Vector length.
  */
-Mesh.prototype.getVectorLength = function( a, b ) {
+HalfEdgeMesh.prototype.getVectorLength = function( a, b ) {
 	var pow0 = Math.pow( a[0] - b[0], 2.0 ),
 	    pow1 = Math.pow( a[1] - b[1], 2.0 ),
 	    pow2 = Math.pow( a[2] - b[2], 2.0 );
@@ -181,7 +169,7 @@ Mesh.prototype.getVectorLength = function( a, b ) {
 /**
  * Set first edges.
  */
-Mesh.prototype.setFirstEdges = function() {
+HalfEdgeMesh.prototype.setFirstEdges = function() {
 	for( var i = 0; i < this.vertices.length; i++ ) {
 		this.vertices[i].setUpFirstEdge();
 	}
@@ -191,10 +179,10 @@ Mesh.prototype.setFirstEdges = function() {
 /**
  * Smoothes the mesh using the umbrella operator.
  */
-Mesh.prototype.smooth = function() {
+HalfEdgeMesh.prototype.smooth = function() {
 	var vs = data.vertices,
 	    vsCopy = [];
-	var v;
+	var e, len, nb, nbs, v, vNew;
 
 	for( var i = 0; i < vs.length; i++ ) {
 		vsCopy[i] = vs[i].slice( 0 );
@@ -204,13 +192,13 @@ Mesh.prototype.smooth = function() {
 		v = this.vertices[i];
 
 		if( !v.isBorderPoint() ) {
-			var nbs = v.getNeighbours();
-			var e = 0.0;
-			var vNew = [];
+			nbs = v.getNeighbours();
+			e = 0.0;
+			vNew = [];
 
 			for( var k = 0; k < nbs.length; k++ ) {
-				var nb = nbs[k];
-				var len = this.getVectorLength( vsCopy[nb], vsCopy[v.index] );
+				nb = nbs[k];
+				len = this.getVectorLength( vsCopy[nb], vsCopy[v.index] );
 
 				vNew[0] += ( vsCopy[v.index][0] - vsCopy[nb][0] ) / len;
 				vNew[1] += ( vsCopy[v.index][1] - vsCopy[nb][1] ) / len;

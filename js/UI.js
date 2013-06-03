@@ -33,8 +33,8 @@ var UI = {
 		var d = document;
 		var test;
 
-		test = d.getElementById( "hf_test" );
-		test.addEventListener( "click", HoleDetection.naive.bind( HoleDetection ), false );
+		test = d.getElementById( "hf_showedges" );
+		test.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
 	},
 
 

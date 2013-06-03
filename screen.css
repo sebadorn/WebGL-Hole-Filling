@@ -133,6 +133,26 @@ label {
 			display: block;
 		}
 
+		.button {
+			border: 1px solid #101010;
+			border-radius: 3px;
+			display: inline-block;
+			padding: 8px 16px;
+		}
+
+		.button:hover {
+			border-color: #b0b0b0;
+		}
+
+		.button:active {
+			background-color: #606060;
+			background-image:     -ms-linear-gradient( top, #404040, #606060 );
+			background-image:      -o-linear-gradient( top, #404040, #606060 );
+			background-image: -webkit-linear-gradient( top, #404040, #606060 );
+			background-image:         linear-gradient( to bottom, #404040, #606060 );
+			color: #000000;
+		}
+
 
 .tool section {
 	border-bottom: 1px solid #101010;
@@ -167,7 +187,8 @@ label {
 		display: none;
 	}
 
-	.tool-render input[type="radio"]:checked + label {
+	.tool-render input[type="radio"]:checked + label,
+	.button {
 		background-color: #404040;
 		background-image:     -ms-linear-gradient( top, #606060, #404040 );
 		background-image:      -o-linear-gradient( top, #606060, #404040 );

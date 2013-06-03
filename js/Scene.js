@@ -74,21 +74,6 @@ var Loader = {
 
 		g.SCENE.add( g.MODEL );
 		render();
-
-		// TODO
-		console.log( "Starting to create mesh ..." );
-		var mesh = new Mesh( g.MODEL.geometry );
-		console.log( "... Done." );
-		var bp = [];
-		for( var i in mesh.vertices ) {
-			if( !mesh.vertices.hasOwnProperty( i ) ) {
-				continue;
-			}
-			if( mesh.vertices[i].isBorderPoint() ) {
-				bp.push( mesh.vertices[i] );
-			}
-		}
-		console.log( bp );
 	},
 
 
@@ -307,6 +292,51 @@ var Scene = {
 	 */
 	resetCamera: function() {
 		GLOBAL.CONTROLS.reset();
+	},
+
+
+	/**
+	 * Show the border edges of the model.
+	 */
+	showEdges: function() {
+		var g = GLOBAL,
+		    geometry = new THREE.Geometry();
+		var border, material, mesh;
+		var f, fIndex, v, vIndex;
+
+		if( g.MODEL == null ) {
+			console.error( "No model loaded." );
+			return;
+		}
+
+		// Build hald-edge structure and find the border edges
+		mesh = new HalfEdgeMesh( g.MODEL.geometry );
+
+		for( var i = 0; i < mesh.vertices.length; i++ ) {
+			if( mesh.vertices[i].isBorderPoint() ) {
+				fIndex = mesh.vertices[i].firstEdge.face;
+				f = g.MODEL.geometry.faces[fIndex];
+				geometry.faces.push( f );
+			}
+		}
+
+		// Build a model from the border edges and render it
+		geometry.vertices = g.MODEL.geometry.vertices.slice( 0 );
+		material = new THREE.MeshBasicMaterial( {
+			color: CONFIG.COLOR.HF_BORDER_EDGES,
+			shading: THREE.NoShading,
+			wireframe: true
+		} );
+
+		border = new THREE.Mesh( geometry, material );
+
+		border.geometry.computeFaceNormals();
+		border.geometry.computeVertexNormals();
+		border.geometry.computeBoundingBox();
+		border.position = g.MODEL.position;
+
+		g.SCENE.add( border );
+		render();
 	}
 
 };

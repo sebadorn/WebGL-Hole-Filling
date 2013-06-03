@@ -2,6 +2,26 @@
 
 
 /**
+ * Edge structure.
+ * (Original Java code by Henning Tjaden.)
+ * @param {Vertex}      vertex
+ * @param {Vertex}      q
+ * @param {Edge}        next (Not a parameter.)
+ * @param {Edge}        pair (Not a parameter.)
+ * @param {THREE.Face3} face
+ * @param {Edge}        prev (Not a parameter.)
+ */
+function Edge( vertex, q, face ) {
+	this.vertex = vertex;
+	this.q = q;
+	this.next = null;
+	this.pair = null;
+	this.face = face;
+	this.prev = null;
+}
+
+
+/**
  * Vertex structure.
  * (Original Java code by Henning Tjaden.)
  * @param {int} index
@@ -52,12 +72,13 @@ Vertex.prototype.isBorderPoint = function() {
  */
 Vertex.prototype.getNeighbours = function() {
 	var neighbours = [];
+	var next;
 
 	// Has edges
 	if( this.edges.length > 0 ) {
 		// Is border vertex
 		if( this.firstEdge.pair == null ) {
-			var next = this.firstEdge.next;
+			next = this.firstEdge.next;
 
 			// Add the other two points of the triangle
 			neighbours.push( this.firstEdge.vertex.index );
@@ -84,7 +105,7 @@ Vertex.prototype.getNeighbours = function() {
 		}
 		// Is an inner vertex of the mesh
 		else {
-			var next = this.firstEdge.pair.next;
+			next = this.firstEdge.pair.next;
 
 			neighbours.push( this.firstEdge.vertex.index );
 
