@@ -22,6 +22,7 @@ var CONFIG = {
 		BOUNDING_BOX: 0x37FEFE,
 		HF_BORDER_EDGES: 0xFF0000
 	},
+	HF_LINEWIDTH: 2,
 	MODE: "solid",
 	SHADING: "phong"
 };

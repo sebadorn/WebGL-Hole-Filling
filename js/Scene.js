@@ -176,18 +176,21 @@ var Scene = {
 			case "none":
 				material = new THREE.MeshPhongMaterial( {
 					shading: THREE.NoShading,
+					side: THREE.DoubleSide,
 					wireframe: ( this.MODE == "wireframe" )
 				} );
 				break;
 			case "flat":
 				material = new THREE.MeshPhongMaterial( {
 					shading: THREE.FlatShading,
+					side: THREE.DoubleSide,
 					wireframe: ( this.MODE == "wireframe" )
 				} );
 				break;
 			case "phong":
 				material = new THREE.MeshPhongMaterial( {
 					shading: THREE.SmoothShading,
+					side: THREE.DoubleSide,
 					wireframe: ( this.MODE == "wireframe" )
 				} );
 				break;
@@ -232,6 +235,7 @@ var Scene = {
 
 		material.shading = this.getCurrentShading();
 		material.wireframe = ( this.MODE == "wireframe" );
+		material.side = THREE.DoubleSide;
 
 		mesh.setMaterial( material );
 
@@ -299,10 +303,9 @@ var Scene = {
 	 * Show the border edges of the model.
 	 */
 	showEdges: function() {
-		var g = GLOBAL,
-		    geometry = new THREE.Geometry();
-		var border, material, mesh;
-		var f, fIndex, v, vIndex;
+		var g = GLOBAL;
+		var bp, bpStart, geometry, line, v, vertex;
+		var foundHoles = 0;
 
 		if( g.MODEL == null ) {
 			console.error( "No model loaded." );
@@ -310,33 +313,45 @@ var Scene = {
 		}
 
 		// Build hald-edge structure and find the border edges
-		mesh = new HalfEdgeMesh( g.MODEL.geometry );
+		var mesh = new HalfEdgeMesh( g.MODEL.geometry );
 
-		for( var i = 0; i < mesh.vertices.length; i++ ) {
-			if( mesh.vertices[i].isBorderPoint() ) {
-				fIndex = mesh.vertices[i].firstEdge.face;
-				f = g.MODEL.geometry.faces[fIndex];
-				geometry.faces.push( f );
-			}
-		}
-
-		// Build a model from the border edges and render it
-		geometry.vertices = g.MODEL.geometry.vertices.slice( 0 );
-		material = new THREE.MeshBasicMaterial( {
+		var material = new THREE.LineBasicMaterial( {
 			color: CONFIG.COLOR.HF_BORDER_EDGES,
-			shading: THREE.NoShading,
-			wireframe: true
+			linewidth: CONFIG.HF_LINEWIDTH
 		} );
 
-		border = new THREE.Mesh( geometry, material );
+		var ignore = [];
 
-		border.geometry.computeFaceNormals();
-		border.geometry.computeVertexNormals();
-		border.geometry.computeBoundingBox();
-		border.position = g.MODEL.position;
+		for( var i = 0; i < mesh.vertices.length; i++ ) {
+			vertex = mesh.vertices[i];
 
-		g.SCENE.add( border );
-		render();
+			if( ignore.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
+				// Find connected border points
+				geometry = new THREE.Geometry();
+				bpStart = vertex;
+				bp = vertex;
+
+				while( true ) {
+					if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
+						v = g.MODEL.geometry.vertices[bp.index];
+						geometry.vertices.push( v );
+						ignore.push( bp.index );
+						bp = bp.firstEdge.vertex;
+					}
+					else {
+						geometry.vertices.push( g.MODEL.geometry.vertices[bpStart.index] );
+						break;
+					}
+				}
+
+				line = new THREE.Line( geometry, material );
+				line.position = g.MODEL.position;
+				g.SCENE.add( line );
+				render();
+
+				UI.updateWindowHoles( ++foundHoles );
+			}
+		}
 	}
 
 };

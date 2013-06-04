@@ -13,7 +13,7 @@ var Init = {
 	all: function() {
 		GLOBAL.CONTAINER = document.getElementById( "container" );
 
-		UI.registerEvents();
+		UI.init();
 
 		this.camera();
 		this.controls();
@@ -51,7 +51,7 @@ var Init = {
 		var g = GLOBAL,
 		    cc = CONFIG.CONTROLS;
 
-		g.CONTROLS = new THREE.TrackballControls( g.CAMERA );
+		g.CONTROLS = new THREE.TrackballControls( g.CAMERA, g.CONTAINER );
 
 		g.CONTROLS.rotateSpeed = cc.ROT_SPEED;
 		g.CONTROLS.zoomSpeed = cc.ZOOM_SPEED;

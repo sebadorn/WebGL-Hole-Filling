@@ -100,7 +100,8 @@ label {
 		width: 100%;
 	}
 
-		.tools fieldset {
+		.tools fieldset,
+		.toolwindow fieldset {
 			background-color: #333748;
 			border: 0;
 			border-bottom-right-radius: 2px;
@@ -117,7 +118,8 @@ label {
 			z-index: 110;
 		}
 
-		.tools legend {
+		.tools legend,
+		.toolwindow legend {
 			background-color: #101010;
 			-moz-box-sizing: border-box;
 			     box-sizing: border-box;
@@ -131,26 +133,6 @@ label {
 
 		.tool:hover fieldset {
 			display: block;
-		}
-
-		.button {
-			border: 1px solid #101010;
-			border-radius: 3px;
-			display: inline-block;
-			padding: 8px 16px;
-		}
-
-		.button:hover {
-			border-color: #b0b0b0;
-		}
-
-		.button:active {
-			background-color: #606060;
-			background-image:     -ms-linear-gradient( top, #404040, #606060 );
-			background-image:      -o-linear-gradient( top, #404040, #606060 );
-			background-image: -webkit-linear-gradient( top, #404040, #606060 );
-			background-image:         linear-gradient( to bottom, #404040, #606060 );
-			color: #000000;
 		}
 
 
@@ -173,57 +155,46 @@ label {
 	}
 
 
-
-
 /* Tool specific */
 /* ------------- */
 
 .tool-about,
+.tool-light,
 .tool-render {
 	white-space: nowrap;
 }
 
-	.tool-render input[type="radio"] {
-		display: none;
-	}
 
-	.tool-render input[type="radio"]:checked + label,
-	.button {
-		background-color: #404040;
-		background-image:     -ms-linear-gradient( top, #606060, #404040 );
-		background-image:      -o-linear-gradient( top, #606060, #404040 );
-		background-image: -webkit-linear-gradient( top, #606060, #404040 );
-		background-image:         linear-gradient( to bottom, #606060, #404040 );
-		color: #ffffff;
-	}
+/* Tool extra window */
+/* ----------------- */
 
-	.tool-render label {
-		background-color: #101010;
-		border: 1px solid #101010;
-		border-left-color: #303030;
-		border-right: 0;
-		color: #b0b0b0;
-		cursor: default;
+.toolwindow {
+	height: 200px;
+	position: absolute;
+	right: 16px;
+	top: 16px;
+	width: 200px;
+}
+
+	.toolwindow .icon-close {
 		display: inline-block;
-		margin-right: -4px;
-		padding: 6px 16px;
+		height: 24px;
+		left: auto;
+		line-height: 24px;
+		right: 6px;
+		text-align: right;
+		top: 6px;
+		z-index: 200;
+		width: 24px;
 	}
 
-	.tool-render label:hover {
-		color: #ffffff;
+	.toolwindow .icon-close:hover {
+		color: #DA6F2C;
 	}
 
-	.tool-render section label:first-of-type {
-		border-left-color: #101010;
-		border-bottom-left-radius: 3px;
-		border-top-left-radius: 3px;
-	}
-
-	.tool-render section label:last-of-type {
-		border-right: 1px solid #101010;
-		border-bottom-right-radius: 3px;
-		border-top-right-radius: 3px;
-		margin-right: 0;
+	.toolwindow fieldset {
+		display: block;
+		position: static;
 	}
 
 
@@ -247,10 +218,12 @@ label {
 }
 
 .icon-about::before { content: "\2139"; }
+.icon-close::before { content: "\2714"; }
 .icon-controls::before { content: "\e024"; }
 .icon-edit::before { content: "\e005"; }
 .icon-export::before { content: "\2935"; }
 .icon-import::before { content: "\e065"; }
+.icon-light::before { content: "\e063"; }
 .icon-render::before { content: "\e025"; }
 
 
@@ -267,7 +240,71 @@ textarea {
 	font-size: 100%;
 }
 
-input[type="checkbox"] {
+input[type="checkbox"],
+input[type="range"] {
 	margin-right: 4px;
 	vertical-align: middle;
+}
+
+.tool input[type="radio"] {
+	display: none;
+}
+
+.tool input[type="radio"]:checked + label,
+.button {
+	background-color: #404040;
+	background-image:     -ms-linear-gradient( top, #606060, #404040 );
+	background-image:      -o-linear-gradient( top, #606060, #404040 );
+	background-image: -webkit-linear-gradient( top, #606060, #404040 );
+	background-image:         linear-gradient( to bottom, #606060, #404040 );
+	color: #ffffff;
+}
+
+.tool label {
+	background-color: #101010;
+	border: 1px solid #101010;
+	border-left-color: #303030;
+	border-right: 0;
+	color: #b0b0b0;
+	cursor: default;
+	display: inline-block;
+	margin-right: -4px;
+	padding: 6px 16px;
+}
+
+.tool label:hover {
+	color: #ffffff;
+}
+
+.tool section label:first-of-type {
+	border-left-color: #101010;
+	border-bottom-left-radius: 3px;
+	border-top-left-radius: 3px;
+}
+
+.tool section label:last-of-type {
+	border-right: 1px solid #101010;
+	border-bottom-right-radius: 3px;
+	border-top-right-radius: 3px;
+	margin-right: 0;
+}
+
+.button {
+	border: 1px solid #101010;
+	border-radius: 3px;
+	display: inline-block;
+	padding: 8px 16px;
+}
+
+.button:hover {
+	border-color: #b0b0b0;
+}
+
+.button:active {
+	background-color: #606060;
+	background-image:     -ms-linear-gradient( top, #404040, #606060 );
+	background-image:      -o-linear-gradient( top, #404040, #606060 );
+	background-image: -webkit-linear-gradient( top, #404040, #606060 );
+	background-image:         linear-gradient( to bottom, #404040, #606060 );
+	color: #000000;
 }
