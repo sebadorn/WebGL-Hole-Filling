@@ -304,54 +304,20 @@ var Scene = {
 	 */
 	showEdges: function() {
 		var g = GLOBAL;
-		var bp, bpStart, geometry, line, v, vertex;
-		var foundHoles = 0;
 
 		if( g.MODEL == null ) {
 			console.error( "No model loaded." );
 			return;
 		}
 
-		// Build hald-edge structure and find the border edges
-		var mesh = new HalfEdgeMesh( g.MODEL.geometry );
+		var lines = HoleFilling.findBorderEdges( g.MODEL );
 
-		var material = new THREE.LineBasicMaterial( {
-			color: CONFIG.COLOR.HF_BORDER_EDGES,
-			linewidth: CONFIG.HF_LINEWIDTH
-		} );
-
-		var ignore = [];
-
-		for( var i = 0; i < mesh.vertices.length; i++ ) {
-			vertex = mesh.vertices[i];
-
-			if( ignore.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
-				// Find connected border points
-				geometry = new THREE.Geometry();
-				bpStart = vertex;
-				bp = vertex;
-
-				while( true ) {
-					if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
-						v = g.MODEL.geometry.vertices[bp.index];
-						geometry.vertices.push( v );
-						ignore.push( bp.index );
-						bp = bp.firstEdge.vertex;
-					}
-					else {
-						geometry.vertices.push( g.MODEL.geometry.vertices[bpStart.index] );
-						break;
-					}
-				}
-
-				line = new THREE.Line( geometry, material );
-				line.position = g.MODEL.position;
-				g.SCENE.add( line );
-				render();
-
-				UI.updateWindowHoles( ++foundHoles );
-			}
+		for( var i = 0; i < lines.length; i++ ) {
+			g.SCENE.add( lines[i] );
 		}
+		render();
+
+		UI.showWindowHoles( lines.length );
 	}
 
 };

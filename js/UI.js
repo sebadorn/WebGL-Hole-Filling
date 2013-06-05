@@ -7,6 +7,10 @@
  */
 var UI = {
 
+	MOUSE: {
+		X: null,
+		Y: null
+	},
 	TOOLWINDOW: null,
 
 
@@ -33,12 +37,70 @@ var UI = {
 	 * Init the extra tool window.
 	 */
 	initToolWindow: function() {
-		var buttonClose;
+		var buttonClose, topBar;
 
 		this.TOOLWINDOW = document.getElementById( "tool-extra-window" );
 
 		buttonClose = this.TOOLWINDOW.querySelector( ".icon-close" );
 		buttonClose.addEventListener( "click", this.closeToolWindow.bind( this ), false );
+
+		topBar = this.TOOLWINDOW.querySelector( "legend" );
+		document.addEventListener( "mouseup", this.moveToolWindowEnd.bind( this ), false );
+		topBar.addEventListener( "mousedown", this.moveToolWindowStart.bind( this ), false );
+	},
+
+
+	/**
+	 * Move the tool window with the mouse.
+	 */
+	moveToolWindow: function( e ) {
+		var tw = UI.TOOLWINDOW,
+		    oldX = tw.offsetLeft,
+		    oldY = tw.offsetTop,
+		    posX = oldX + ( e.clientX - UI.MOUSE.X ),
+		    posY = oldY + ( e.clientY - UI.MOUSE.Y );
+
+		// X limits
+		if( posX < 76 ) {
+			posX = 76;
+		}
+		else if( posX > window.innerWidth - tw.offsetWidth - 16 ) {
+			posX = window.innerWidth - tw.offsetWidth - 16;
+		}
+
+		// Y limits
+		if( posY < 16 ) {
+			posY = 16;
+		}
+		else if( posY > window.innerHeight - tw.offsetHeight - 16 ) {
+			posY = window.innerHeight - tw.offsetHeight - 16;
+		}
+
+		UI.MOUSE.X = e.clientX;
+		UI.MOUSE.Y = e.clientY;
+
+		tw.style.left = posX + "px";
+		tw.style.top = posY + "px";
+	},
+
+
+	/**
+	 * Initialize moving of tool window.
+	 */
+	moveToolWindowEnd: function( e ) {
+		document.removeEventListener( "mousemove", this.moveToolWindow, false );
+		this.MOUSE.X = null;
+		this.MOUSE.Y = null;
+	},
+
+
+	/**
+	 * Initialize moving of tool window.
+	 */
+	moveToolWindowStart: function( e ) {
+		this.MOUSE.X = e.clientX;
+		this.MOUSE.Y = e.clientY;
+		document.addEventListener( "mousemove", this.moveToolWindow, false );
 	},
 
 
@@ -77,6 +139,9 @@ var UI = {
 	},
 
 
+	/**
+	 * Listen to events of the lighting options.
+	 */
 	registerLightingOptions: function() {
 		var d = document,
 		    lightingOptions = ["on", "off"];
@@ -137,10 +202,10 @@ var UI = {
 
 
 	/**
-	 * Update the counter of found holes.
+	 * Show a little window with information about the found holes.
 	 * @param {int} foundHoles New number of found holes.
 	 */
-	updateWindowHoles: function( foundHoles ) {
+	showWindowHoles: function( foundHoles ) {
 		if( this.TOOLWINDOW.hasAttribute( "hidden" ) ) {
 			this.TOOLWINDOW.removeAttribute( "hidden" );
 		}

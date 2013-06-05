@@ -70,6 +70,16 @@ label {
 	font-weight: normal;
 }
 
+canvas,
+legend {
+	cursor: default;
+	   -moz-user-select: none;
+	    -ms-user-select: none;
+	     -o-user-select: none;
+	-webkit-user-select: none;
+	        user-select: none;
+}
+
 
 /* Sidebar */
 /* ------- */
@@ -85,7 +95,7 @@ label {
 	position: absolute;
 	top: 0;
 	width: 60px;
-	z-index: 100;
+	z-index: 500;
 }
 
 	.tool p:last-child {
@@ -169,12 +179,16 @@ label {
 /* ----------------- */
 
 .toolwindow {
-	height: 200px;
+	border: 1px solid rgba( 255, 255, 255, 0.4 );
+	border-radius: 2px;
 	position: absolute;
-	right: 16px;
-	top: 16px;
 	width: 200px;
+	z-index: 10;
 }
+
+	.toolwindow legend {
+		cursor: move;
+	}
 
 	.toolwindow .icon-close {
 		display: inline-block;
@@ -184,7 +198,7 @@ label {
 		right: 6px;
 		text-align: right;
 		top: 6px;
-		z-index: 200;
+		z-index: 20;
 		width: 24px;
 	}
 
