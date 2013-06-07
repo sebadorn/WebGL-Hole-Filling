@@ -112,6 +112,10 @@ var Loader = {
  */
 var Scene = {
 
+	LIGHT: {
+		AMBIENT: true,
+		DIRECTIONAL: true
+	},
 	MODE: CONFIG.MODE,
 	SHADING: CONFIG.SHADING,
 
@@ -318,6 +322,39 @@ var Scene = {
 		render();
 
 		UI.showWindowHoles( lines.length );
+	},
+
+
+	/**
+	 * Switch the light on or off.
+	 */
+	toggleLight: function( e ) {
+		var g = GLOBAL,
+		    lightType = e.target.name;
+		var light, lightStatus;
+
+		switch( lightType ) {
+
+			case "light_ambient":
+				light = g.LIGHTS.AMBIENT;
+				lightStatus = this.LIGHT.AMBIENT;
+				this.LIGHT.AMBIENT = !lightStatus;
+				break;
+
+			case "light_directional":
+				light = g.LIGHTS.DIRECTIONAL;
+				lightStatus = this.LIGHT.DIRECTIONAL;
+				this.LIGHT.DIRECTIONAL = !lightStatus;
+				break;
+
+			default:
+				console.error( "Unknown light type: " + lightType );
+				return;
+
+		}
+
+		lightStatus ? g.SCENE.remove( light ) : g.SCENE.add( light );
+		render();
 	}
 
 };

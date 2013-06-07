@@ -83,15 +83,15 @@ var Init = {
 	 */
 	scene: function() {
 		var g = GLOBAL;
-		var ambient, dirLight;
 
-		ambient = new THREE.AmbientLight( 0x101010 );
 		g.SCENE = new THREE.Scene();
-		g.SCENE.add( ambient );
 
-		dirLight = new THREE.DirectionalLight( 0xffffff );
-		dirLight.position.set( 0, 0, 1 ).normalize();
-		g.SCENE.add( dirLight );
+		g.LIGHTS.AMBIENT = new THREE.AmbientLight( 0x101010 );
+		g.SCENE.add( g.LIGHTS.AMBIENT );
+
+		g.LIGHTS.DIRECTIONAL = new THREE.DirectionalLight( 0xffffff );
+		g.LIGHTS.DIRECTIONAL.position.set( 0, 0, 1 ).normalize();
+		g.SCENE.add( g.LIGHTS.DIRECTIONAL );
 	}
 
 };

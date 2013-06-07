@@ -5,6 +5,10 @@ var GLOBAL = {
 	CAMERA: null,
 	CONTAINER: null,
 	CONTROLS: null,
+	LIGHTS: {
+		AMBIENT: null,
+		DIRECTIONAL: null
+	},
 	MODEL: null,
 	RENDERER: null,
 	SCENE: null

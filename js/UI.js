@@ -144,12 +144,15 @@ var UI = {
 	 */
 	registerLightingOptions: function() {
 		var d = document,
-		    lightingOptions = ["on", "off"];
+		    lightOptions = ["on", "off"],
+		    lightTypes = ["ambient", "directional"];
 		var radio;
 
-		for( var i = 0; i < lightingOptions.length; i++ ) {
-			radio = d.getElementById( "light_" + lightingOptions[i] );
-			radio.addEventListener( "change", function(){}, false ); // TODO
+		for( var i = 0; i < lightTypes.length; i++ ) {
+			for( var j = 0; j < lightOptions.length; j++ ) {
+				radio = d.getElementById( "light_" + lightTypes[i] + "_" + lightOptions[j] );
+				radio.addEventListener( "change", Scene.toggleLight.bind( Scene ), false );
+			}
 		}
 	},
 
