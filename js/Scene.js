@@ -322,6 +322,13 @@ var Scene = {
 		render();
 
 		UI.showWindowHoles( lines.length );
+
+		// TODO: Add axis to config and refactor
+		g.SCENE.add( new THREE.AxisHelper( 40 ) );
+		render();
+
+		HoleFilling.advancingFront( g.MODEL, lines );
+		render();
 	},
 
 

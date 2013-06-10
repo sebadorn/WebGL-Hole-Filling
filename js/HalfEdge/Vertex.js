@@ -68,7 +68,7 @@ Vertex.prototype.isBorderPoint = function() {
 
 /**
  * Get the neighbour vertices of the vertex.
- * @return {Array} List of all neighbour vertices.
+ * @return {Array<int>} List of all neighbour vertices.
  */
 Vertex.prototype.getNeighbours = function() {
 	var neighbours = [];
