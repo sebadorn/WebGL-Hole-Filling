@@ -229,6 +229,25 @@ var Scene = {
 
 
 	/**
+	 * Create a sphere mesh.
+	 * @param  {Dictionary}  position Position of the sphere.
+	 * @param  {float}       size     Radius of the sphere.
+	 * @param  {hexadecimal} color    Color of the sphere.
+	 * @return {THREE.Mesh}
+	 */
+	createPoint: function( position, size, color ) {
+		var material = new THREE.MeshBasicMaterial( { color: color } ),
+		    mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
+
+		mesh.position.x = position.x;
+		mesh.position.y = position.y;
+		mesh.position.z = position.z;
+
+		return mesh;
+	},
+
+
+	/**
 	 * Prepare the model as mesh.
 	 * @param  {THREE.Geometry} geometry Geometry of the model.
 	 * @return {THREE.Mesh}              Model as mesh.

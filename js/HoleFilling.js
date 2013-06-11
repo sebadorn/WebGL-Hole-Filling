@@ -26,14 +26,12 @@ var HoleFilling = {
 
 		for( var i = 0; i < len; i++ ) {
 			// TODO: refactor, maybe add to config and/or as option
-			var m = new THREE.Mesh(
-				new THREE.SphereGeometry( 0.03 ),
-				new THREE.MeshBasicMaterial( { color: 0xA1DA42 } )
-			);
-			m.position.x = front[i].x + model.position.x;
-			m.position.y = front[i].y + model.position.y;
-			m.position.z = front[i].z + model.position.z;
-			GLOBAL.SCENE.add( m );
+			var pos = {
+				x: front[i].x + model.position.x,
+				y: front[i].y + model.position.y,
+				z: front[i].z + model.position.z
+			};
+			GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0xA1DA42 ) );
 			// ODOT
 
 			vp = front[( i == 0 ) ? len - 2 : i - 1];
@@ -53,31 +51,61 @@ var HoleFilling = {
 
 
 		// Step 3: Create new triangles on the plane.
-		var j = smallest.index;
+		var j = smallest.index,
+		    update = new THREE.Geometry(),
+		    material = new THREE.MeshBasicMaterial( { color: 0xFFFFFF } );
 		var ix;
 
 		while( true ) {
 			if( j >= smallest.index + len ) {
 				break;
 			}
-			ix = j % len;
-			angle = angles[ix + ":" + ( ix + 1 )];
+			angle = angles[j % len];
+			vp = front[( j == 0 ) ? len - 2 : j - 1];
+			v = front[j];
+			vn = front[( j + 1 ) % len];
+
+			if( !v || !vn ) {
+				j++;
+				continue;
+			}
+
 
 			// Rule 1: Just close the gap.
 			if( angle <= 75.0 ) {
-				// TODO
+				this.afRule1( update, angle, vp, v, vn );
+
+				var pos = {
+					x: vp.x + model.position.x,
+					y: vp.y + model.position.y,
+					z: vp.z + model.position.z
+				};
+				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFFFF ) );
+
+				var pos = {
+					x: vn.x + model.position.x,
+					y: vn.y + model.position.y,
+					z: vn.z + model.position.z
+				};
+				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFFFF ) );
 			}
 			// Rule 2: Create one new vertice.
 			else if( angle > 75.0 && angle <= 135.0 ) {
-				// TODO
+				this.afRule2( update, angle, vp, v, vn );
 			}
 			// Rule 3: Create two new vertices.
 			else { // angle > 135.0
-				// TODO
+				this.afRule3( update, angle, vp, v, vn );
 			}
 
 			j++;
 		}
+
+		var mesh = new THREE.Mesh( update, material );
+		mesh.position.x += model.position.x;
+		mesh.position.y += model.position.y;
+		mesh.position.z += model.position.z;
+		// GLOBAL.SCENE.add( mesh );
 
 		render();
 
@@ -89,6 +117,69 @@ var HoleFilling = {
 
 
 	/**
+	 * Apply rule 1 of the advancing front mesh algorithm.
+	 * Rule 1: Close gaps of angles <= 75°.
+	 * @param {THREE.Geometry} update New geometry of the current iteration.
+	 * @param {float}          angle  Angle between vp and vn relative to v.
+	 * @param {THREE.Vector3}  vp     Previous vector.
+	 * @param {THREE.Vector3}  v      Current vector.
+	 * @param {THREE.Vector3}  vn     Next vector.
+	 */
+	afRule1: function( update, angle, vp, v, vn ) {
+		update.vertices.push( vp );
+		update.vertices.push( vn );
+	},
+
+
+	/**
+	 * Apply rule 2 of the advancing front mesh algorithm.
+	 * Rule 2: Create one new vertex if the angle is > 75° and <= 135°.
+	 * @param {THREE.Geometry} update New geometry of the current iteration.
+	 * @param {float}          angle  Angle between vp and vn relative to v.
+	 * @param {THREE.Vector3}  vp     Previous vector.
+	 * @param {THREE.Vector3}  v      Current vector.
+	 * @param {THREE.Vector3}  vn     Next vector.
+	 */
+	afRule2: function( update, angle, vp, v, vn ) {
+		var vpTemp = new THREE.Vector3().copy( vp ),
+		    vnTemp = new THREE.Vector3().copy( vn ),
+		    vNew = new THREE.Vector3();
+
+		vpTemp.add( v );
+		vnTemp.add( v );
+
+		vNew.subVectors( vpTemp, vnTemp );
+
+		// var pos = {
+		// 	x: vNew.x + GLOBAL.MODEL.position.x,
+		// 	y: vNew.y + GLOBAL.MODEL.position.y,
+		// 	z: vNew.z + GLOBAL.MODEL.position.z
+		// }
+		// GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFF00 ) );
+
+		update.vertices.push( vp );
+		update.vertices.push( vNew );
+		update.vertices.push( v );
+		update.vertices.push( vNew );
+		update.vertices.push( vn );
+	},
+
+
+	/**
+	 * Apply rule 3 of the advancing front mesh algorithm.
+	 * Rule 3: Create two new vertices if the angle is > 135°.
+	 * @param {THREE.Geometry} update New geometry of the current iteration.
+	 * @param {float}          angle  Angle between vp and vn relative to v.
+	 * @param {THREE.Vector3}  vp     Previous vector.
+	 * @param {THREE.Vector3}  v      Current vector.
+	 * @param {THREE.Vector3}  vn     Next vector.
+	 */
+	afRule3: function( update, angle, vp, v, vn ) {
+		//
+	},
+
+
+	/**
 	 * Compute the angle between two vertices.
 	 * @param  {THREE.Vector3} vp The previous vertex.
 	 * @param  {THREE.Vector3} v  The current vertex.
@@ -96,13 +187,19 @@ var HoleFilling = {
 	 * @return {float}         Angle between the vertices in degree.
 	 */
 	computeAngle: function( vp, v, vn ) {
-		var vpTemp = new THREE.Vector3(),
-		    vnTemp = new THREE.Vector3();
+		var vpTemp = new THREE.Vector3().subVectors( vp, v ),
+		    vnTemp = new THREE.Vector3().subVectors( vn, v ),
+		    vTemp = new THREE.Vector3().copy( v ).add( GLOBAL.MODEL.position ),
+		    t1 = new THREE.Vector3().copy( vp ).sub( v ),
+		    t2 = new THREE.Vector3().copy( vn ).sub( v ),
+		    c = new THREE.Vector3().crossVectors( t1, t2 ).add( v ).add( GLOBAL.MODEL.position ),
+		    angle = vpTemp.angleTo( vnTemp ) * 180 / Math.PI;
 
-		vpTemp.subVectors( vp, v );
-		vnTemp.subVectors( vn, v );
+		if( c.length() < vTemp.length() ) {
+			angle = 360.0 - angle;
+		}
 
-		return vpTemp.angleTo( vnTemp ) * 180 / Math.PI;
+		return angle;
 	},
 
 
