@@ -1,6 +1,10 @@
 "use strict";
 
 
+/**
+ * Class for hole finding and filling algorithms.
+ * @type {Object}
+ */
 var HoleFilling = {
 
 	/**
@@ -25,15 +29,6 @@ var HoleFilling = {
 		var angle, v, vn, vp;
 
 		for( var i = 0; i < len; i++ ) {
-			// TODO: refactor, maybe add to config and/or as option
-			var pos = {
-				x: front[i].x + model.position.x,
-				y: front[i].y + model.position.y,
-				z: front[i].z + model.position.z
-			};
-			GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0xA1DA42 ) );
-			// ODOT
-
 			vp = front[( i == 0 ) ? len - 2 : i - 1];
 			v = front[i];
 			vn = front[( i + 1 ) % len];
@@ -80,14 +75,14 @@ var HoleFilling = {
 					y: vp.y + model.position.y,
 					z: vp.z + model.position.z
 				};
-				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFFFF ) );
+				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
 
 				var pos = {
 					x: vn.x + model.position.x,
 					y: vn.y + model.position.y,
 					z: vn.z + model.position.z
 				};
-				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFFFF ) );
+				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
 			}
 			// Rule 2: Create one new vertice.
 			else if( angle > 75.0 && angle <= 135.0 ) {
@@ -205,14 +200,17 @@ var HoleFilling = {
 
 	/**
 	 * Find the border edges of a hole inside a half-edge structure.
-	 * @param  {THREE.Mesh}        model  The model to find holes in.
-	 * @return {Array<THREE.Line>}        List of THREE.Line marking holes.
+	 * @param  {THREE.Mesh} model  The model to find holes in.
+	 * @return {Object}            Arrays of lines and points, depending on configuration.
 	 */
 	findBorderEdges: function( model ) {
-		var colors = CONFIG.COLOR.HF_BORDER_EDGES,
+		var colors = CONFIG.HF.BORDER.COLOR,
+		    count = 0,
 		    ignore = [],
-		    lines = [];
-		var geometry, line, material, mesh, vertex;
+		    lines = [],
+		    points = [],
+		    pos = new THREE.Vector3();
+		var geometry, line, material, mesh, v, vertex;
 
 		mesh = new HalfEdgeMesh( model.geometry );
 
@@ -223,18 +221,36 @@ var HoleFilling = {
 				// Find connected border points
 				geometry = this.getNeighbouringBorderPoints( model, ignore, vertex );
 
-				material = new THREE.LineBasicMaterial( {
-					color: colors[lines.length % colors.length],
-					linewidth: CONFIG.HF_LINEWIDTH
-				} );
+				// Lines
+				if( CONFIG.HF.BORDER.SHOW_LINES ) {
+					material = new THREE.LineBasicMaterial( {
+						color: colors[lines.length % colors.length],
+						linewidth: CONFIG.HF.BORDER.LINE_WIDTH
+					} );
 
-				line = new THREE.Line( geometry, material );
-				line.position = model.position;
-				lines.push( line );
+					line = new THREE.Line( geometry, material );
+					line.position = model.position;
+					lines.push( line );
+				}
+
+				// Points
+				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
+					for( var j = 0; j < geometry.vertices.length; j++ ) {
+						v = geometry.vertices[j];
+						pos.set(
+							v.x + model.position.x,
+							v.y + model.position.y,
+							v.z + model.position.z
+						);
+						points.push( Scene.createPoint( pos, 0.03, 0xA1DA42 ) );
+					}
+				}
+
+				count++;
 			}
 		}
 
-		return lines;
+		return { holes: count, lines: lines, points: points };
 	},
 
 

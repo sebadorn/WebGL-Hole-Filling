@@ -121,6 +121,19 @@ var Scene = {
 
 
 	/**
+	 * Show coordinate system axis.
+	 * Adds an axis to the scene. Does not call render() function!
+	 */
+	addAxis: function() {
+		var axis = new THREE.AxisHelper( CONFIG.AXIS.SIZE );
+
+		axis.name = "axis";
+
+		GLOBAL.SCENE.add( axis );
+	},
+
+
+	/**
 	 * Center a mesh.
 	 * @param  {THREE.Mesh} mesh The mesh to center.
 	 * @return {THREE.Mesh}      Centered mesh.
@@ -211,7 +224,7 @@ var Scene = {
 
 
 	/**
-	 * Clear the scene (except for the lights).
+	 * Clear the scene (except for the lights and axis).
 	 */
 	clearModels: function() {
 		var scene = GLOBAL.SCENE;
@@ -221,6 +234,9 @@ var Scene = {
 			obj = scene.children[i];
 
 			if( obj instanceof THREE.Light || obj instanceof THREE.Camera ) {
+				continue;
+			}
+			if( obj.name == "axis" ) {
 				continue;
 			}
 			scene.remove( obj );
@@ -301,7 +317,7 @@ var Scene = {
 		var cubeGeometry, cubeMesh, material;
 
 		material = new THREE.MeshBasicMaterial( {
-			color: CONFIG.COLOR.BOUNDING_BOX,
+			color: CONFIG.BBOX_COLOR,
 			shading: THREE.NoShading,
 			wireframe: true
 		} );
@@ -333,20 +349,20 @@ var Scene = {
 			return;
 		}
 
-		var lines = HoleFilling.findBorderEdges( g.MODEL );
+		var border = HoleFilling.findBorderEdges( g.MODEL );
 
-		for( var i = 0; i < lines.length; i++ ) {
-			g.SCENE.add( lines[i] );
+		for( var i = 0; i < border.lines.length; i++ ) {
+			g.SCENE.add( border.lines[i] );
+		}
+		for( var j = 0; j < border.points.length; j++ ) {
+			g.SCENE.add( border.points[j] );
 		}
 		render();
 
-		UI.showWindowHoles( lines.length );
+		UI.showWindowHoles( border.holes );
 
-		// TODO: Add axis to config and refactor
-		g.SCENE.add( new THREE.AxisHelper( 40 ) );
-		render();
-
-		HoleFilling.advancingFront( g.MODEL, lines );
+		// TODO: Not here, only do if requested
+		HoleFilling.advancingFront( g.MODEL, lines ); // TODO: Lines not configurable! Because needed!
 		render();
 	},
 

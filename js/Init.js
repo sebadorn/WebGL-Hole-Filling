@@ -86,9 +86,16 @@ var Init = {
 
 		g.SCENE = new THREE.Scene();
 
+		// Axis
+		if( CONFIG.AXIS.SHOW ) {
+			Scene.addAxis();
+		}
+
+		// Lighting: Ambient
 		g.LIGHTS.AMBIENT = new THREE.AmbientLight( 0x101010 );
 		g.SCENE.add( g.LIGHTS.AMBIENT );
 
+		// Lighting: Directional
 		g.LIGHTS.DIRECTIONAL = new THREE.DirectionalLight( 0xffffff );
 		g.LIGHTS.DIRECTIONAL.position.set( 0, 0, 1 ).normalize();
 		g.SCENE.add( g.LIGHTS.DIRECTIONAL );
