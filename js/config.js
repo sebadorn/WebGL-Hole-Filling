@@ -27,13 +27,11 @@ var CONFIG = {
 		BORDER: {
 			COLOR: [0xFF0000, 0xFF57DE, 0xFFC620, 0x74FF3A],
 			LINE_WIDTH: 2,
-			SHOW_LINES: true,
 			SHOW_POINTS: true
 		},
 		FILLING: {
 			COLOR: 0xFFFFFF,
 			LINE_WIDTH: 2,
-			SHOW_LINES: true,
 			SHOW_POINTS: true
 		}
 	},

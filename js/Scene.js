@@ -141,9 +141,9 @@ var Scene = {
 	centerModel: function( mesh ) {
 		var center = mesh.geometry.boundingBox.center();
 
-		mesh.position.x -= center.x;
+		/*mesh.position.x -= center.x;
 		mesh.position.y -= center.y;
-		mesh.position.z -= center.z;
+		mesh.position.z -= center.z;*/
 
 		return mesh;
 	},
@@ -241,6 +241,25 @@ var Scene = {
 			}
 			scene.remove( obj );
 		}
+	},
+
+
+	/**
+	 * Create a line from a starting to an end point.
+	 * @param  {THREE.Vector3} from  Start point.
+	 * @param  {THREE.Vector3} to    End point.
+	 * @param  {float}         width Line width of the line.
+	 * @param  {hexadecimal}   color Color of the line.
+	 * @return {THREE.Line}          A THREE.Line object.
+	 */
+	createLine: function( from, to, width, color ) {
+		var material = new THREE.LineBasicMaterial( { linewidth: width, color: color } ),
+		    geo = new THREE.Geometry();
+
+		geo.vertices.push( from );
+		geo.vertices.push( to );
+
+		return new THREE.Line( geo, material );
 	},
 
 
@@ -359,10 +378,10 @@ var Scene = {
 		}
 		render();
 
-		UI.showWindowHoles( border.holes );
+		UI.showWindowHoles( border.lines.length );
 
 		// TODO: Not here, only do if requested
-		HoleFilling.advancingFront( g.MODEL, lines ); // TODO: Lines not configurable! Because needed!
+		HoleFilling.advancingFront( g.MODEL, border.lines );
 		render();
 	},
 

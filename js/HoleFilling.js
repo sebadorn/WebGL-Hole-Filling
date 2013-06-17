@@ -48,16 +48,15 @@ var HoleFilling = {
 		// Step 3: Create new triangles on the plane.
 		var j = smallest.index,
 		    update = new THREE.Geometry(),
-		    material = new THREE.MeshBasicMaterial( { color: 0xFFFFFF } );
-		var ix;
+		    material = new THREE.LineBasicMaterial( { color: 0xFFFFFF } );
 
 		while( true ) {
 			if( j >= smallest.index + len ) {
 				break;
 			}
 			angle = angles[j % len];
-			vp = front[( j == 0 ) ? len - 2 : j - 1];
-			v = front[j];
+			vp = front[( j == 0 ) ? len - 2 : ( j - 1 ) % len];
+			v = front[j % len];
 			vn = front[( j + 1 ) % len];
 
 			if( !v || !vn ) {
@@ -65,24 +64,9 @@ var HoleFilling = {
 				continue;
 			}
 
-
 			// Rule 1: Just close the gap.
 			if( angle <= 75.0 ) {
 				this.afRule1( update, angle, vp, v, vn );
-
-				var pos = {
-					x: vp.x + model.position.x,
-					y: vp.y + model.position.y,
-					z: vp.z + model.position.z
-				};
-				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
-
-				var pos = {
-					x: vn.x + model.position.x,
-					y: vn.y + model.position.y,
-					z: vn.z + model.position.z
-				};
-				GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
 			}
 			// Rule 2: Create one new vertice.
 			else if( angle > 75.0 && angle <= 135.0 ) {
@@ -96,11 +80,13 @@ var HoleFilling = {
 			j++;
 		}
 
-		var mesh = new THREE.Mesh( update, material );
+		update.vertices.push( update.vertices[0] );
+
+		var mesh = new THREE.Line( update, material );
 		mesh.position.x += model.position.x;
 		mesh.position.y += model.position.y;
 		mesh.position.z += model.position.z;
-		// GLOBAL.SCENE.add( mesh );
+		GLOBAL.SCENE.add( mesh );
 
 		render();
 
@@ -121,8 +107,22 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule1: function( update, angle, vp, v, vn ) {
-		update.vertices.push( vp );
-		update.vertices.push( vn );
+		//update.vertices.push( vp );
+		//update.vertices.push( vn );
+
+		var pos = {
+			x: vp.x + GLOBAL.MODEL.position.x,
+			y: vp.y + GLOBAL.MODEL.position.y,
+			z: vp.z + GLOBAL.MODEL.position.z
+		};
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, CONFIG.HF.FILLING.COLOR ) );
+
+		var pos = {
+			x: vn.x + GLOBAL.MODEL.position.x,
+			y: vn.y + GLOBAL.MODEL.position.y,
+			z: vn.z + GLOBAL.MODEL.position.z
+		};
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, CONFIG.HF.FILLING.COLOR ) );
 	},
 
 
@@ -140,23 +140,47 @@ var HoleFilling = {
 		    vnTemp = new THREE.Vector3().copy( vn ),
 		    vNew = new THREE.Vector3();
 
+		vNew.copy( vnTemp );
+
 		vpTemp.add( v );
 		vnTemp.add( v );
 
-		vNew.subVectors( vpTemp, vnTemp );
+		vpTemp.normalize();
+		vnTemp.normalize();
 
-		// var pos = {
-		// 	x: vNew.x + GLOBAL.MODEL.position.x,
-		// 	y: vNew.y + GLOBAL.MODEL.position.y,
-		// 	z: vNew.z + GLOBAL.MODEL.position.z
-		// }
-		// GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFF00 ) );
+		var rotAxis = new THREE.Vector3().crossVectors( vnTemp, vpTemp );
+		rotAxis.add( v );
+		rotAxis.normalize();
 
-		update.vertices.push( vp );
-		update.vertices.push( vNew );
+		var angleRad = ( 180 ) * Math.PI / 180.0;
+
+		// Rotation axis
+		GLOBAL.SCENE.add( Scene.createPoint( rotAxis, 0.04, 0xFF4000 ) );
+		GLOBAL.SCENE.add( Scene.createLine( v, new THREE.Vector3().copy( rotAxis ), 4, 0xFF4000 ) );
+
+		// Point before rotation
+		GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x0080F0 ) );
+		GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x0080F0 ) );
+
+		vNew.applyAxisAngle( rotAxis, angleRad );
+
+		// Point after rotation
+		GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x40D010 ) );
+		GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x40E010 ) );
+
+
+		var pos = {
+			x: vNew.x + GLOBAL.MODEL.position.x,
+			y: vNew.y + GLOBAL.MODEL.position.y,
+			z: vNew.z + GLOBAL.MODEL.position.z
+		}
+		//GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0xFFFF00 ) );
+
+		/*update.vertices.push( vp );
+		update.vertices.push( vNew );*/
 		update.vertices.push( v );
 		update.vertices.push( vNew );
-		update.vertices.push( vn );
+		//update.vertices.push( vn );
 	},
 
 
@@ -170,7 +194,44 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule3: function( update, angle, vp, v, vn ) {
-		//
+		return; // FIXME
+		var vpTemp = new THREE.Vector3().copy( vp ),
+		    vnTemp = new THREE.Vector3().copy( vn ),
+		    vNew1 = new THREE.Vector3(),
+		    vNew2 = new THREE.Vector3();
+
+		vpTemp.add( v );
+		vnTemp.add( v );
+
+		vNew1.addVectors( vpTemp, vnTemp );
+
+		vNew2.addVectors( vpTemp, vnTemp );
+
+		vNew1.sub( v );
+		vNew2.sub( v );
+
+		var pos = {
+			x: vNew1.x + GLOBAL.MODEL.position.x,
+			y: vNew1.y + GLOBAL.MODEL.position.y,
+			z: vNew1.z + GLOBAL.MODEL.position.z
+		}
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0x8080FF ) );
+
+		var pos = {
+			x: vNew2.x + GLOBAL.MODEL.position.x,
+			y: vNew2.y + GLOBAL.MODEL.position.y,
+			z: vNew2.z + GLOBAL.MODEL.position.z
+		}
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0x8080FF ) );
+
+		update.vertices.push( vp );
+		update.vertices.push( vNew1 );
+		update.vertices.push( v );
+		update.vertices.push( vNew1 );
+		update.vertices.push( vNew2 );
+		update.vertices.push( v );
+		update.vertices.push( vNew2 );
+		update.vertices.push( vn );
 	},
 
 
@@ -205,7 +266,6 @@ var HoleFilling = {
 	 */
 	findBorderEdges: function( model ) {
 		var colors = CONFIG.HF.BORDER.COLOR,
-		    count = 0,
 		    ignore = [],
 		    lines = [],
 		    points = [],
@@ -222,16 +282,14 @@ var HoleFilling = {
 				geometry = this.getNeighbouringBorderPoints( model, ignore, vertex );
 
 				// Lines
-				if( CONFIG.HF.BORDER.SHOW_LINES ) {
-					material = new THREE.LineBasicMaterial( {
-						color: colors[lines.length % colors.length],
-						linewidth: CONFIG.HF.BORDER.LINE_WIDTH
-					} );
+				material = new THREE.LineBasicMaterial( {
+					color: colors[lines.length % colors.length],
+					linewidth: CONFIG.HF.BORDER.LINE_WIDTH
+				} );
 
-					line = new THREE.Line( geometry, material );
-					line.position = model.position;
-					lines.push( line );
-				}
+				line = new THREE.Line( geometry, material );
+				line.position = model.position;
+				lines.push( line );
 
 				// Points
 				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
@@ -245,12 +303,10 @@ var HoleFilling = {
 						points.push( Scene.createPoint( pos, 0.03, 0xA1DA42 ) );
 					}
 				}
-
-				count++;
 			}
 		}
 
-		return { holes: count, lines: lines, points: points };
+		return { lines: lines, points: points };
 	},
 
 
