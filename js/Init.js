@@ -22,6 +22,8 @@ var Init = {
 
 		animate();
 		render();
+
+		if( typeof test != "undefined" ) { test(); } // TODO: remove
 	},
 
 

@@ -136,8 +136,8 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule2: function( update, angle, vp, v, vn ) {
-		var vpTemp = new THREE.Vector3().copy( vp ),
-		    vnTemp = new THREE.Vector3().copy( vn ),
+		var vpTemp = vp.clone(),
+		    vnTemp = vn.clone(),
 		    vNew = new THREE.Vector3();
 
 		vNew.copy( vnTemp );
@@ -148,25 +148,25 @@ var HoleFilling = {
 		vpTemp.normalize();
 		vnTemp.normalize();
 
-		var rotAxis = new THREE.Vector3().crossVectors( vnTemp, vpTemp );
-		rotAxis.add( v );
-		rotAxis.normalize();
+		var plane = new Plane( v, vp, vn );
 
-		var angleRad = ( 180 ) * Math.PI / 180.0;
+		// var rotAxis = new THREE.Vector3().crossVectors( vnTemp, vpTemp );
 
-		// Rotation axis
-		GLOBAL.SCENE.add( Scene.createPoint( rotAxis, 0.04, 0xFF4000 ) );
-		GLOBAL.SCENE.add( Scene.createLine( v, new THREE.Vector3().copy( rotAxis ), 4, 0xFF4000 ) );
+		// var angleRad = ( angle / 2.0 ) * Math.PI / 180.0;
 
-		// Point before rotation
-		GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x0080F0 ) );
-		GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x0080F0 ) );
+		// // Rotation axis
+		// GLOBAL.SCENE.add( Scene.createPoint( rotAxis, 0.04, 0xFF4000 ) );
+		// GLOBAL.SCENE.add( Scene.createLine( v, new THREE.Vector3().copy( rotAxis ), 4, 0xFF4000 ) );
 
-		vNew.applyAxisAngle( rotAxis, angleRad );
+		// // Point before rotation
+		// GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x0080F0 ) );
+		// GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x0080F0 ) );
 
-		// Point after rotation
-		GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x40D010 ) );
-		GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x40E010 ) );
+		// vNew.applyAxisAngle( rotAxis, angleRad );
+
+		// // Point after rotation
+		// GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x40D010 ) );
+		// GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x40E010 ) );
 
 
 		var pos = {
