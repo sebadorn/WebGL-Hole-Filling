@@ -141,9 +141,9 @@ var Scene = {
 	centerModel: function( mesh ) {
 		var center = mesh.geometry.boundingBox.center();
 
-		/*mesh.position.x -= center.x;
+		mesh.position.x -= center.x;
 		mesh.position.y -= center.y;
-		mesh.position.z -= center.z;*/
+		mesh.position.z -= center.z;
 
 		return mesh;
 	},

@@ -107,22 +107,27 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule1: function( update, angle, vp, v, vn ) {
-		//update.vertices.push( vp );
-		//update.vertices.push( vn );
+		update.vertices.push( vp );
+		update.vertices.push( vn );
 
 		var pos = {
 			x: vp.x + GLOBAL.MODEL.position.x,
 			y: vp.y + GLOBAL.MODEL.position.y,
 			z: vp.z + GLOBAL.MODEL.position.z
 		};
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, CONFIG.HF.FILLING.COLOR ) );
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
 
 		var pos = {
 			x: vn.x + GLOBAL.MODEL.position.x,
 			y: vn.y + GLOBAL.MODEL.position.y,
 			z: vn.z + GLOBAL.MODEL.position.z
 		};
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, CONFIG.HF.FILLING.COLOR ) );
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
+	},
+
+
+	getAverageLength: function( vp, vn ) {
+		return ( vp.length() + vn.length() ) / 2.0;
 	},
 
 
@@ -136,51 +141,39 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule2: function( update, angle, vp, v, vn ) {
-		var vpTemp = vp.clone(),
-		    vnTemp = vn.clone(),
-		    vNew = new THREE.Vector3();
+		// To make things easier, we just move the whole thing into the origin
+		// and when we have the new point, we move it back.
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v ),
+		    origin = new THREE.Vector3();
 
-		vNew.copy( vnTemp );
+		// Create the plane of the vectors vp and vn
+		// with position vector v.
+		var plane = new Plane( origin, vpClone, vnClone );
+		var adjusted, avLen, vNew;
 
-		vpTemp.add( v );
-		vnTemp.add( v );
+		// Get a vector on that plane, that lies on half the angle between vp and vn.
+		vNew = plane.getPoint( 1, 1 );
 
-		vpTemp.normalize();
-		vnTemp.normalize();
-
-		var plane = new Plane( v, vp, vn );
-
-		// var rotAxis = new THREE.Vector3().crossVectors( vnTemp, vpTemp );
-
-		// var angleRad = ( angle / 2.0 ) * Math.PI / 180.0;
-
-		// // Rotation axis
-		// GLOBAL.SCENE.add( Scene.createPoint( rotAxis, 0.04, 0xFF4000 ) );
-		// GLOBAL.SCENE.add( Scene.createLine( v, new THREE.Vector3().copy( rotAxis ), 4, 0xFF4000 ) );
-
-		// // Point before rotation
-		// GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x0080F0 ) );
-		// GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x0080F0 ) );
-
-		// vNew.applyAxisAngle( rotAxis, angleRad );
-
-		// // Point after rotation
-		// GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0x40D010 ) );
-		// GLOBAL.SCENE.add( Scene.createLine( new THREE.Vector3().copy( vNew ), rotAxis, 2, 0x40E010 ) );
-
+		// Compute the average length of vp and vn.
+		// Then adjust the position of the new vector, so it has this average length.
+		avLen = this.getAverageLength( vpClone, vnClone );
+		adjusted = avLen / vNew.length();
+		vNew = plane.getPoint( adjusted, adjusted );
+		vNew.add( v );
 
 		var pos = {
 			x: vNew.x + GLOBAL.MODEL.position.x,
 			y: vNew.y + GLOBAL.MODEL.position.y,
 			z: vNew.z + GLOBAL.MODEL.position.z
 		}
-		//GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.04, 0xFFFF00 ) );
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFF00 ) );
 
-		/*update.vertices.push( vp );
-		update.vertices.push( vNew );*/
+		update.vertices.push( vp );
+		update.vertices.push( vNew );
 		update.vertices.push( v );
 		update.vertices.push( vNew );
-		//update.vertices.push( vn );
+		update.vertices.push( vn );
 	},
 
 
@@ -194,44 +187,60 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule3: function( update, angle, vp, v, vn ) {
-		return; // FIXME
-		var vpTemp = new THREE.Vector3().copy( vp ),
-		    vnTemp = new THREE.Vector3().copy( vn ),
-		    vNew1 = new THREE.Vector3(),
-		    vNew2 = new THREE.Vector3();
+		if( angle > 180.0 ) {
+			console.log( angle );
+			return;
+		}
 
-		vpTemp.add( v );
-		vnTemp.add( v );
+		// To make things easier, we just move the whole thing into the origin
+		// and when we have the new point, we move it back.
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v ),
+		    origin = new THREE.Vector3();
 
-		vNew1.addVectors( vpTemp, vnTemp );
+		// Create the plane of the vectors vp and vn
+		// with position vector v.
+		var plane = new Plane( origin, vpClone, vnClone );
+		var adjusted, avLen, vNew1, vNew2;
 
-		vNew2.addVectors( vpTemp, vnTemp );
+		// Get vectors on that plane, that lie on 1/3 and 2/3 the angle between vp and vn.
+		vNew1 = plane.getPoint( 0.666, 1 );
+		vNew2 = plane.getPoint( 1, 0.666 );
 
-		vNew1.sub( v );
-		vNew2.sub( v );
+		// Compute the average length of vp and vn.
+		// Then adjust the position of the new vectors, so they have this average length.
+		avLen = this.getAverageLength( vpClone, vnClone );
+
+		adjusted = avLen / vNew1.length();
+		vNew1 = plane.getPoint( 0.666 * adjusted, adjusted );
+		vNew1.add( v );
+
+		adjusted = avLen / vNew2.length();
+		vNew2 = plane.getPoint( adjusted, 0.666 * adjusted );
+		vNew2.add( v );
 
 		var pos = {
 			x: vNew1.x + GLOBAL.MODEL.position.x,
 			y: vNew1.y + GLOBAL.MODEL.position.y,
 			z: vNew1.z + GLOBAL.MODEL.position.z
 		}
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0x8080FF ) );
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xD317F6 ) );
 
 		var pos = {
 			x: vNew2.x + GLOBAL.MODEL.position.x,
 			y: vNew2.y + GLOBAL.MODEL.position.y,
 			z: vNew2.z + GLOBAL.MODEL.position.z
 		}
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.03, 0x8080FF ) );
+		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xD317F6 ) );
 
-		update.vertices.push( vp );
-		update.vertices.push( vNew1 );
-		update.vertices.push( v );
+		// update.vertices.push( vp );
+		// update.vertices.push( vNew1 );
+		// update.vertices.push( v );
 		update.vertices.push( vNew1 );
 		update.vertices.push( vNew2 );
-		update.vertices.push( v );
-		update.vertices.push( vNew2 );
-		update.vertices.push( vn );
+		// update.vertices.push( v );
+		// update.vertices.push( vNew2 );
+		// update.vertices.push( vn );
 	},
 
 
