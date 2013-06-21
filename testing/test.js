@@ -13,33 +13,36 @@ function testRule3() {
 	GLOBAL.MODEL = new Object();
 	GLOBAL.MODEL.position = new THREE.Vector3( 0, 0, 0 );
 
-	var v = new THREE.Vector3( 1.4, 4.4, 0 ),
-	    vp = new THREE.Vector3( 1.4, 4.7, -0 ).add( v ),
-	    vn = new THREE.Vector3( 1.1, 4.6, 0 ).add( v );
+	var v = new THREE.Vector3( 1.38, 4.44, 0.01 ),
+	    vp = new THREE.Vector3( 1.39, 4.66, -0.00 ),
+	    vn = new THREE.Vector3( 1.13, 4.62, 0.02 );
 
-	gs.add( Scene.createPoint( v, 0.08, 0x101010 ) );
-	gs.add( Scene.createPoint( vp, 0.08, 0x101010 ) );
-	gs.add( Scene.createPoint( vn, 0.08, 0x101010 ) );
+	gs.add( Scene.createPoint( v, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( vp, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( vn, 0.04, 0x101010 ) );
 	gs.add( Scene.createLine( v, vp, 1, 0xFFFFFF ) );
 	gs.add( Scene.createLine( v, vn, 1, 0xFFFFFF ) );
 
 	var angle = HoleFilling.computeAngle( vp, v, vn );
-	console.log( "angle: " + angle + "°" );
+	angle.degree = 360.0 - angle.degree;
+	console.log( angle );
 
 	// Move to 0
 	var vpClone = vp.clone().sub( v );
 	var vnClone = vn.clone().sub( v );
 
-	gs.add( Scene.createPoint( new THREE.Vector3(), 0.08, 0x101010 ) );
-	gs.add( Scene.createPoint( vpClone, 0.08, 0x101010 ) );
-	gs.add( Scene.createPoint( vnClone, 0.08, 0x101010 ) );
+	gs.add( Scene.createPoint( new THREE.Vector3(), 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( vpClone, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( vnClone, 0.04, 0x101010 ) );
 	gs.add( Scene.createLine( new THREE.Vector3(), vpClone, 1, 0xFFFFFF ) );
 	gs.add( Scene.createLine( new THREE.Vector3(), vnClone, 1, 0xFFFFFF ) );
 
 
 	var plane = new Plane( new THREE.Vector3(), vpClone, vnClone );
-	var q1 = plane.getPoint( 0.666, -1 ),
-	    q2 = plane.getPoint( -1, 0.666 );
+	var f = ( 360 - angle.degree ) / angle.degree;
+	var q1 = plane.getPoint( -f * 0.666, -1 ),
+	    q2 = plane.getPoint( -1, -f * 0.666 );
+	console.log( f );
 
 	gs.add( Scene.createPoint( q1, 0.04, 0xEC3A7C ) );
 	gs.add( Scene.createLine( new THREE.Vector3(), q1, 1, 0xEC3A7C ) );
@@ -48,10 +51,13 @@ function testRule3() {
 	render();
 
 	var avLen = ( vpClone.length() + vnClone.length() ) / 2.0;
+
 	var adjusted = avLen / q1.length();
-	q1 = plane.getPoint( 0.666 * adjusted, adjusted );
+	q1 = plane.getPoint( 0.666 * -adjusted, -adjusted );
+
 	var adjusted = avLen / q2.length();
-	q2 = plane.getPoint( adjusted, 0.666 * adjusted );
+	q2 = plane.getPoint( -adjusted, 0.666 * -adjusted );
+
 	q1.add( v );
 	q2.add( v );
 

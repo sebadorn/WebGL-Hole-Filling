@@ -246,18 +246,19 @@ var Scene = {
 
 	/**
 	 * Create a line from a starting to an end point.
-	 * @param  {THREE.Vector3} from  Start point.
-	 * @param  {THREE.Vector3} to    End point.
-	 * @param  {float}         width Line width of the line.
-	 * @param  {hexadecimal}   color Color of the line.
-	 * @return {THREE.Line}          A THREE.Line object.
+	 * @param  {THREE.Vector3} from          Start point.
+	 * @param  {THREE.Vector3} to            End point.
+	 * @param  {float}         width         Line width of the line.
+	 * @param  {hexadecimal}   color         Color of the line.
+	 * * @param  {boolean}     moveWithModel If true, move the line to the position of the model.
+	 * @return {THREE.Line}                  A THREE.Line object.
 	 */
-	createLine: function( from, to, width, color ) {
+	createLine: function( from, to, width, color, moveWithModel ) {
 		var material = new THREE.LineBasicMaterial( { linewidth: width, color: color } ),
 		    geo = new THREE.Geometry();
 
-		geo.vertices.push( from );
-		geo.vertices.push( to );
+		geo.vertices.push( from.clone().add( GLOBAL.MODEL.position ) );
+		geo.vertices.push( to.clone().add( GLOBAL.MODEL.position ) );
 
 		return new THREE.Line( geo, material );
 	},
@@ -265,18 +266,27 @@ var Scene = {
 
 	/**
 	 * Create a sphere mesh.
-	 * @param  {Dictionary}  position Position of the sphere.
-	 * @param  {float}       size     Radius of the sphere.
-	 * @param  {hexadecimal} color    Color of the sphere.
+	 * @param  {Dictionary}  position      Position of the sphere.
+	 * @param  {float}       size          Radius of the sphere.
+	 * @param  {hexadecimal} color         Color of the sphere.
+	 * @param  {boolean}     moveWithModel If true, move the point to the position of the model.
 	 * @return {THREE.Mesh}
 	 */
-	createPoint: function( position, size, color ) {
+	createPoint: function( position, size, color, moveWithModel ) {
 		var material = new THREE.MeshBasicMaterial( { color: color } ),
 		    mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
 
 		mesh.position.x = position.x;
 		mesh.position.y = position.y;
 		mesh.position.z = position.z;
+
+		if( typeof moveWithModel != "undefined" && moveWithModel ) {
+			var gmp = GLOBAL.MODEL.position;
+
+			mesh.position.x += gmp.x;
+			mesh.position.y += gmp.y;
+			mesh.position.z += gmp.z;
+		}
 
 		return mesh;
 	},

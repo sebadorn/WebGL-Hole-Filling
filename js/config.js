@@ -32,7 +32,8 @@ var CONFIG = {
 		FILLING: {
 			COLOR: 0xFFFFFF,
 			LINE_WIDTH: 2,
-			SHOW_POINTS: true
+			SHOW_POINTS: true,
+			THRESHOLD_MERGE: 0.1
 		}
 	},
 	MODE: "solid",

@@ -13,87 +13,42 @@ var HoleFilling = {
 	 * @param {Array<THREE.Line>} holes List of the holes.
 	 */
 	advancingFront: function( model, holes ) {
-		var filling = new THREE.Geometry();
-
 		// Step 1: Get the front using the boundary vertices of the hole.
 		var front = holes[0].geometry.vertices;
-		var len = front.length;
-
 
 		// Step 2: Calculate the angel between two adjacent vertices.
-		var angles = [],
-		    smallest = {
-				angle: 361.0,
-				index: -1
-		    };
-		var angle, v, vn, vp;
-
-		for( var i = 0; i < len; i++ ) {
-			vp = front[( i == 0 ) ? len - 2 : i - 1];
-			v = front[i];
-			vn = front[( i + 1 ) % len];
-
-			angle = this.computeAngle( vp, v, vn );
-			angles.push( angle );
-
-			if( smallest.angle > angle ) {
-				smallest.angle = angle;
-				smallest.index = i;
-			}
-		}
-
-		render();
-
+		var ca = this.computeAngles( front );
 
 		// Step 3: Create new triangles on the plane.
-		var j = smallest.index,
-		    update = new THREE.Geometry(),
-		    material = new THREE.LineBasicMaterial( { color: 0xFFFFFF } );
+		var update = this.createNewTriangles( front, ca );
 
-		while( true ) {
-			if( j >= smallest.index + len ) {
-				break;
-			}
-			angle = angles[j % len];
-			vp = front[( j == 0 ) ? len - 2 : ( j - 1 ) % len];
-			v = front[j % len];
-			vn = front[( j + 1 ) % len];
+		// Step 4: Compute the distances between each new
+		// created vertex and see, if they can be merged.
+		update = this.mergeByDistance( update );
 
-			if( !v || !vn ) {
-				j++;
-				continue;
-			}
+		// Step 5: Update the front.
 
-			// Rule 1: Just close the gap.
-			if( angle <= 75.0 ) {
-				this.afRule1( update, angle, vp, v, vn );
-			}
-			// Rule 2: Create one new vertice.
-			else if( angle > 75.0 && angle <= 135.0 ) {
-				this.afRule2( update, angle, vp, v, vn );
-			}
-			// Rule 3: Create two new vertices.
-			else { // angle > 135.0
-				this.afRule3( update, angle, vp, v, vn );
-			}
 
-			j++;
-		}
+		// Step 6: Repeat step 2–5.
+		// -> loop
 
-		update.vertices.push( update.vertices[0] );
+		// Create a mesh from the computed data and render it.
+		var material = new THREE.MeshBasicMaterial( {
+			color: 0xFFFFFF,
+			wireframe: true
+		} );
+		var mesh = new THREE.Mesh( update, material );
 
-		var mesh = new THREE.Line( update, material );
 		mesh.position.x += model.position.x;
 		mesh.position.y += model.position.y;
 		mesh.position.z += model.position.z;
+
+		mesh.geometry.computeFaceNormals();
+		mesh.geometry.computeVertexNormals();
+		mesh.geometry.computeBoundingBox();
+
 		GLOBAL.SCENE.add( mesh );
-
 		render();
-
-
-		// Step 4: Compute the distances between each new created vertices and see, if they are merged.
-		// Step 5: Update the front.
-		// Step 6: Repeat step 2–5.
 	},
 
 
@@ -101,33 +56,14 @@ var HoleFilling = {
 	 * Apply rule 1 of the advancing front mesh algorithm.
 	 * Rule 1: Close gaps of angles <= 75°.
 	 * @param {THREE.Geometry} update New geometry of the current iteration.
-	 * @param {float}          angle  Angle between vp and vn relative to v.
 	 * @param {THREE.Vector3}  vp     Previous vector.
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule1: function( update, angle, vp, v, vn ) {
+	afRule1: function( update, vp, v, vn ) {
+		update.vertices.push( v );
 		update.vertices.push( vp );
 		update.vertices.push( vn );
-
-		var pos = {
-			x: vp.x + GLOBAL.MODEL.position.x,
-			y: vp.y + GLOBAL.MODEL.position.y,
-			z: vp.z + GLOBAL.MODEL.position.z
-		};
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
-
-		var pos = {
-			x: vn.x + GLOBAL.MODEL.position.x,
-			y: vn.y + GLOBAL.MODEL.position.y,
-			z: vn.z + GLOBAL.MODEL.position.z
-		};
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, CONFIG.HF.FILLING.COLOR ) );
-	},
-
-
-	getAverageLength: function( vp, vn ) {
-		return ( vp.length() + vn.length() ) / 2.0;
 	},
 
 
@@ -135,12 +71,11 @@ var HoleFilling = {
 	 * Apply rule 2 of the advancing front mesh algorithm.
 	 * Rule 2: Create one new vertex if the angle is > 75° and <= 135°.
 	 * @param {THREE.Geometry} update New geometry of the current iteration.
-	 * @param {float}          angle  Angle between vp and vn relative to v.
 	 * @param {THREE.Vector3}  vp     Previous vector.
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule2: function( update, angle, vp, v, vn ) {
+	afRule2: function( update, vp, v, vn ) {
 		// To make things easier, we just move the whole thing into the origin
 		// and when we have the new point, we move it back.
 		var vpClone = vp.clone().sub( v ),
@@ -162,13 +97,8 @@ var HoleFilling = {
 		vNew = plane.getPoint( adjusted, adjusted );
 		vNew.add( v );
 
-		var pos = {
-			x: vNew.x + GLOBAL.MODEL.position.x,
-			y: vNew.y + GLOBAL.MODEL.position.y,
-			z: vNew.z + GLOBAL.MODEL.position.z
-		}
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xFFFF00 ) );
 
+		update.vertices.push( v );
 		update.vertices.push( vp );
 		update.vertices.push( vNew );
 		update.vertices.push( v );
@@ -181,17 +111,11 @@ var HoleFilling = {
 	 * Apply rule 3 of the advancing front mesh algorithm.
 	 * Rule 3: Create two new vertices if the angle is > 135°.
 	 * @param {THREE.Geometry} update New geometry of the current iteration.
-	 * @param {float}          angle  Angle between vp and vn relative to v.
 	 * @param {THREE.Vector3}  vp     Previous vector.
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule3: function( update, angle, vp, v, vn ) {
-		if( angle > 180.0 ) {
-			console.log( angle );
-			return;
-		}
-
+	afRule3: function( update, vp, v, vn ) {
 		// To make things easier, we just move the whole thing into the origin
 		// and when we have the new point, we move it back.
 		var vpClone = vp.clone().sub( v ),
@@ -204,67 +128,144 @@ var HoleFilling = {
 		var adjusted, avLen, vNew1, vNew2;
 
 		// Get vectors on that plane, that lie on 1/3 and 2/3 the angle between vp and vn.
-		vNew1 = plane.getPoint( 0.666, 1 );
-		vNew2 = plane.getPoint( 1, 0.666 );
+		vNew1 = plane.getPoint( 0.667, 1 );
+		vNew2 = plane.getPoint( 1, 0.667 );
 
 		// Compute the average length of vp and vn.
 		// Then adjust the position of the new vectors, so they have this average length.
 		avLen = this.getAverageLength( vpClone, vnClone );
 
 		adjusted = avLen / vNew1.length();
-		vNew1 = plane.getPoint( 0.666 * adjusted, adjusted );
+		vNew1 = plane.getPoint( 0.667 * adjusted, adjusted );
 		vNew1.add( v );
 
 		adjusted = avLen / vNew2.length();
-		vNew2 = plane.getPoint( adjusted, 0.666 * adjusted );
+		vNew2 = plane.getPoint( adjusted, 0.667 * adjusted );
 		vNew2.add( v );
 
-		var pos = {
-			x: vNew1.x + GLOBAL.MODEL.position.x,
-			y: vNew1.y + GLOBAL.MODEL.position.y,
-			z: vNew1.z + GLOBAL.MODEL.position.z
-		}
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xD317F6 ) );
+		// TODO: New way to find the new points
 
-		var pos = {
-			x: vNew2.x + GLOBAL.MODEL.position.x,
-			y: vNew2.y + GLOBAL.MODEL.position.y,
-			z: vNew2.z + GLOBAL.MODEL.position.z
-		}
-		GLOBAL.SCENE.add( Scene.createPoint( pos, 0.04, 0xD317F6 ) );
-
-		// update.vertices.push( vp );
-		// update.vertices.push( vNew1 );
 		// update.vertices.push( v );
-		update.vertices.push( vNew1 );
-		update.vertices.push( vNew2 );
+		// update.vertices.push( vp );
+		// update.vertices.push( vNew2 );
 		// update.vertices.push( v );
 		// update.vertices.push( vNew2 );
+		// update.vertices.push( vNew1 );
+		// update.vertices.push( v );
+		// update.vertices.push( vNew1 );
 		// update.vertices.push( vn );
 	},
 
 
 	/**
+	 * Compute the angles of neighbouring vertices.
+	 * Angles are in degree.
+	 * @param  {THREE.Geometry} front The model with the vertices.
+	 * @return {Object}               The angles and the smallest one together with the index of the vertex.
+	 */
+	computeAngles: function( front ) {
+		var angles = [],
+		    smallest = {
+				angle: 361.0,
+				index: -1
+		    };
+		var angle, v, vn, vp;
+
+		for( var i = 0, len = front.length; i < len; i++ ) {
+			vp = front[( i == 0 ) ? len - 2 : i - 1];
+			v = front[i];
+			vn = front[( i + 1 ) % len];
+
+			angle = this.computeAngle( vp, v, vn );
+			angles.push( angle );
+
+			if( smallest.angle > angle ) {
+				smallest.angle = angle;
+				smallest.index = i;
+			}
+		}
+
+		return {
+			angles: angles,
+			smallest: smallest
+		};
+	},
+
+
+	/**
 	 * Compute the angle between two vertices.
+	 * Angle is in degree.
 	 * @param  {THREE.Vector3} vp The previous vertex.
 	 * @param  {THREE.Vector3} v  The current vertex.
 	 * @param  {THREE.Vector3} vn The next vertex.
-	 * @return {float}         Angle between the vertices in degree.
+	 * @return {float}            Angle between the vertices in degree and flag if it has been adjusted to point into the hole.
 	 */
 	computeAngle: function( vp, v, vn ) {
-		var vpTemp = new THREE.Vector3().subVectors( vp, v ),
-		    vnTemp = new THREE.Vector3().subVectors( vn, v ),
-		    vTemp = new THREE.Vector3().copy( v ).add( GLOBAL.MODEL.position ),
-		    t1 = new THREE.Vector3().copy( vp ).sub( v ),
-		    t2 = new THREE.Vector3().copy( vn ).sub( v ),
-		    c = new THREE.Vector3().crossVectors( t1, t2 ).add( v ).add( GLOBAL.MODEL.position ),
-		    angle = vpTemp.angleTo( vnTemp ) * 180 / Math.PI;
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v ),
+		    vClone = v.clone().add( GLOBAL.MODEL.position );
+		var angle, c;
 
-		if( c.length() < vTemp.length() ) {
+		// Get angle and change radians to degree
+		angle = vpClone.angleTo( vnClone ) * 180 / Math.PI;
+
+		// Get the axis described by the cross product of the vectors building the angle
+		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
+		c.add( v ).add( GLOBAL.MODEL.position );
+
+		// Use "the other side of the angle" if it doesn't point inside the hole
+		if( c.length() < vClone.length() ) {
 			angle = 360.0 - angle;
 		}
 
 		return angle;
+	},
+
+
+	/**
+	 * Create new triangles in the hole, going from the border vertices.
+	 * @param  {THREE.Geometry} front The border of the hole.
+	 * @param  {Object}         ca    The computed angles and the smallest one found.
+	 * @return {THREE.Geometry}       Geometry of the new triangles, building a new front.
+	 */
+	createNewTriangles: function( front, ca ) {
+		var j = ca.smallest.index,
+		    len = front.length,
+		    update = new THREE.Geometry();
+		var angle, v, vn, vp;
+
+		while( true ) {
+			if( j >= ca.smallest.index + len ) {
+				break;
+			}
+			angle = ca.angles[j % len];
+			vp = front[( j == 0 ) ? len - 2 : ( j - 1 ) % len];
+			v = front[j % len];
+			vn = front[( j + 1 ) % len];
+
+			if( !v || !vn ) {
+				j++;
+				continue;
+			}
+
+			// Rule 1: Just close the gap.
+			if( angle <= 75.0 ) {
+				this.afRule1( update, vp, v, vn );
+			}
+			// Rule 2: Create one new vertice.
+			else if( angle > 75.0 && angle <= 135.0 ) {
+				this.afRule2( update, vp, v, vn );
+			}
+			// Rule 3: Create two new vertices.
+			else if( angle < 180.0 ) {
+				this.afRule3( update, vp, v, vn );
+			}
+
+			j++;
+		}
+
+
+		return update;
 	},
 
 
@@ -304,18 +305,24 @@ var HoleFilling = {
 				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
 					for( var j = 0; j < geometry.vertices.length; j++ ) {
 						v = geometry.vertices[j];
-						pos.set(
-							v.x + model.position.x,
-							v.y + model.position.y,
-							v.z + model.position.z
-						);
-						points.push( Scene.createPoint( pos, 0.03, 0xA1DA42 ) );
+						points.push( Scene.createPoint( v, 0.03, 0xA1DA42, true ) );
 					}
 				}
 			}
 		}
 
 		return { lines: lines, points: points };
+	},
+
+
+	/**
+	 * Get the average length of two vectors.
+	 * @param  {THREE.Vector3} vp Vector.
+	 * @param  {THREE.Vector3} vn Vector.
+	 * @return {float}            Average length.
+	 */
+	getAverageLength: function( vp, vn ) {
+		return ( vp.length() + vn.length() ) / 2;
 	},
 
 
@@ -347,6 +354,56 @@ var HoleFilling = {
 		}
 
 		return geometry;
+	},
+
+
+	/**
+	 * Merge vertices that are close together.
+	 * @param  {THREE.Geometry} update Vertices that will be part of the new front.
+	 * @return {THREE.Geometry}        New front with merged vertices.
+	 */
+	mergeByDistance: function( update ) {
+		var face, skip, t, v;
+		var skip = [];
+
+		// Move already close vertices to the exact same position
+		for( var i = 0, len = update.vertices.length; i < len; i++ ) {
+			if( skip.indexOf( i ) >= 0 ) {
+				continue;
+			}
+			v = update.vertices[i];
+
+			// Compare current point to all other new points
+			for( var j = 0; j < len; j++ ) {
+				if( j == i ) {
+					continue;
+				}
+				t = update.vertices[j];
+
+				// Merge points if distance below threshold
+				if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+					update.vertices[j] = v;
+					skip.push( j );
+				}
+			}
+		}
+
+		// Create face values from vertices, assuming they are in a fitting order
+		for( var i = 0, len = update.vertices.length; i < len; i += 3 ) {
+			update.faces.push( new THREE.Face3(
+				i,
+				( i + 1 ) % len,
+				( i + 2 ) % len )
+			);
+		}
+
+		// Remove doublicate vertices (also updates the faces)
+		var beforeMerge = update.vertices.length;
+		update.mergeVertices();
+
+		console.log( "merged vertices from " + beforeMerge + " to " + update.vertices.length );
+
+		return update;
 	}
 
 };
