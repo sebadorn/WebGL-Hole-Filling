@@ -1,17 +1,57 @@
 "use strict";
 
 
+function test_setup() {
+	GLOBAL.CAMERA.position = new THREE.Vector3( 2, 2, 8 );
+	GLOBAL.MODEL = new Object();
+	GLOBAL.MODEL.position = new THREE.Vector3( 0, 0, 0 );
+}
+
+
 function test() {
-	testRule3();
+	test_setup();
+
+	var gs = GLOBAL.SCENE;
+
+	var p = new THREE.Vector3(),
+	    q = new THREE.Vector3( 1.5, 1.7, 2.5 );
+
+	gs.add( Scene.createPoint( p, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( q, 0.04, 0x101010 ) );
+	gs.add( Scene.createLine( p, q, 1, 0xFFFFFF ) );
+
+	var cross = new THREE.Vector3().crossVectors( new THREE.Vector3( 0, 0, -1 ), q );
+	cross.normalize();
+
+	gs.add( Scene.createPoint( cross, 0.04, 0x831DE4 ) );
+	gs.add( Scene.createLine( p, cross, 1, 0x831DE4 ) );
+
+	var len = q.length(); // from p to q
+	var plane = new Plane( p, cross, q );
+	var newQ = plane.getPoint( 1, 2/3 );
+
+	gs.add( Scene.createPoint( newQ, 0.05, 0x707070 ) );
+	render();
+
+	var adjust = len / newQ.length();
+	newQ = plane.getPoint( adjust, adjust * 2/3 );
+
+	console.log( q.length() );
+	console.log( newQ.length() );
+	console.log( newQ.distanceTo( q ) );
+
+	gs.add( Scene.createPoint( newQ, 0.05, 0x707070 ) );
+	gs.add( Scene.createLine( newQ, p, 1, 0x707070 ) );
+	gs.add( Scene.createLine( newQ, q, 1, 0x707070 ) );
+
+	render();
 }
 
 
 function testRule3() {
-	var gs = GLOBAL.SCENE;
+	test_setup();
 
-	GLOBAL.CAMERA.position = new THREE.Vector3( 2, 2, 8 );
-	GLOBAL.MODEL = new Object();
-	GLOBAL.MODEL.position = new THREE.Vector3( 0, 0, 0 );
+	var gs = GLOBAL.SCENE;
 
 	var v = new THREE.Vector3( 1.38, 4.44, 0.01 ),
 	    vp = new THREE.Vector3( 1.39, 4.66, -0.00 ),
@@ -70,11 +110,9 @@ function testRule3() {
 
 
 function testRule2() {
-	var gs = GLOBAL.SCENE;
+	test_setup();
 
-	GLOBAL.CAMERA.position = new THREE.Vector3( 2, 2, 8 );
-	GLOBAL.MODEL = new Object();
-	GLOBAL.MODEL.position = new THREE.Vector3( 0, 0, 0 );
+	var gs = GLOBAL.SCENE;
 
 	var v = new THREE.Vector3( 2, 1, -3 ),
 	    vp = new THREE.Vector3( 2.4, 1, 0 ).add( v ),

@@ -104,6 +104,9 @@ var HoleFilling = {
 		update.vertices.push( v );
 		update.vertices.push( vNew );
 		update.vertices.push( vn );
+
+
+		GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.02, 0xFFFFFF, true ) );
 	},
 
 
@@ -116,44 +119,89 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule3: function( update, vp, v, vn ) {
-		// To make things easier, we just move the whole thing into the origin
-		// and when we have the new point, we move it back.
-		var vpClone = vp.clone().sub( v ),
-		    vnClone = vn.clone().sub( v ),
-		    origin = new THREE.Vector3();
+		var origin = new THREE.Vector3();
 
-		// Create the plane of the vectors vp and vn
-		// with position vector v.
-		var plane = new Plane( origin, vpClone, vnClone );
-		var adjusted, avLen, vNew1, vNew2;
+		var neigh;
+		var vertex;
+		var vPotentialCommonPoints = [];
+		var commonPoint;
 
-		// Get vectors on that plane, that lie on 1/3 and 2/3 the angle between vp and vn.
-		vNew1 = plane.getPoint( 0.667, 1 );
-		vNew2 = plane.getPoint( 1, 0.667 );
+		neigh = v.neighbours;
+		for( var i = 0; i < neigh.length; i++ ) {
+			vertex = GLOBAL.MODEL.geometry.vertices[neigh[i].vertex.index];
+			vPotentialCommonPoints.push( vertex );
+		}
 
-		// Compute the average length of vp and vn.
-		// Then adjust the position of the new vectors, so they have this average length.
-		avLen = this.getAverageLength( vpClone, vnClone );
+		neigh = vn.neighbours;
+		for( var i = 0; i < neigh.length; i++ ) {
+			vertex = GLOBAL.MODEL.geometry.vertices[neigh[i].vertex.index];
 
-		adjusted = avLen / vNew1.length();
-		vNew1 = plane.getPoint( 0.667 * adjusted, adjusted );
-		vNew1.add( v );
+			if( vPotentialCommonPoints.indexOf( vertex ) >= 0 ) {
+				commonPoint = vertex;
+				break;
+			}
+		}
 
-		adjusted = avLen / vNew2.length();
-		vNew2 = plane.getPoint( adjusted, 0.667 * adjusted );
-		vNew2.add( v );
 
-		// TODO: New way to find the new points
+		var vClone = v.clone().sub( commonPoint );
+		var vnClone = vn.clone().sub( commonPoint );
 
-		// update.vertices.push( v );
-		// update.vertices.push( vp );
-		// update.vertices.push( vNew2 );
-		// update.vertices.push( v );
-		// update.vertices.push( vNew2 );
-		// update.vertices.push( vNew1 );
-		// update.vertices.push( v );
-		// update.vertices.push( vNew1 );
-		// update.vertices.push( vn );
+		var plane = new Plane( origin, vClone, vnClone );
+		var vNew1 = plane.getPoint( 1, 1 );
+		var adjust = ( vClone.length() + vnClone.length() ) / vNew1.length();
+		vNew1 = plane.getPoint( adjust, adjust );
+
+		vNew1.add( commonPoint );
+
+
+		// Second new point
+
+		var neigh;
+		var vertex;
+		var vPotentialCommonPoints = [];
+		var commonPoint;
+
+		neigh = v.neighbours;
+		for( var i = 0; i < neigh.length; i++ ) {
+			vertex = GLOBAL.MODEL.geometry.vertices[neigh[i].vertex.index];
+			vPotentialCommonPoints.push( vertex );
+		}
+
+		neigh = vp.neighbours;
+		for( var i = 0; i < neigh.length; i++ ) {
+			vertex = GLOBAL.MODEL.geometry.vertices[neigh[i].vertex.index];
+
+			if( vPotentialCommonPoints.indexOf( vertex ) >= 0 ) {
+				commonPoint = vertex;
+				break;
+			}
+		}
+
+
+		var vClone = v.clone().sub( commonPoint );
+		var vpClone = vp.clone().sub( commonPoint );
+
+		var plane = new Plane( origin, vClone, vpClone );
+		var vNew2 = plane.getPoint( 1, 1 );
+		var adjust = ( vClone.length() + vpClone.length() ) / vNew2.length();
+		vNew2 = plane.getPoint( adjust, adjust );
+
+		vNew2.add( commonPoint );
+
+
+		update.vertices.push( v );
+		update.vertices.push( vp );
+		update.vertices.push( vNew2 );
+		update.vertices.push( v );
+		update.vertices.push( vNew2 );
+		update.vertices.push( vNew1 );
+		update.vertices.push( v );
+		update.vertices.push( vNew1 );
+		update.vertices.push( vn );
+
+
+		GLOBAL.SCENE.add( Scene.createPoint( vNew1, 0.02, 0xFFFFFF, true ) );
+		GLOBAL.SCENE.add( Scene.createPoint( vNew2, 0.02, 0xFFFFFF, true ) );
 	},
 
 
@@ -311,7 +359,12 @@ var HoleFilling = {
 			}
 		}
 
-		return { lines: lines, points: points };
+		GLOBAL.HALFEDGE = mesh;
+
+		return {
+			lines: lines,
+			points: points
+		};
 	},
 
 
@@ -343,6 +396,7 @@ var HoleFilling = {
 		while( true ) {
 			if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
 				v = model.geometry.vertices[bp.index];
+				v.neighbours = bp.edges;
 				geometry.vertices.push( v );
 				ignore.push( bp.index );
 				bp = bp.firstEdge.vertex;

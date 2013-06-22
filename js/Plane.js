@@ -23,6 +23,12 @@ Plane.prototype = {
 	constructor: Plane,
 
 
+	/**
+	 * Get a point from the plane.
+	 * @param  {float}         s Factor for vector v1.
+	 * @param  {float}         t Factor for vector v2.
+	 * @return {THREE.Vector3}   Point on the plane.
+	 */
 	getPoint: function( s, t ) {
 		var v1s = this.v1.clone().multiplyScalar( s ),
 		    v2t = this.v2.clone().multiplyScalar( t );
