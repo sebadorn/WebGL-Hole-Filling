@@ -30,7 +30,7 @@ var CONFIG = {
 			SHOW_POINTS: true
 		},
 		FILLING: {
-			COLOR: 0xFFFFFF,
+			COLOR: 0xFFFF00,
 			LINE_WIDTH: 2,
 			SHOW_POINTS: true,
 			THRESHOLD_MERGE: 0.1

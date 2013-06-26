@@ -391,7 +391,7 @@ var Scene = {
 		UI.showWindowHoles( border.lines.length );
 
 		// TODO: Not here, only do if requested
-		HoleFilling.advancingFront( g.MODEL, border.lines );
+		HoleFilling.advancingFront( g.MODEL, border.holes );
 		render();
 	},
 
