@@ -13,36 +13,33 @@ function test() {
 
 	var gs = GLOBAL.SCENE;
 
-	var p = new THREE.Vector3(),
-	    q = new THREE.Vector3( 1.5, 1.7, 2.5 );
+	var o = new THREE.Vector3(),
+	    m = new THREE.Vector3( 1.7, 2.3, 0.2 ),
+	    p = new THREE.Vector3( -2, 0, 0 ).add( m ),
+	    q = new THREE.Vector3( 3, 1, 1 ).add( m );
 
+	gs.add( Scene.createPoint( m, 0.04, 0x101010 ) );
 	gs.add( Scene.createPoint( p, 0.04, 0x101010 ) );
 	gs.add( Scene.createPoint( q, 0.04, 0x101010 ) );
-	gs.add( Scene.createLine( p, q, 1, 0xFFFFFF ) );
+	gs.add( Scene.createLine( m, p, 2, 0xFFFFFF ) );
+	gs.add( Scene.createLine( m, q, 2, 0xFFFFFF ) );
 
-	var cross = new THREE.Vector3().crossVectors( new THREE.Vector3( 0, 0, -1 ), q );
+	console.log( HoleFilling.computeAngle( p, m, q ) );
+
+	var cross = new THREE.Vector3().crossVectors( p.clone().sub( m ), q.clone().sub( m ) );
 	cross.normalize();
+	cross.add( m );
 
-	gs.add( Scene.createPoint( cross, 0.04, 0x831DE4 ) );
-	gs.add( Scene.createLine( p, cross, 1, 0x831DE4 ) );
+	gs.add( Scene.createPoint( cross, 0.05, 0x44AAEE ) );
+	gs.add( Scene.createLine( m, cross, 1, 0x44AAEE ) );
 
-	var len = q.length(); // from p to q
-	var plane = new Plane( p, cross, q );
-	var newQ = plane.getPoint( 1, 2/3 );
+	var cross2 = new THREE.Vector3().crossVectors( cross.clone().sub( m ), p.clone().sub( m ) );
+	cross2.normalize();
+	cross2.add( m );
 
-	gs.add( Scene.createPoint( newQ, 0.05, 0x707070 ) );
-	render();
+	gs.add( Scene.createPoint( cross2, 0.05, 0x00AA00 ) );
+	gs.add( Scene.createLine( m, cross2, 1, 0x00AA00 ) );
 
-	var adjust = len / newQ.length();
-	newQ = plane.getPoint( adjust, adjust * 2/3 );
-
-	console.log( q.length() );
-	console.log( newQ.length() );
-	console.log( newQ.distanceTo( q ) );
-
-	gs.add( Scene.createPoint( newQ, 0.05, 0x707070 ) );
-	gs.add( Scene.createLine( newQ, p, 1, 0x707070 ) );
-	gs.add( Scene.createLine( newQ, q, 1, 0x707070 ) );
 
 	render();
 }
