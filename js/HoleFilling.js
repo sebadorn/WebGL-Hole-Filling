@@ -29,7 +29,7 @@ var HoleFilling = {
 		while( true ) {
 			len = hole.vertices.length;
 
-			if( ++count > holes[0].length + 300 ) { // TODO: remove
+			if( ++count > holes[0].length + 200 ) {
 				break;
 			}
 			if( len == 3 ) {
@@ -58,7 +58,7 @@ var HoleFilling = {
 				//console.log( "rule 2: " + angle );
 				j++;
 			}
-			else if( angle > 135.0 && angle < 150.0 ) {
+			else if( angle > 135.0 && angle < 180.0 ) {
 				this.afRule3( hole, filling, vp, v, vn, angle );
 				//console.log( "rule 3: " + angle );
 				j += 2;
@@ -70,39 +70,59 @@ var HoleFilling = {
 
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
-			filling = this.mergeByDistance( filling );
+			this.mergeByDistance( hole, filling );
 		}
 
 
-		// // Draw the (moving) front
-		/*var material = new THREE.LineBasicMaterial( { color: 0xFFFFFF, linewidth: 6 } );
-		var mesh = new THREE.Line( hole, material );
-
-		mesh.position.x += model.position.x;
-		mesh.position.y += model.position.y;
-		mesh.position.z += model.position.z;
-
-		GLOBAL.SCENE.add( mesh );
-		render();*/
-
-
 		// Create a mesh from the computed data and render it.
-		var material = new THREE.MeshBasicMaterial( {
-			color: 0xFFFFFF,
-			wireframe: true
+		var materialSolid = new THREE.MeshBasicMaterial( {
+			color: 0x87C3EC,
+			side: THREE.DoubleSide,
+			wireframe: false
 		} );
-		var mesh = new THREE.Mesh( filling, material );
+		var materialWire = new THREE.MeshBasicMaterial( {
+			color: 0xFFFFFF,
+			side: THREE.DoubleSide,
+			wireframe: true,
+			wireframeLinewidth: 3
+		} );
+		var meshSolid = new THREE.Mesh( filling, materialSolid );
+		var meshWire = new THREE.Mesh( filling, materialWire );
 
-		mesh.position.x += model.position.x;
-		mesh.position.y += model.position.y;
-		mesh.position.z += model.position.z;
+		meshSolid.position.x += model.position.x;
+		meshSolid.position.y += model.position.y;
+		meshSolid.position.z += model.position.z;
 
-		mesh.geometry.computeFaceNormals();
-		mesh.geometry.computeVertexNormals();
-		mesh.geometry.computeBoundingBox();
+		meshSolid.geometry.computeFaceNormals();
+		meshSolid.geometry.computeVertexNormals();
+		meshSolid.geometry.computeBoundingBox();
 
-		GLOBAL.SCENE.add( mesh );
+		meshWire.position.x += model.position.x;
+		meshWire.position.y += model.position.y;
+		meshWire.position.z += model.position.z;
+
+		meshWire.geometry.computeFaceNormals();
+		meshWire.geometry.computeVertexNormals();
+		meshWire.geometry.computeBoundingBox();
+
+		GLOBAL.SCENE.add( meshSolid );
+		GLOBAL.SCENE.add( meshWire );
 		render();
+
+
+		// // Draw the (moving) front
+		// var material = new THREE.LineBasicMaterial( {
+		// 	color: 0xFFFFFF,
+		// 	linewidth: 5
+		// } );
+		// var mesh = new THREE.Line( hole, material );
+
+		// mesh.position.x += model.position.x;
+		// mesh.position.y += model.position.y;
+		// mesh.position.z += model.position.z;
+
+		// GLOBAL.SCENE.add( mesh );
+		// render();
 	},
 
 
@@ -217,20 +237,20 @@ var HoleFilling = {
 		vNew1.add( v );
 
 
-		// New vertice 2
-		var crossVn = new THREE.Vector3().crossVectors( cross1.clone().sub( v ), vnClone );
-		if( angle > 180.0 ) {
-			crossVn.multiplyScalar( -1 );
-		}
-		crossVn.normalize();
-		crossVn.add( v );
+		// // New vertice 2
+		// var crossVn = new THREE.Vector3().crossVectors( cross1.clone().sub( v ), vnClone );
+		// if( angle <= 180.0 ) {
+		// 	crossVn.multiplyScalar( -1 );
+		// }
+		// crossVn.normalize();
+		// crossVn.add( v );
 
-		var plane = new Plane( new THREE.Vector3(), vnClone, crossVn.clone().sub( v ) );
-		var vNew2 = plane.getPoint( 1, 1 );
+		// var plane = new Plane( new THREE.Vector3(), vnClone, crossVn.clone().sub( v ) );
+		// var vNew2 = plane.getPoint( 1, 1 );
 
-		var adjusted = avLen / vNew2.length();
-		vNew2 = plane.getPoint( adjusted, adjusted );
-		vNew2.add( v );
+		// var adjusted = avLen / vNew2.length();
+		// vNew2 = plane.getPoint( adjusted, adjusted );
+		// vNew2.add( v );
 
 
 		// New triangle 1
@@ -238,25 +258,26 @@ var HoleFilling = {
 		filling.vertices.push( vNew1 );
 		filling.vertices.push( v );
 
-		// New triangle 2
-		filling.vertices.push( v );
-		filling.vertices.push( vNew2 );
-		filling.vertices.push( vn );
+		// // New triangle 2
+		// filling.vertices.push( v );
+		// filling.vertices.push( vNew2 );
+		// filling.vertices.push( vn );
 
-		// New triangle 3
-		filling.vertices.push( vNew1 );
-		filling.vertices.push( v );
-		filling.vertices.push( vNew2 );
+		// // New triangle 3
+		// filling.vertices.push( vNew1 );
+		// filling.vertices.push( v );
+		// filling.vertices.push( vNew2 );
 
 		// New faces for the triangles
 		var l = filling.vertices.length;
-		filling.faces.push( new THREE.Face3( l - 9, l - 8, l - 7 ) );
-		filling.faces.push( new THREE.Face3( l - 6, l - 5, l - 4 ) );
+		// filling.faces.push( new THREE.Face3( l - 9, l - 8, l - 7 ) );
+		// filling.faces.push( new THREE.Face3( l - 6, l - 5, l - 4 ) );
 		filling.faces.push( new THREE.Face3( l - 3, l - 2, l - 1 ) );
 
 		// Update front
 		var ix = hole.vertices.indexOf( v );
-		hole.vertices.splice( ix, 1, vNew1, vNew2 );
+		// hole.vertices.splice( ix, 1, vNew1, vNew2 );
+		hole.vertices.splice( ix, 0, vNew1 );
 
 
 		//GLOBAL.SCENE.add( Scene.createPoint( vNew1, 0.02, 0xFFFFFF, true ) );
@@ -489,18 +510,19 @@ var HoleFilling = {
 	 * @param  {THREE.Geometry} filling Vertices that will be part of the new front.
 	 * @return {THREE.Geometry}         New front with merged vertices.
 	 */
-	mergeByDistance: function( filling ) {
-		var face, skip, t, v;
+	mergeByDistance: function( hole, filling ) {
+		var ix, skip, t, v;
 		var skip = [];
-		var before = filling.vertices.length;
-		var after;
+
+		filling.mergeVertices();
+		hole.mergeVertices();
 
 		// Move already close vertices to the exact same position
 		for( var i = 0, len = filling.vertices.length; i < len; i++ ) {
 			if( skip.indexOf( i ) >= 0 ) {
 				continue;
 			}
-			v = filling.vertices[i];
+			v = filling.vertices[i].clone();
 
 			// Compare current point to all other new points
 			for( var j = 0; j < len; j++ ) {
@@ -511,19 +533,26 @@ var HoleFilling = {
 
 				// Merge points if distance below threshold
 				if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+					GLOBAL.SCENE.add( Scene.createPoint(
+						t.clone(), 0.04, 0xFFEE00, true
+					) );
+
 					filling.vertices[j] = v;
 					skip.push( j );
+
+					// TODO: Merging two points can close of another point from the hole.
+					// In which case this closed-off point has to be removed!
+					ix = hole.vertices.indexOf( t );
+					if( ix >= 0 ) {
+						hole.vertices[ix] = v;
+					}
 				}
 			}
 		}
 
 		// Remove doublicate vertices (also update the faces)
 		filling.mergeVertices();
-
-		after = filling.vertices.length;
-		//console.log( "merged vertices from " + before + " to " + after );
-
-		return filling;
+		hole.mergeVertices();
 	}
 
 };
