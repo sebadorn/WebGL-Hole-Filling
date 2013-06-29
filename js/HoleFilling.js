@@ -14,22 +14,24 @@ var HoleFilling = {
 	 */
 	advancingFront: function( model, holes ) {
 		var filling = new THREE.Geometry();
-		var hole = new THREE.Geometry();
+		var front = new THREE.Geometry();
 
 		filling.vertices = holes[0].slice( 0 );
-		hole.vertices = holes[0].slice( 0 );
+		front.vertices = holes[0].slice( 0 );
 
 		var ca = this.computeAngles( filling.vertices ),
 		    j = ca.smallest.index;
-		var angle, len, v, vn, vp;
+		var angle, len, v, vn, vNew, vp;
 		var vIndex, vnIndex, vpIndex;
 		var count = 0;
 
 
-		while( true ) {
-			len = hole.vertices.length;
+		filling.mergeVertices();
 
-			if( ++count > holes[0].length + 200 ) {
+		while( true ) {
+			len = front.vertices.length;
+
+			if( ++count > /*holes[0].length*/6 ) {
 				break;
 			}
 			if( len == 3 ) {
@@ -41,36 +43,33 @@ var HoleFilling = {
 			vIndex = j % len;
 			vnIndex = ( j + 1 ) % len;
 
-			vp = hole.vertices[vpIndex];
-			v = hole.vertices[vIndex];
-			vn = hole.vertices[vnIndex];
+			vp = front.vertices[vpIndex];
+			v = front.vertices[vIndex];
+			vn = front.vertices[vnIndex];
 
 			// Calculate the angle between two adjacent vertices.
 			angle = this.computeAngle( vp, v, vn );
 
 			// Create new triangles on the plane.
 			if( angle <= 75.0 ) {
-				this.afRule1( hole, filling, vp, v, vn );
-				//console.log( "rule 1: " + angle );
+				vNew = this.afRule1( front, filling, vp, v, vn );
 			}
 			else if( angle <= 135.0 ) {
-				this.afRule2( hole, filling, vp, v, vn );
-				//console.log( "rule 2: " + angle );
+				vNew = this.afRule2( front, filling, vp, v, vn );
 				j++;
 			}
 			else if( angle > 135.0 && angle < 180.0 ) {
-				this.afRule3( hole, filling, vp, v, vn, angle );
-				//console.log( "rule 3: " + angle );
+				vNew = this.afRule3( front, filling, vp, v, vn, angle );
 				j += 2;
 			}
 			else {
-				//console.log( "skipped: " + angle );
+				vNew = false;
 				j++;
 			}
 
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
-			this.mergeByDistance( hole, filling );
+			this.mergeByDistance( front, filling, vNew, holes[0] );
 		}
 
 
@@ -84,7 +83,7 @@ var HoleFilling = {
 			color: 0xFFFFFF,
 			side: THREE.DoubleSide,
 			wireframe: true,
-			wireframeLinewidth: 3
+			wireframeLinewidth: 2
 		} );
 		var meshSolid = new THREE.Mesh( filling, materialSolid );
 		var meshWire = new THREE.Mesh( filling, materialWire );
@@ -110,19 +109,19 @@ var HoleFilling = {
 		render();
 
 
-		// // Draw the (moving) front
-		// var material = new THREE.LineBasicMaterial( {
-		// 	color: 0xFFFFFF,
-		// 	linewidth: 5
-		// } );
-		// var mesh = new THREE.Line( hole, material );
+		// Draw the (moving) front
+		var material = new THREE.LineBasicMaterial( {
+			color: 0x4991E0,
+			linewidth: 5
+		} );
+		var mesh = new THREE.Line( front, material );
 
-		// mesh.position.x += model.position.x;
-		// mesh.position.y += model.position.y;
-		// mesh.position.z += model.position.z;
+		mesh.position.x += model.position.x;
+		mesh.position.y += model.position.y;
+		mesh.position.z += model.position.z;
 
-		// GLOBAL.SCENE.add( mesh );
-		// render();
+		GLOBAL.SCENE.add( mesh );
+		render();
 	},
 
 
@@ -134,7 +133,7 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule1: function( hole, filling, vp, v, vn ) {
+	afRule1: function( front, filling, vp, v, vn ) {
 		filling.vertices.push( v );
 		filling.vertices.push( vp );
 		filling.vertices.push( vn );
@@ -143,7 +142,9 @@ var HoleFilling = {
 		filling.faces.push( new THREE.Face3( f - 3, f - 2, f - 1 ) );
 
 		// The vector v is not a part of the (moving) hole front anymore.
-		hole.vertices.splice( hole.vertices.indexOf( v ), 1 );
+		front.vertices.splice( front.vertices.indexOf( v ), 1 );
+
+		return false;
 	},
 
 
@@ -155,7 +156,7 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule2: function( hole, filling, vp, v, vn ) {
+	afRule2: function( front, filling, vp, v, vn ) {
 		// To make things easier, we just move the whole thing into the origin
 		// and when we have the new point, we move it back.
 		var vpClone = vp.clone().sub( v ),
@@ -195,10 +196,10 @@ var HoleFilling = {
 		filling.faces.push( new THREE.Face3( l - 3, l - 2, l - 1 ) );
 
 		// Update front
-		var ix = hole.vertices.indexOf( v );
-		hole.vertices[ix] = vNew;
+		var ix = front.vertices.indexOf( v );
+		front.vertices[ix] = vNew;
 
-
+		return vNew;
 		//GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.02, 0xFFFFFF, true ) );
 	},
 
@@ -211,7 +212,7 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  v      Current vector.
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
-	afRule3: function( hole, filling, vp, v, vn, angle ) {
+	afRule3: function( front, filling, vp, v, vn, angle ) {
 		var vpClone = vp.clone().sub( v ),
 		    vnClone = vn.clone().sub( v );
 
@@ -275,11 +276,11 @@ var HoleFilling = {
 		filling.faces.push( new THREE.Face3( l - 3, l - 2, l - 1 ) );
 
 		// Update front
-		var ix = hole.vertices.indexOf( v );
-		// hole.vertices.splice( ix, 1, vNew1, vNew2 );
-		hole.vertices.splice( ix, 0, vNew1 );
+		var ix = front.vertices.indexOf( v );
+		// front.vertices.splice( ix, 1, vNew1, vNew2 );
+		front.vertices.splice( ix, 0, vNew1 );
 
-
+		return vNew1;
 		//GLOBAL.SCENE.add( Scene.createPoint( vNew1, 0.02, 0xFFFFFF, true ) );
 		//GLOBAL.SCENE.add( Scene.createPoint( vNew2, 0.02, 0xFFFFFF, true ) );
 	},
@@ -510,41 +511,71 @@ var HoleFilling = {
 	 * @param  {THREE.Geometry} filling Vertices that will be part of the new front.
 	 * @return {THREE.Geometry}         New front with merged vertices.
 	 */
-	mergeByDistance: function( hole, filling ) {
-		var ix, skip, t, v;
+	mergeByDistance: function( front, filling, v, ignore ) {
+		var cutOff, ixFrom, ixTo, len, start, t;
 		var skip = [];
 
-		filling.mergeVertices();
-		hole.mergeVertices();
+		// No new vertex has been added, but
+		// there may be some duplicate ones
+		if( !v ) {
+			filling.mergeVertices();
+			return true;
+		}
+
+		start = filling.vertices.indexOf( v );
+
+		if( start < 0 ) {
+			console.error( "mergeByDistance: start vertex not part of filling" );
+			return false;
+		}
 
 		// Move already close vertices to the exact same position
-		for( var i = 0, len = filling.vertices.length; i < len; i++ ) {
-			if( skip.indexOf( i ) >= 0 ) {
+		len = filling.vertices.length;
+
+		// Compare current point to all other new points
+		for( var j = start + 1; j != start; j++ ) {
+			if( j >= len ) {
+				j = 0;
+			}
+			t = filling.vertices[j];
+
+			// The original form of the hole shall not be changed
+			if( ignore.indexOf( t ) >= 0 ) {
 				continue;
 			}
-			v = filling.vertices[i].clone();
 
-			// Compare current point to all other new points
-			for( var j = 0; j < len; j++ ) {
-				if( j == i ) {
-					continue;
-				}
-				t = filling.vertices[j];
+			// Merge points if distance below threshold
+			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+				GLOBAL.SCENE.add( Scene.createPoint(
+					t.clone(), 0.034, 0xFFEE00, true
+				) );
 
-				// Merge points if distance below threshold
-				if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
-					GLOBAL.SCENE.add( Scene.createPoint(
-						t.clone(), 0.04, 0xFFEE00, true
-					) );
+				filling.vertices[j] = v.clone();
 
-					filling.vertices[j] = v;
-					skip.push( j );
 
-					// TODO: Merging two points can close of another point from the hole.
-					// In which case this closed-off point has to be removed!
-					ix = hole.vertices.indexOf( t );
-					if( ix >= 0 ) {
-						hole.vertices[ix] = v;
+				// Update front
+				ixFrom = front.vertices.indexOf( t );
+				ixTo = front.vertices.indexOf( v );
+
+				if( ixFrom >= 0 ) {
+					front.vertices[ixFrom] = v;
+
+					if( ixTo >= 0 ) {
+						cutOff = ixTo - ixFrom;
+						cutOff = ( cutOff < 0 ) ? -cutOff : cutOff;
+						cutOff--;
+
+						// Two vertices directly neighboured are merged
+						// -> One less in the moving front
+						if( cutOff == 0 ) {
+							front.vertices.splice( ixTo, 1 );
+						}
+						// Two vertices more than one step apart are merged
+						// -> All vertices between them are cut off from the front
+						// -> This may create a second front, but that's a story for another time.
+						else if( cutOff > 0 ) {
+							front.vertices.splice( ixFrom + 1, cutOff );
+						}
 					}
 				}
 			}
@@ -552,7 +583,6 @@ var HoleFilling = {
 
 		// Remove doublicate vertices (also update the faces)
 		filling.mergeVertices();
-		hole.mergeVertices();
 	}
 
 };
