@@ -16,9 +16,8 @@ var HoleFilling = {
 		var filling = new THREE.Geometry();
 		var front = new THREE.Geometry();
 
-		// filling.vertices = holes[0].slice( 0 ); // TODO
 		front.vertices = holes[0].slice( 0 );
-		filling.vertices = [];
+		filling.vertices = holes[0].slice( 0 );
 
 		var ca = this.computeAngles( front.vertices ),
 		    j = ca.smallest.index;
@@ -30,7 +29,7 @@ var HoleFilling = {
 		while( true ) {
 			len = front.vertices.length;
 
-			if( ++count > /*holes[0].length*/5 ) {
+			if( ++count > /*holes[0].length + 200*/4 ) {
 				break;
 			}
 			if( len == 3 ) {
@@ -57,7 +56,7 @@ var HoleFilling = {
 				vNew = this.afRule2( front, filling, vp, v, vn );
 				j++;
 			}
-			else if( angle > 135.0 && angle < 180.0 ) {
+			else if( angle > 135.0 ) {
 				vNew = this.afRule3( front, filling, vp, v, vn, angle );
 				j += 2;
 			}
@@ -134,12 +133,11 @@ var HoleFilling = {
 	 * @param {THREE.Vector3}  vn     Next vector.
 	 */
 	afRule1: function( front, filling, vp, v, vn ) {
-		filling.vertices.push( v );
-		filling.vertices.push( vp );
-		filling.vertices.push( vn );
+		var vIndex = filling.vertices.indexOf( v ),
+		    vnIndex = filling.vertices.indexOf( vn ),
+		    vpIndex = filling.vertices.indexOf( vp );
 
-		var f = filling.vertices.length;
-		filling.faces.push( new THREE.Face3( f - 3, f - 2, f - 1 ) );
+		filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
 
 		// The vector v is not a part of the (moving) hole front anymore.
 		front.vertices.splice( front.vertices.indexOf( v ), 1 );
@@ -179,28 +177,24 @@ var HoleFilling = {
 		vNew.add( v );
 
 
-		// New triangle 1
-		filling.vertices.push( v );
-		filling.vertices.push( vp );
+		// New vertex
 		filling.vertices.push( vNew );
 
-		// New triangle 2
-		filling.vertices.push( v );
-		filling.vertices.push( vNew );
-		filling.vertices.push( vn );
+		// New faces for 2 new triangles
+		var len = filling.vertices.length;
+		var vpIndex = filling.vertices.indexOf( vp ),
+		    vIndex = filling.vertices.indexOf( v ),
+		    vnIndex = filling.vertices.indexOf( vn );
 
+		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
+		filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
 
-		// New faces for the triangles
-		var l = filling.vertices.length;
-		filling.faces.push( new THREE.Face3( l - 6, l - 5, l - 4 ) );
-		filling.faces.push( new THREE.Face3( l - 3, l - 2, l - 1 ) );
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
 		front.vertices[ix] = vNew;
 
 		return vNew;
-		//GLOBAL.SCENE.add( Scene.createPoint( vNew, 0.02, 0xFFFFFF, true ) );
 	},
 
 
@@ -238,51 +232,22 @@ var HoleFilling = {
 		vNew1.add( v );
 
 
-		// // New vertice 2
-		// var crossVn = new THREE.Vector3().crossVectors( cross1.clone().sub( v ), vnClone );
-		// if( angle <= 180.0 ) {
-		// 	crossVn.multiplyScalar( -1 );
-		// }
-		// crossVn.normalize();
-		// crossVn.add( v );
-
-		// var plane = new Plane( new THREE.Vector3(), vnClone, crossVn.clone().sub( v ) );
-		// var vNew2 = plane.getPoint( 1, 1 );
-
-		// var adjusted = avLen / vNew2.length();
-		// vNew2 = plane.getPoint( adjusted, adjusted );
-		// vNew2.add( v );
-
-
-		// New triangle 1
-		filling.vertices.push( vp );
+		// New vertex
 		filling.vertices.push( vNew1 );
-		filling.vertices.push( v );
 
-		// // New triangle 2
-		// filling.vertices.push( v );
-		// filling.vertices.push( vNew2 );
-		// filling.vertices.push( vn );
+		// New faces for the new triangle
+		var len = filling.vertices.length;
+		var vpIndex = filling.vertices.indexOf( vp ),
+		    vIndex = filling.vertices.indexOf( v );
 
-		// // New triangle 3
-		// filling.vertices.push( vNew1 );
-		// filling.vertices.push( v );
-		// filling.vertices.push( vNew2 );
+		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
 
-		// New faces for the triangles
-		var l = filling.vertices.length;
-		// filling.faces.push( new THREE.Face3( l - 9, l - 8, l - 7 ) );
-		// filling.faces.push( new THREE.Face3( l - 6, l - 5, l - 4 ) );
-		filling.faces.push( new THREE.Face3( l - 3, l - 2, l - 1 ) );
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
-		// front.vertices.splice( ix, 1, vNew1, vNew2 );
 		front.vertices.splice( ix, 0, vNew1 );
 
 		return vNew1;
-		//GLOBAL.SCENE.add( Scene.createPoint( vNew1, 0.02, 0xFFFFFF, true ) );
-		//GLOBAL.SCENE.add( Scene.createPoint( vNew2, 0.02, 0xFFFFFF, true ) );
 	},
 
 
@@ -510,7 +475,7 @@ var HoleFilling = {
 	 * Merge vertices that are close together.
 	 */
 	mergeByDistance: function( front, filling, v, ignore ) {
-		var ixV = filling.vertices.indexOf( v );
+		var vIndex = filling.vertices.indexOf( v );
 		var t;
 
 		// No new vertex has been added, but
@@ -519,7 +484,7 @@ var HoleFilling = {
 			return true;
 		}
 
-		if( ixV < 0 ) {
+		if( vIndex < 0 ) {
 			console.error( "mergeByDistance: given vertex not part of filling" );
 			return false;
 		}
@@ -527,7 +492,7 @@ var HoleFilling = {
 		// Compare current point to all other new points
 		for( var i = filling.vertices.length - 1; i >= 0; i-- ) {
 			// Don't compare a vertex to itself
-			if( i == ixV ) {
+			if( i == vIndex ) {
 				continue;
 			}
 
@@ -543,9 +508,9 @@ var HoleFilling = {
 				GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.024, 0xFFEE00, true ) );
 
 				filling.vertices.splice( i, 1 );
-				ixV = filling.vertices.indexOf( v );
+				vIndex = filling.vertices.indexOf( v );
 
-				this.updateFaces( filling, ixV, i );
+				this.updateFaces( filling, vIndex, i );
 				this.mergeUpdateFront( front, v, t );
 			}
 		}
@@ -584,39 +549,38 @@ var HoleFilling = {
 	},
 
 
-	updateFaces: function( filling, ixV, i ) {
+	updateFaces: function( filling, vIndex, ixOld ) {
 		var face;
 
-		for( var j = filling.faces.length - 1; j >= 0; j-- ) {
-			face = filling.faces[j];
+		for( var i = filling.faces.length - 1; i >= 0; i-- ) {
+			face = filling.faces[i];
 
-			// Replace vertex index of the merged-away
-			// one with the merge-surviving one
-			if( face.a == i ) {
-				face.a = ixV;
+			// Replace all instances of the merged-away vertex
+			if( face.a == ixOld ) {
+				face.a = vIndex;
 			}
-			if( face.b == i ) {
-				face.b = ixV;
+			if( face.b == ixOld ) {
+				face.b = vIndex;
 			}
-			if( face.c == i ) {
-				face.c = ixV;
+			if( face.c == ixOld ) {
+				face.c = vIndex;
 			}
 
 			// By removing a vertex all (greater) face
 			// indexes have to be updated
-			if( face.a >= i && face.a != ixV ) {
+			if( face.a > ixOld ) {
 				face.a--;
 			}
-			if( face.b >= i && face.b != ixV ) {
+			if( face.b > ixOld ) {
 				face.b--;
 			}
-			if( face.c >= i && face.c != ixV ) {
+			if( face.c > ixOld ) {
 				face.c--;
 			}
 
 			// Triangle disappeared through merge
-			if( face.a == face.b && face.b == face.c ) {
-				filling.faces.splice( j, 1 );
+			if( face.a == face.b || face.a == face.c || face.b == face.c ) {
+				filling.faces.splice( i, 1 );
 			}
 		}
 	}

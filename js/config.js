@@ -33,7 +33,7 @@ var CONFIG = {
 			COLOR: 0xFFFF00,
 			LINE_WIDTH: 2,
 			SHOW_POINTS: true,
-			THRESHOLD_MERGE: 0.12
+			THRESHOLD_MERGE: 0.1
 		}
 	},
 	MODE: "solid",
