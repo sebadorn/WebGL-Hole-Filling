@@ -29,7 +29,7 @@ var HoleFilling = {
 		while( true ) {
 			len = front.vertices.length;
 
-			if( ++count > /*holes[0].length + 200*/4 ) {
+			if( ++count > /*holes[0].length + 200*/1000 ) {
 				break;
 			}
 			if( len == 3 ) {
@@ -56,7 +56,7 @@ var HoleFilling = {
 				vNew = this.afRule2( front, filling, vp, v, vn );
 				j++;
 			}
-			else if( angle > 135.0 ) {
+			else if( angle > 135.0 && angle < 150.0 ) { // TODO: > 135.0 only
 				vNew = this.afRule3( front, filling, vp, v, vn, angle );
 				j += 2;
 			}
@@ -475,8 +475,9 @@ var HoleFilling = {
 	 * Merge vertices that are close together.
 	 */
 	mergeByDistance: function( front, filling, v, ignore ) {
-		var vIndex = filling.vertices.indexOf( v );
-		var t;
+		var vIndex = filling.vertices.indexOf( v ),
+		    vIndexFront = front.vertices.indexOf( v );
+		var t, tIndex;
 
 		// No new vertex has been added, but
 		// there may be some duplicate ones
@@ -488,6 +489,34 @@ var HoleFilling = {
 			console.error( "mergeByDistance: given vertex not part of filling" );
 			return false;
 		}
+
+
+		// // Compare current point to neighbouring border points
+		// var neighbours = [
+		// 	front.vertices[( vIndexFront - 1 ) % front.vertices.length],
+		// 	front.vertices[( vIndexFront + 1 ) % front.vertices.length]
+		// ];
+
+		// for( var i = neighbours.length - 1; i >= 0; i-- ) {
+		// 	t = neighbours[i];
+
+		// 	// The original form of the hole shall not be changed
+		// 	if( ignore.indexOf( t ) >= 0 ) {
+		// 		continue;
+		// 	}
+
+		// 	// Merge points if distance below threshold
+		// 	if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+		// 		GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.024, 0xFFEE00, true ) );
+
+		// 		tIndex = filling.vertices.indexOf( t );
+		// 		filling.vertices.splice( tIndex, 1 );
+		// 		vIndex = filling.vertices.indexOf( v );
+
+		// 		this.updateFaces( filling, vIndex, tIndex );
+		// 		this.mergeUpdateFront( front, v, t );
+		// 	}
+		// }
 
 		// Compare current point to all other new points
 		for( var i = filling.vertices.length - 1; i >= 0; i-- ) {
