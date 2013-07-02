@@ -29,7 +29,7 @@ var HoleFilling = {
 		while( true ) {
 			len = front.vertices.length;
 
-			if( ++count > /*holes[0].length + 200*/1000 ) {
+			if( ++count > /*holes[0].length + 200*/661 ) { // 661 -> merging error
 				break;
 			}
 			if( len == 3 ) {
@@ -103,7 +103,7 @@ var HoleFilling = {
 		meshWire.geometry.computeVertexNormals();
 		meshWire.geometry.computeBoundingBox();
 
-		GLOBAL.SCENE.add( meshSolid );
+		//GLOBAL.SCENE.add( meshSolid );
 		GLOBAL.SCENE.add( meshWire );
 		render();
 
@@ -519,13 +519,13 @@ var HoleFilling = {
 		// }
 
 		// Compare current point to all other new points
-		for( var i = filling.vertices.length - 1; i >= 0; i-- ) {
+		for( var i = front.vertices.length - 1; i >= 0; i-- ) {
 			// Don't compare a vertex to itself
-			if( i == vIndex ) {
+			if( i == vIndexFront ) {
 				continue;
 			}
 
-			t = filling.vertices[i];
+			t = front.vertices[i];
 
 			// The original form of the hole shall not be changed
 			if( ignore.indexOf( t ) >= 0 ) {
@@ -534,13 +534,18 @@ var HoleFilling = {
 
 			// Merge points if distance below threshold
 			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
-				GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.024, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.02, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( v.clone(), 0.012, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createLine( t.clone(), v.clone(), 1, 0xFFEE00, true ) );
 
-				filling.vertices.splice( i, 1 );
+				tIndex = filling.vertices.indexOf( t );
+				filling.vertices.splice( tIndex, 1 );
 				vIndex = filling.vertices.indexOf( v );
 
-				this.updateFaces( filling, vIndex, i );
+				this.updateFaces( filling, vIndex, tIndex );
 				this.mergeUpdateFront( front, v, t );
+
+				vIndexFront = front.vertices.indexOf( v );
 			}
 		}
 	},
@@ -578,32 +583,32 @@ var HoleFilling = {
 	},
 
 
-	updateFaces: function( filling, vIndex, ixOld ) {
+	updateFaces: function( filling, newIndex, oldIndex ) {
 		var face;
 
 		for( var i = filling.faces.length - 1; i >= 0; i-- ) {
 			face = filling.faces[i];
 
 			// Replace all instances of the merged-away vertex
-			if( face.a == ixOld ) {
-				face.a = vIndex;
+			if( face.a == oldIndex ) {
+				face.a = newIndex;
 			}
-			if( face.b == ixOld ) {
-				face.b = vIndex;
+			if( face.b == oldIndex ) {
+				face.b = newIndex;
 			}
-			if( face.c == ixOld ) {
-				face.c = vIndex;
+			if( face.c == oldIndex ) {
+				face.c = newIndex;
 			}
 
-			// By removing a vertex all (greater) face
-			// indexes have to be updated
-			if( face.a > ixOld ) {
+			// By removing a vertex all (greater)
+			// face indexes have to be updated
+			if( face.a > oldIndex ) {
 				face.a--;
 			}
-			if( face.b > ixOld ) {
+			if( face.b > oldIndex ) {
 				face.b--;
 			}
-			if( face.c > ixOld ) {
+			if( face.c > oldIndex ) {
 				face.c--;
 			}
 
