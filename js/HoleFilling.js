@@ -7,6 +7,9 @@
  */
 var HoleFilling = {
 
+	LAST_ITERATION: false, // TODO: only for debugging, remove later
+
+
 	/**
 	 * Fill the hole using the advancing front algorithm.
 	 * @param {THREE.Mesh}        model The model to fill the holes in.
@@ -25,12 +28,16 @@ var HoleFilling = {
 		var vIndex, vnIndex, vpIndex;
 		var count = 0;
 
+		var stopIter = 800; // for debugging
 
 		while( true ) {
 			len = front.vertices.length;
 
-			if( ++count > /*holes[0].length + 200*/661 ) { // 661 -> merging error
+			if( ++count > /*holes[0].length + 200*/stopIter ) {
 				break;
+			}
+			if( count == stopIter - 1 ) {
+				this.LAST_ITERATION = true;
 			}
 			if( len == 3 ) {
 				console.log( "Hole filled! (Except for the last triangle.)" );
@@ -80,6 +87,7 @@ var HoleFilling = {
 		} );
 		var materialWire = new THREE.MeshBasicMaterial( {
 			color: 0xFFFFFF,
+			overdraw: true,
 			side: THREE.DoubleSide,
 			wireframe: true,
 			wireframeLinewidth: 3
@@ -103,7 +111,7 @@ var HoleFilling = {
 		meshWire.geometry.computeVertexNormals();
 		meshWire.geometry.computeBoundingBox();
 
-		//GLOBAL.SCENE.add( meshSolid );
+		GLOBAL.SCENE.add( meshSolid );
 		GLOBAL.SCENE.add( meshWire );
 		render();
 
@@ -490,34 +498,6 @@ var HoleFilling = {
 			return false;
 		}
 
-
-		// // Compare current point to neighbouring border points
-		// var neighbours = [
-		// 	front.vertices[( vIndexFront - 1 ) % front.vertices.length],
-		// 	front.vertices[( vIndexFront + 1 ) % front.vertices.length]
-		// ];
-
-		// for( var i = neighbours.length - 1; i >= 0; i-- ) {
-		// 	t = neighbours[i];
-
-		// 	// The original form of the hole shall not be changed
-		// 	if( ignore.indexOf( t ) >= 0 ) {
-		// 		continue;
-		// 	}
-
-		// 	// Merge points if distance below threshold
-		// 	if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
-		// 		GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.024, 0xFFEE00, true ) );
-
-		// 		tIndex = filling.vertices.indexOf( t );
-		// 		filling.vertices.splice( tIndex, 1 );
-		// 		vIndex = filling.vertices.indexOf( v );
-
-		// 		this.updateFaces( filling, vIndex, tIndex );
-		// 		this.mergeUpdateFront( front, v, t );
-		// 	}
-		// }
-
 		// Compare current point to all other new points
 		for( var i = front.vertices.length - 1; i >= 0; i-- ) {
 			// Don't compare a vertex to itself
@@ -539,10 +519,10 @@ var HoleFilling = {
 				GLOBAL.SCENE.add( Scene.createLine( t.clone(), v.clone(), 1, 0xFFEE00, true ) );
 
 				tIndex = filling.vertices.indexOf( t );
-				filling.vertices.splice( tIndex, 1 );
 				vIndex = filling.vertices.indexOf( v );
+				filling.vertices.splice( tIndex, 1 );
 
-				this.updateFaces( filling, vIndex, tIndex );
+				this.updateFaces( filling, tIndex, vIndex );
 				this.mergeUpdateFront( front, v, t );
 
 				vIndexFront = front.vertices.indexOf( v );
@@ -583,7 +563,7 @@ var HoleFilling = {
 	},
 
 
-	updateFaces: function( filling, newIndex, oldIndex ) {
+	updateFaces: function( filling, oldIndex, newIndex ) {
 		var face;
 
 		for( var i = filling.faces.length - 1; i >= 0; i-- ) {
