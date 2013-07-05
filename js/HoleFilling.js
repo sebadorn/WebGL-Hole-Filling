@@ -28,15 +28,15 @@ var HoleFilling = {
 		var vIndex, vnIndex, vpIndex;
 		var count = 0;
 
-		var stopIter = 800; // for debugging
+		var stopIter = 1600; // for debugging
 
 		while( true ) {
 			len = front.vertices.length;
 
-			if( ++count > /*holes[0].length + 200*/stopIter ) {
+			if( ++count > /*holes[0].length*/stopIter ) {
 				break;
 			}
-			if( count == stopIter - 1 ) {
+			if( count == stopIter - 1 ) { // for debugging
 				this.LAST_ITERATION = true;
 			}
 			if( len == 3 ) {
@@ -63,7 +63,7 @@ var HoleFilling = {
 				vNew = this.afRule2( front, filling, vp, v, vn );
 				j++;
 			}
-			else if( angle > 135.0 && angle < 150.0 ) { // TODO: > 135.0 only
+			else if( angle > 135.0 && angle < 180.0 ) {
 				vNew = this.afRule3( front, filling, vp, v, vn, angle );
 				j += 2;
 			}
@@ -223,39 +223,81 @@ var HoleFilling = {
 		cross1.add( v );
 
 
-		// New vertice 1
-		var crossVp = new THREE.Vector3().crossVectors( cross1.clone().sub( v ), vpClone );
-		if( angle > 180.0 ) {
-			crossVp.multiplyScalar( -1 );
+		// New vertice
+		var halfWay = vnClone.clone().divideScalar( 2 );
+
+		var cross1 = new THREE.Vector3().crossVectors( vpClone, vnClone );
+		cross1.normalize();
+		cross1.add( halfWay );
+		cross1.add( v );
+
+		var cross2 = new THREE.Vector3().crossVectors( cross1.clone().sub( v ).sub( halfWay ), vnClone.clone().sub( halfWay ) );
+		if( angle < 180.0 ) {
+			cross2.multiplyScalar( -1 );
 		}
-		crossVp.normalize();
-		crossVp.add( v );
+		cross2.normalize();
+		cross2.add( v ).add( halfWay );
 
-		var plane = new Plane( new THREE.Vector3(), vpClone, crossVp.clone().sub( v ) );
-		var vNew1 = plane.getPoint( 1, 1 );
+		var plane = new Plane( new THREE.Vector3(), vnClone.clone().sub( halfWay ), cross2.clone().sub( v ).sub( halfWay ) );
+		var vNew = plane.getPoint( 0, vnClone.length() );
 
-		var avLen = this.getAverageLength( vpClone, vnClone );
-		var adjusted = avLen / vNew1.length();
-		vNew1 = plane.getPoint( adjusted, adjusted );
-		vNew1.add( v );
+		vNew.add( v ).add( halfWay );
+
+
+		var x = [v.x, vn.x];
+		var y = [v.y, vn.y];
+		var z = [v.z, vn.z];
+
+		var averageX = ( v.x + vn.x ) / 3;
+		var averageY = ( v.y + vn.y ) / 3;
+		var averageZ = ( v.z + vn.z ) / 3;
+
+		var varianceX = 0, varianceY = 0, varianceZ = 0;
+
+		for( var i = 0; i < 2; i++ ) {
+			varianceX += Math.pow( x[i] - averageX, 2 );
+			varianceY += Math.pow( y[i] - averageY, 2 );
+			varianceZ += Math.pow( z[i] - averageZ, 2 );
+		}
+
+		varianceX /= 2;
+		varianceY /= 2;
+		varianceZ /= 2;
+
+		if( varianceX < varianceY ) {
+			if( varianceX < varianceZ ) {
+				vNew.x = averageX;
+			}
+			else {
+				vNew.z = averageZ;
+			}
+		}
+		else {
+			if( varianceY < varianceZ ) {
+				vNew.y = averageY;
+			}
+			else {
+				vNew.z = averageZ;
+			}
+		}
 
 
 		// New vertex
-		filling.vertices.push( vNew1 );
+		filling.vertices.push( vNew );
 
 		// New faces for the new triangle
 		var len = filling.vertices.length;
-		var vpIndex = filling.vertices.indexOf( vp ),
+		var vnIndex = filling.vertices.indexOf( vn ),
 		    vIndex = filling.vertices.indexOf( v );
 
-		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
+		filling.faces.push( new THREE.Face3( vIndex, vnIndex, len - 1 ) );
 
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
-		front.vertices.splice( ix, 0, vNew1 );
+		front.vertices.splice( ix + 1, 0, vNew );
 
-		return vNew1;
+		return vNew;
 	},
 
 
@@ -498,14 +540,26 @@ var HoleFilling = {
 			return false;
 		}
 
-		// Compare current point to all other new points
-		for( var i = front.vertices.length - 1; i >= 0; i-- ) {
-			// Don't compare a vertex to itself
-			if( i == vIndexFront ) {
-				continue;
-			}
+		// TODO: Only merge with neighbours!
 
-			t = front.vertices[i];
+		var vIndexBefore = vIndexFront - 1,
+		    vIndexAfter = vIndexFront + 1;
+
+		if( vIndexBefore < 0 ) {
+			vIndexBefore = front.vertices.length - 1;
+		}
+		if( vIndexAfter > front.vertices.length - 1 ) {
+			vIndexAfter = 0;
+		}
+
+		var compare = [
+			front.vertices[vIndexBefore],
+			front.vertices[vIndexAfter]
+		];
+
+		// Compare current point to all other new points
+		for( var i = 0; i < compare.length; i++ ) {
+			t = compare[i];
 
 			// The original form of the hole shall not be changed
 			if( ignore.indexOf( t ) >= 0 ) {
@@ -524,8 +578,6 @@ var HoleFilling = {
 
 				this.updateFaces( filling, tIndex, vIndex );
 				this.mergeUpdateFront( front, v, t );
-
-				vIndexFront = front.vertices.indexOf( v );
 			}
 		}
 	},

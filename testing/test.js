@@ -26,19 +26,29 @@ function test() {
 
 	console.log( HoleFilling.computeAngle( p, m, q ) );
 
+	var halfWay = p.clone().sub( m ).divideScalar( 2 );
+
 	var cross = new THREE.Vector3().crossVectors( p.clone().sub( m ), q.clone().sub( m ) );
 	cross.normalize();
+	cross.add( halfWay );
 	cross.add( m );
 
 	gs.add( Scene.createPoint( cross, 0.05, 0x44AAEE ) );
-	gs.add( Scene.createLine( m, cross, 1, 0x44AAEE ) );
+	gs.add( Scene.createLine( halfWay.clone().add( m ), cross, 1, 0x44AAEE ) );
 
-	var cross2 = new THREE.Vector3().crossVectors( cross.clone().sub( m ), p.clone().sub( m ) );
+	var cross2 = new THREE.Vector3().crossVectors( cross.clone().sub( m ).sub( halfWay ), p.clone().sub( m ).sub( halfWay ) );
 	cross2.normalize();
-	cross2.add( m );
+	cross2.add( m ).add( halfWay );
 
 	gs.add( Scene.createPoint( cross2, 0.05, 0x00AA00 ) );
-	gs.add( Scene.createLine( m, cross2, 1, 0x00AA00 ) );
+	gs.add( Scene.createLine( m.clone().add( halfWay ), cross2, 1, 0x00AA00 ) );
+
+	var plane = new Plane( new THREE.Vector3(), p.clone().sub( m ).sub( halfWay ), cross2.clone().sub( m ).sub( halfWay ) );
+	var vNew = plane.getPoint( 0, p.clone().sub( m ).length() );
+	vNew.add( m ).add( halfWay );
+
+	gs.add( Scene.createPoint( vNew, 0.06, 0xB06000 ) );
+	gs.add( Scene.createLine( vNew, halfWay.clone().add( m ), 1, 0xB06000 ) );
 
 
 	render();
@@ -157,4 +167,47 @@ function testRule2() {
 	gs.add( Scene.createPoint( q, 0.04, 0x831DE4 ) );
 	gs.add( Scene.createLine( v, q, 1, 0x831DE4 ) );
 	render();
+}
+
+
+
+function variance() {
+	if( this.LAST_ITERATION ) {
+		var x = [vp.x, v.x, vn.x];
+		var y = [vp.y, v.y, vn.y];
+		var z = [vp.z, v.z, vn.z];
+
+		var averageX = ( vp.x + v.x + vn.x ) / 3;
+		var averageY = ( vp.y + v.y + vn.y ) / 3;
+		var averageZ = ( vp.z + v.z + vn.z ) / 3;
+
+		var varianceX = 0, varianceY = 0, varianceZ = 0;
+
+		for( var i = 0; i < 3; i++ ) {
+			varianceX += Math.pow( x[i] - averageX, 2 );
+			varianceY += Math.pow( y[i] - averageY, 2 );
+			varianceZ += Math.pow( z[i] - averageZ, 2 );
+		}
+
+		varianceX /= 2;
+		varianceY /= 2;
+		varianceZ /= 2;
+
+		if( varianceX < varianceY ) {
+			if( varianceX < varianceZ ) {
+				vNew1.x = averageX;
+			}
+			else {
+				vNew1.z = averageZ;
+			}
+		}
+		else {
+			if( varianceY < varianceZ ) {
+				vNew1.y = averageY;
+			}
+			else {
+				vNew1.z = averageZ;
+			}
+		}
+	}
 }

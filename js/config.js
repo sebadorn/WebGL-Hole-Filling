@@ -12,8 +12,8 @@ var CONFIG = {
 		ANGLE: 45,
 		POSITION: {
 			X: 0,
-			Y: 0,
-			Z: 20
+			Y: 5,
+			Z: -14
 		},
 		ZFAR: 2500,
 		ZNEAR: 0.1
@@ -37,5 +37,5 @@ var CONFIG = {
 		}
 	},
 	MODE: "solid",
-	SHADING: "phong"
+	SHADING: "flat"
 };

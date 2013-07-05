@@ -98,8 +98,8 @@ var Init = {
 		g.SCENE.add( g.LIGHTS.AMBIENT );
 
 		// Lighting: Directional
-		g.LIGHTS.DIRECTIONAL = new THREE.DirectionalLight( 0xffffff );
-		g.LIGHTS.DIRECTIONAL.position.set( 0, 0, 1 ).normalize();
+		g.LIGHTS.DIRECTIONAL = new THREE.DirectionalLight( 0xF4F4F4 );
+		g.LIGHTS.DIRECTIONAL.position.set( -1, 0, -1 ).normalize();
 		g.SCENE.add( g.LIGHTS.DIRECTIONAL );
 	}
 
