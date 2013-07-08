@@ -18,22 +18,15 @@ function Plane( p, v1, v2 ) {
 };
 
 
-Plane.prototype = {
+/**
+ * Get a point from the plane.
+ * @param  {float}         s Factor for vector v1.
+ * @param  {float}         t Factor for vector v2.
+ * @return {THREE.Vector3}   Point on the plane.
+ */
+Plane.prototype.getPoint = function( s, t ) {
+	var v1s = this.v1.clone().multiplyScalar( s ),
+	    v2t = this.v2.clone().multiplyScalar( t );
 
-	constructor: Plane,
-
-
-	/**
-	 * Get a point from the plane.
-	 * @param  {float}         s Factor for vector v1.
-	 * @param  {float}         t Factor for vector v2.
-	 * @return {THREE.Vector3}   Point on the plane.
-	 */
-	getPoint: function( s, t ) {
-		var v1s = this.v1.clone().multiplyScalar( s ),
-		    v2t = this.v2.clone().multiplyScalar( t );
-
-		return new THREE.Vector3().copy( this.p ).add( v1s ).add( v2t );
-	}
-
+	return new THREE.Vector3().copy( this.p ).add( v1s ).add( v2t );
 };

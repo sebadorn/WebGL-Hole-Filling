@@ -28,7 +28,15 @@ var HoleFilling = {
 		var vIndex, vnIndex, vpIndex;
 		var count = 0;
 
-		var stopIter = 1600; // for debugging
+		// TODO: Idea!
+		// 1: Apply rule 1 until no new points are being added.
+		// 2: Apply rule 2 until no new points are being added.
+		// 3: Apply rule 3 for one round.
+		// 4: GO TO 1
+		// Why? Because my rule 3 implementation sucks and has a
+		// tendency to fuck things up. So I want to apply it as
+		// little as possible.
+		var stopIter = 800; // for debugging
 
 		while( true ) {
 			len = front.vertices.length;
@@ -180,9 +188,13 @@ var HoleFilling = {
 		// Compute the average length of vp and vn.
 		// Then adjust the position of the new vector, so it has this average length.
 		avLen = this.getAverageLength( vpClone, vnClone );
-		adjusted = avLen / vNew.length();
-		vNew = plane.getPoint( adjusted, adjusted );
+		vNew.setLength( avLen );
 		vNew.add( v );
+
+
+		if( !this.isInHole( front, vNew, vp.clone(), vn.clone() ) ) {
+			return false;
+		}
 
 
 		// New vertex
@@ -282,6 +294,11 @@ var HoleFilling = {
 		}
 
 
+		if( !this.isInHole( front, vNew, vp.clone(), vn.clone() ) ) {
+			return false;
+		}
+
+
 		// New vertex
 		filling.vertices.push( vNew );
 
@@ -351,14 +368,14 @@ var HoleFilling = {
 		var angle, c;
 
 		// Get angle and change radians to degree
-		angle = vpClone.angleTo( vnClone ) * 180 / Math.PI;
+		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
 
 		// Get the axis described by the cross product of the vectors building the angle
 		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
 		c.add( v ).add( GLOBAL.MODEL.position );
 
 		// Use "the other side of the angle" if it doesn't point inside the hole
-		if( c.length() < vClone.length() ) {
+		if( c.length() < vClone.length() ) { // TODO: Um... can this be right?
 			angle = 360.0 - angle;
 		}
 
@@ -518,6 +535,47 @@ var HoleFilling = {
 		}
 
 		return geometry;
+	},
+
+
+	/**
+	 * Check, if a vector is inside the hole or has left the boundary.
+	 * @param  {Array}         front The current front of the hole.
+	 * @param  {THREE.Vector3} v     The vector to check.
+	 * @return {boolean}             True, if still inside, false otherwise.
+	 */
+	isInHole: function( front, v, fromA, fromB ) {
+		var t1, t2;
+		var tMinX, tMaxX, tMinY, tMaxY;
+		var vMinX, vMaxX, vMinY, vMaxY;
+
+		for( var i = 0, len = front.vertices.length; i < len; i += 2 ) {
+			t1 = front.vertices[i];
+			t2 = front.vertices[( i + 1 ) % len];
+
+			tMinX = Math.min( t1.x, t2.x );
+			tMaxX = Math.max( t1.x, t2.x );
+			tMinY = Math.min( t1.y, t2.y );
+			tMaxY = Math.max( t1.y, t2.y );
+
+			vMinX = Math.min( v.x, fromA.x );
+			vMaxX = Math.max( v.x, fromA.x );
+			vMinY = Math.min( v.y, fromA.y );
+			vMaxY = Math.max( v.y, fromA.y );
+
+			if( vMinX >= tMinX && vMaxX <= tMaxX ) {
+				if( vMinY <= tMinY && vMaxY >= tMaxY ) {
+					return false;
+				}
+			}
+			if( vMinY >= tMinY && vMaxY <= tMaxY ) {
+				if( vMinX <= tMinX && vMaxX >= tMaxX ) {
+					return false;
+				}
+			}
+		}
+
+		return true;
 	},
 
 
