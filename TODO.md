@@ -1,14 +1,11 @@
 ## ToDo
 
 * `Critical` Merge created filling with original model
-* `Feature` Select, which hole to fill
+* `Critical` Test collision not only with filling, but the whole mesh
+* `Critical` Select, which hole to fill
+* `Critical` Export
 * `Feature` Drag&Drop files to import them.
-* `Feature` Export
 * `Feature` Refine AFM based on Poisson equation OR radial basis functions
 * `Feature` Adjust light position
 * `Feature` Show in-between steps of filling
-
-
-### Weakpoints (may or may not fix)
-
-* No testing if created patch collisions with other parts of the model
+* `Feature` Parallelization through Workers
