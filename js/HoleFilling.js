@@ -16,40 +16,70 @@ var HoleFilling = {
 	 * @param {Array<THREE.Line>} holes List of the holes.
 	 */
 	advancingFront: function( model, holes ) {
-		var filling = new THREE.Geometry();
-		var front = new THREE.Geometry();
+		var filling = new THREE.Geometry(),
+		    front = new THREE.Geometry();
 
 		front.vertices = holes[0].slice( 0 );
 		filling.vertices = holes[0].slice( 0 );
+
+		front.mergeVertices();
 
 		var ca = this.computeAngles( front.vertices ),
 		    j = ca.smallest.index;
 		var angle, len, v, vn, vNew, vp;
 		var vIndex, vnIndex, vpIndex;
-		var count = 0;
 
-		// TODO: Idea!
-		// 1: Apply rule 1 until no new points are being added.
-		// 2: Apply rule 2 until no new points are being added.
-		// 3: Apply rule 3 for one round.
-		// 4: GO TO 1
-		// Why? Because my rule 3 implementation sucks and has a
-		// tendency to fuck things up. So I want to apply it as
-		// little as possible.
-		var stopIter = 800; // for debugging
+		var count = 0;
+		var stopIter = 20000; // for debugging
+		var applyRule = 1;
+		var loopCounter = 0;
+		var applied = 0;
+		var appliedBefore = 0;
+		var ignoredAngles = 0;
 
 		while( true ) {
 			len = front.vertices.length;
+			count++;
 
-			if( ++count > /*holes[0].length*/stopIter ) {
+			if( stopIter !== false && ++count > stopIter ) {
 				break;
 			}
-			if( count == stopIter - 1 ) { // for debugging
+			if( stopIter !== false && count == stopIter - 1 ) { // for debugging
 				this.LAST_ITERATION = true;
 			}
 			if( len == 3 ) {
-				console.log( "Hole filled! (Except for the last triangle.)" );
 				break;
+			}
+
+			// Each round, we only apply one of the three rules.
+			// And we strongly favor rule 1 and rule 2, because
+			// rule 3 is really unrealiable. So we want to use it
+			// as little as possible.
+			if( loopCounter++ >= len ) {
+				if( applyRule == 3 ) {
+					applyRule = 1;
+					// console.log( "Applying rule 1 now." );
+				}
+				else if( applied == 0 ) {
+					if( applyRule == 1 ) {
+						applyRule = 2;
+						// console.log( "Applying rule 2 now." );
+					}
+					else if( applyRule == 2 ) {
+						if( appliedBefore == 0 ) {
+							applyRule = 3;
+							// console.log( "Applying rule 3 now." );
+						}
+						else {
+							applyRule = 1;
+							// console.log( "Applying rule 1 again." );
+						}
+					}
+				}
+
+				loopCounter = 0;
+				appliedBefore = applied;
+				applied = 0;
 			}
 
 			vpIndex = ( j == 0 ) ? len - 2 : ( j - 1 ) % len;
@@ -60,24 +90,43 @@ var HoleFilling = {
 			v = front.vertices[vIndex];
 			vn = front.vertices[vnIndex];
 
+			if( vp == v || v == vn || vp == vn ) {
+				console.error( "Shouldn't happen: Same vertices in front!\n", vp, v, vn );
+				j++;
+				continue;
+			}
+
 			// Calculate the angle between two adjacent vertices.
 			angle = this.computeAngle( vp, v, vn );
 
-			// Create new triangles on the plane.
-			if( angle <= 75.0 ) {
-				vNew = this.afRule1( front, filling, vp, v, vn );
+			if( isNaN( angle ) ) {
+				console.error( "Angle is NaN!\n", vp, v, vn );
 			}
-			else if( angle <= 135.0 ) {
+
+			// Create new triangles on the plane.
+			if( applyRule == 1 && angle <= 75.0 ) {
+				vNew = this.afRule1( front, filling, vp, v, vn );
+				applied++;
+			}
+			else if( applyRule == 2 && angle <= 135.0 ) {
 				vNew = this.afRule2( front, filling, vp, v, vn );
 				j++;
+				applied++;
 			}
-			else if( angle > 135.0 && angle < 180.0 ) {
+			// TODO: Angle >= 180.0 not handled
+			else if( applyRule == 3 && angle > 135.0 && angle < 180.0 ) {
 				vNew = this.afRule3( front, filling, vp, v, vn, angle );
 				j += 2;
+				applied++;
+			}
+			else if( angle >= 180.0 ) {
+				ignoredAngles++;
+				j++;
+				continue;
 			}
 			else {
-				vNew = false;
 				j++;
+				continue;
 			}
 
 			// Compute the distances between each new created
@@ -85,57 +134,73 @@ var HoleFilling = {
 			this.mergeByDistance( front, filling, vNew, holes[0] );
 		}
 
-		console.log( filling.clone() );
+		console.log(
+			"Finished after " + count + " iterations.\n",
+			"- New vertices: " + filling.vertices.length + "\n",
+			"- New faces: " + filling.faces.length
+		);
+		if( ignoredAngles > 0 ) {
+			console.warn( "Ignored " + ignoredAngles + " angles, because they were >= 180°." );
+		}
+
 
 		// Create a mesh from the computed data and render it.
-		var materialSolid = new THREE.MeshBasicMaterial( {
-			color: 0x87C3EC,
-			side: THREE.DoubleSide,
-			wireframe: false
-		} );
-		var materialWire = new THREE.MeshBasicMaterial( {
-			color: 0xFFFFFF,
-			overdraw: true,
-			side: THREE.DoubleSide,
-			wireframe: true,
-			wireframeLinewidth: 3
-		} );
-		var meshSolid = new THREE.Mesh( filling, materialSolid );
-		var meshWire = new THREE.Mesh( filling, materialWire );
+		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
+			var materialSolid = new THREE.MeshPhongMaterial( {
+				color: 0x87C3EC,
+				shading: THREE.FlatShading,
+				side: THREE.DoubleSide,
+				wireframe: false
+			} );
+			var meshSolid = new THREE.Mesh( filling, materialSolid );
 
-		meshSolid.position.x += model.position.x;
-		meshSolid.position.y += model.position.y;
-		meshSolid.position.z += model.position.z;
+			meshSolid.position.x += model.position.x;
+			meshSolid.position.y += model.position.y;
+			meshSolid.position.z += model.position.z;
 
-		meshSolid.geometry.computeFaceNormals();
-		meshSolid.geometry.computeVertexNormals();
-		meshSolid.geometry.computeBoundingBox();
+			meshSolid.geometry.computeFaceNormals();
+			meshSolid.geometry.computeVertexNormals();
+			meshSolid.geometry.computeBoundingBox();
 
-		meshWire.position.x += model.position.x;
-		meshWire.position.y += model.position.y;
-		meshWire.position.z += model.position.z;
+			GLOBAL.SCENE.add( meshSolid );
+		}
 
-		meshWire.geometry.computeFaceNormals();
-		meshWire.geometry.computeVertexNormals();
-		meshWire.geometry.computeBoundingBox();
+		if( CONFIG.HF.FILLING.SHOW_WIREFRAME ) {
+			var materialWire = new THREE.MeshBasicMaterial( {
+				color: 0xFFFFFF,
+				overdraw: true,
+				side: THREE.DoubleSide,
+				wireframe: true,
+				wireframeLinewidth: 3
+			} );
+			var meshWire = new THREE.Mesh( filling, materialWire );
 
-		GLOBAL.SCENE.add( meshSolid );
-		GLOBAL.SCENE.add( meshWire );
-		render();
+			meshWire.position.x += model.position.x;
+			meshWire.position.y += model.position.y;
+			meshWire.position.z += model.position.z;
 
+			meshWire.geometry.computeFaceNormals();
+			meshWire.geometry.computeVertexNormals();
+			meshWire.geometry.computeBoundingBox();
+
+			GLOBAL.SCENE.add( meshWire );
+		}
 
 		// Draw the (moving) front
-		var material = new THREE.LineBasicMaterial( {
-			color: 0x4991E0,
-			linewidth: 5
-		} );
-		var mesh = new THREE.Line( front, material );
+		if( CONFIG.DEBUG.SHOW_FRONT ) {
+			var material = new THREE.LineBasicMaterial( {
+				color: 0x4991E0,
+				linewidth: 5
+			} );
+			var mesh = new THREE.Line( front, material );
 
-		mesh.position.x += model.position.x;
-		mesh.position.y += model.position.y;
-		mesh.position.z += model.position.z;
+			mesh.position.x += model.position.x;
+			mesh.position.y += model.position.y;
+			mesh.position.z += model.position.z;
 
-		GLOBAL.SCENE.add( mesh );
+			GLOBAL.SCENE.add( mesh );
+		}
+
 		render();
 	},
 
@@ -192,7 +257,7 @@ var HoleFilling = {
 		vNew.add( v );
 
 
-		if( !this.isInHole( front, vNew, vp.clone(), vn.clone() ) ) {
+		if( !this.isInHole( front, filling, vNew.clone(), vp.clone(), vn.clone() ) ) {
 			return false;
 		}
 
@@ -243,58 +308,27 @@ var HoleFilling = {
 		cross1.add( halfWay );
 		cross1.add( v );
 
-		var cross2 = new THREE.Vector3().crossVectors( cross1.clone().sub( v ).sub( halfWay ), vnClone.clone().sub( halfWay ) );
+		var cross2 = new THREE.Vector3().crossVectors(
+			cross1.clone().sub( v ).sub( halfWay ),
+			vnClone.clone().sub( halfWay )
+		);
 		if( angle < 180.0 ) {
 			cross2.multiplyScalar( -1 );
 		}
 		cross2.normalize();
 		cross2.add( v ).add( halfWay );
 
-		var plane = new Plane( new THREE.Vector3(), vnClone.clone().sub( halfWay ), cross2.clone().sub( v ).sub( halfWay ) );
+		var plane = new Plane(
+			new THREE.Vector3(),
+			vnClone.clone().sub( halfWay ),
+			cross2.clone().sub( v ).sub( halfWay )
+		);
 		var vNew = plane.getPoint( 0, vnClone.length() );
 
 		vNew.add( v ).add( halfWay );
+		vNew = this.keepNearPlane( v, vn, vNew );
 
-
-		var x = [v.x, vn.x];
-		var y = [v.y, vn.y];
-		var z = [v.z, vn.z];
-
-		var averageX = ( v.x + vn.x ) / 3;
-		var averageY = ( v.y + vn.y ) / 3;
-		var averageZ = ( v.z + vn.z ) / 3;
-
-		var varianceX = 0, varianceY = 0, varianceZ = 0;
-
-		for( var i = 0; i < 2; i++ ) {
-			varianceX += Math.pow( x[i] - averageX, 2 );
-			varianceY += Math.pow( y[i] - averageY, 2 );
-			varianceZ += Math.pow( z[i] - averageZ, 2 );
-		}
-
-		varianceX /= 2;
-		varianceY /= 2;
-		varianceZ /= 2;
-
-		if( varianceX < varianceY ) {
-			if( varianceX < varianceZ ) {
-				vNew.x = averageX;
-			}
-			else {
-				vNew.z = averageZ;
-			}
-		}
-		else {
-			if( varianceY < varianceZ ) {
-				vNew.y = averageY;
-			}
-			else {
-				vNew.z = averageZ;
-			}
-		}
-
-
-		if( !this.isInHole( front, vNew, vp.clone(), vn.clone() ) ) {
+		if( !this.isInHole( front, filling, vNew.clone(), vp.clone(), vn.clone() ) ) {
 			return false;
 		}
 
@@ -313,6 +347,96 @@ var HoleFilling = {
 		// Update front
 		var ix = front.vertices.indexOf( v );
 		front.vertices.splice( ix + 1, 0, vNew );
+
+		return vNew;
+	},
+
+
+	/**
+	 * Calculate standard variance and average of the X, Y and Z
+	 * coordinates of the given vectors.
+	 * @param  {Array<THREE.Vector3>} vectors The vectors to use.
+	 * @return {Object}                       Object of the X, Y and Z variances and averages.
+	 */
+	calculateVariances: function( vectors ) {
+		var x = [],
+		    y = [],
+		    z = [];
+		var averageX = 0,
+		    averageY = 0,
+		    averageZ = 0;
+		var varianceX = 0,
+		    varianceY = 0,
+		    varianceZ = 0;
+		var len = vectors.length;
+		var v;
+
+		for( var i = 0; i < len; i++ ) {
+			v = vectors[i];
+			x.push( v.x );
+			y.push( v.y );
+			z.push( v.z );
+			averageX += v.x;
+			averageY += v.y;
+			averageZ += v.z;
+		}
+
+		averageX /= len + 1;
+		averageY /= len + 1;
+		averageZ /= len + 1;
+
+		for( var i = 0; i < len; i++ ) {
+			varianceX += Math.pow( x[i] - averageX, 2 );
+			varianceY += Math.pow( y[i] - averageY, 2 );
+			varianceZ += Math.pow( z[i] - averageZ, 2 );
+		}
+
+		varianceX /= len;
+		varianceY /= len;
+		varianceZ /= len;
+
+		return {
+			x: varianceX,
+			y: varianceY,
+			z: varianceZ,
+			average: {
+				x: averageX,
+				y: averageY,
+				z: averageZ
+			}
+		};
+	},
+
+
+	/**
+	 * Keep a vector close to the plane of its creating vectors.
+	 * Calculates the standard variance of the X, Y, and Z coordinates
+	 * and adjusts the coordinate of the new vector to the smallest one.
+	 * @param  {THREE.Vector3} v    One of the creating vectors.
+	 * @param  {THREE.Vector3} vn   One of the creating vectors.
+	 * @param  {THREE.Vector3} vNew The newly created vector.
+	 * @return {THREE.Vector3}      Adjusted vector.
+	 */
+	keepNearPlane: function( v, vn, vNew ) {
+		var variance = this.calculateVariances( [v, vn] );
+
+		// TODO: Threshold?
+		if( variance.x < variance.y ) {
+			if( variance.x < variance.z ) {
+				vNew.x = variance.average.x;
+			}
+			else {
+				vNew.z = variance.average.z;
+			}
+		}
+		else {
+			if( variance.y < variance.z ) {
+				vNew.y = variance.average.y;
+			}
+			else {
+				vNew.z = variance.average.z;
+			}
+		}
 
 		return vNew;
 	},
@@ -538,40 +662,51 @@ var HoleFilling = {
 	},
 
 
+	isSameSide: function( p1, p2, a, b ) {
+	    var cp1 = new THREE.Vector3().crossVectors(
+	    	b.clone().sub( a ), p1.clone().sub( a )
+	    );
+	    var cp2 = new THREE.Vector3().crossVectors(
+	    	b.clone().sub( a ), p2.clone().sub( a )
+	    );
+	    return ( cp1.dot( cp2 ) >= 0 );
+	},
+
+
+	isPointInTriangle: function( p, a, b, c ) {
+	    if( this.isSameSide( p, a, b, c ) && this.isSameSide( p, b, a, c )
+	    		&& this.isSameSide( p, c, a, b ) ) {
+	    	return true;
+	    }
+	    return false;
+	},
+
+
 	/**
 	 * Check, if a vector is inside the hole or has left the boundary.
 	 * @param  {Array}         front The current front of the hole.
 	 * @param  {THREE.Vector3} v     The vector to check.
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
-	isInHole: function( front, v, fromA, fromB ) {
-		var t1, t2;
-		var tMinX, tMaxX, tMinY, tMaxY;
-		var vMinX, vMaxX, vMinY, vMaxY;
+	isInHole: function( front, filling, v, fromA, fromB ) {
+		var a, b, c, face;
+		var v2D = new THREE.Vector2( v.x, v.y );
 
-		for( var i = 0, len = front.vertices.length; i < len; i += 2 ) {
-			t1 = front.vertices[i];
-			t2 = front.vertices[( i + 1 ) % len];
+		// TODO: Problem! Just forbidding to set a new point results in some cases
+		// in no point being set at all in this area. Never-ever.
 
-			tMinX = Math.min( t1.x, t2.x );
-			tMaxX = Math.max( t1.x, t2.x );
-			tMinY = Math.min( t1.y, t2.y );
-			tMaxY = Math.max( t1.y, t2.y );
+		for( var i = 0; i < filling.faces.length; i++ ) {
+			face = filling.faces[i];
+			a = filling.vertices[face.a].clone();
+			b = filling.vertices[face.b].clone();
+			c = filling.vertices[face.c].clone();
 
-			vMinX = Math.min( v.x, fromA.x );
-			vMaxX = Math.max( v.x, fromA.x );
-			vMinY = Math.min( v.y, fromA.y );
-			vMaxY = Math.max( v.y, fromA.y );
+			a = new THREE.Vector2( a.x, a.y );
+			b = new THREE.Vector2( b.x, b.y );
+			c = new THREE.Vector2( c.x, c.y );
 
-			if( vMinX >= tMinX && vMaxX <= tMaxX ) {
-				if( vMinY <= tMinY && vMaxY >= tMaxY ) {
-					return false;
-				}
-			}
-			if( vMinY >= tMinY && vMaxY <= tMaxY ) {
-				if( vMinX <= tMinX && vMaxX >= tMaxX ) {
-					return false;
-				}
+			if( this.isPointInTriangle( v2D, a, b, c ) ) {
+				return false;
 			}
 		}
 
@@ -594,11 +729,9 @@ var HoleFilling = {
 		}
 
 		if( vIndex < 0 ) {
-			console.error( "mergeByDistance: given vertex not part of filling" );
+			console.error( "mergeByDistance: Given vertex not part of filling!" );
 			return false;
 		}
-
-		// TODO: Only merge with neighbours!
 
 		var vIndexBefore = vIndexFront - 1,
 		    vIndexAfter = vIndexFront + 1;
@@ -626,9 +759,11 @@ var HoleFilling = {
 
 			// Merge points if distance below threshold
 			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
-				GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.02, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createPoint( v.clone(), 0.012, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createLine( t.clone(), v.clone(), 1, 0xFFEE00, true ) );
+				if( CONFIG.DEBUG.SHOW_MERGING ) {
+					GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.02, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( v.clone(), 0.012, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createLine( t.clone(), v.clone(), 1, 0xFFEE00, true ) );
+				}
 
 				tIndex = filling.vertices.indexOf( t );
 				vIndex = filling.vertices.indexOf( v );
@@ -651,6 +786,7 @@ var HoleFilling = {
 
 			if( ixTo >= 0 ) {
 				cutOff = ixTo - ixFrom;
+				cutOff = cutOff % ( front.vertices.length - 2 );
 
 				// Two vertices directly neighboured are merged
 				// -> One less in the moving front
@@ -661,6 +797,13 @@ var HoleFilling = {
 				// -> All vertices between them are cut off from the front
 				// -> This may create a second front, but that's a story for another time.
 				else {
+					console.warn(
+						"mergeUpdateFront: Case for cutOff > 1 not enough tested.\n",
+						"- Front vertices: " + front.vertices.length + "\n",
+						"- Cut index from: " + ixFrom + "\n",
+						"- Cut index to: " + ixTo + "\n",
+						"- Remove items: " + cutOff
+					);
 					if( cutOff > 1 ) {
 						front.vertices.splice( ixFrom, cutOff );
 					}

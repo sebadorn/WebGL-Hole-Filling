@@ -23,6 +23,10 @@ var CONFIG = {
 		ROT_SPEED: 1.5,
 		ZOOM_SPEED: 1.5
 	},
+	DEBUG: {
+		SHOW_FRONT: false,
+		SHOW_MERGING: false
+	},
 	HF: { // Hole Filling
 		BORDER: {
 			COLOR: [0xFF0000, 0xFF57DE, 0xFFC620, 0x74FF3A],
@@ -33,6 +37,8 @@ var CONFIG = {
 			COLOR: 0xFFFF00,
 			LINE_WIDTH: 2,
 			SHOW_POINTS: true,
+			SHOW_SOLID: true,
+			SHOW_WIREFRAME: true,
 			THRESHOLD_MERGE: 0.12
 		}
 	},
