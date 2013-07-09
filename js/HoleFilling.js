@@ -72,7 +72,7 @@ var HoleFilling = {
 			vn = vectors.vn;
 
 			// Calculate the angle between two adjacent vertices.
-			angle = this.computeAngle( vp, v, vn );
+			angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
 
 			if( isNaN( angle ) ) {
 				console.error( "Angle is NaN!\n", vp, v, vn );
@@ -171,7 +171,7 @@ var HoleFilling = {
 
 		// Compute the average length of vp and vn.
 		// Then adjust the position of the new vector, so it has this average length.
-		avLen = this.getAverageLength( vpClone, vnClone );
+		avLen = Utils.getAverageLength( vpClone, vnClone );
 		vNew.setLength( avLen );
 		vNew.add( v );
 
@@ -268,62 +268,6 @@ var HoleFilling = {
 
 
 	/**
-	 * Calculate standard variance and average of the X, Y and Z
-	 * coordinates of the given vectors.
-	 * @param  {Array<THREE.Vector3>} vectors The vectors to use.
-	 * @return {Object}                       Object of the X, Y and Z variances and averages.
-	 */
-	calculateVariances: function( vectors ) {
-		var x = [],
-		    y = [],
-		    z = [];
-		var averageX = 0,
-		    averageY = 0,
-		    averageZ = 0;
-		var varianceX = 0,
-		    varianceY = 0,
-		    varianceZ = 0;
-		var len = vectors.length;
-		var v;
-
-		for( var i = 0; i < len; i++ ) {
-			v = vectors[i];
-			x.push( v.x );
-			y.push( v.y );
-			z.push( v.z );
-			averageX += v.x;
-			averageY += v.y;
-			averageZ += v.z;
-		}
-
-		averageX /= len + 1;
-		averageY /= len + 1;
-		averageZ /= len + 1;
-
-		for( var i = 0; i < len; i++ ) {
-			varianceX += Math.pow( x[i] - averageX, 2 );
-			varianceY += Math.pow( y[i] - averageY, 2 );
-			varianceZ += Math.pow( z[i] - averageZ, 2 );
-		}
-
-		varianceX /= len;
-		varianceY /= len;
-		varianceZ /= len;
-
-		return {
-			x: varianceX,
-			y: varianceY,
-			z: varianceZ,
-			average: {
-				x: averageX,
-				y: averageY,
-				z: averageZ
-			}
-		};
-	},
-
-
-	/**
 	 * Compute the angles of neighbouring vertices.
 	 * Angles are in degree.
 	 * @param  {THREE.Geometry} front The model with the vertices.
@@ -342,7 +286,7 @@ var HoleFilling = {
 			v = front[i];
 			vn = front[( i + 1 ) % len];
 
-			angle = this.computeAngle( vp, v, vn );
+			angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
 			angles.push( angle );
 
 			if( smallest.angle > angle ) {
@@ -355,36 +299,6 @@ var HoleFilling = {
 			angles: angles,
 			smallest: smallest
 		};
-	},
-
-
-	/**
-	 * Compute the angle between two vertices.
-	 * Angle is in degree.
-	 * @param  {THREE.Vector3} vp The previous vertex.
-	 * @param  {THREE.Vector3} v  The current vertex.
-	 * @param  {THREE.Vector3} vn The next vertex.
-	 * @return {float}            Angle between the vertices in degree and flag if it has been adjusted to point into the hole.
-	 */
-	computeAngle: function( vp, v, vn ) {
-		var vpClone = vp.clone().sub( v ),
-		    vnClone = vn.clone().sub( v ),
-		    vClone = v.clone().add( GLOBAL.MODEL.position );
-		var angle, c;
-
-		// Get angle and change radians to degree
-		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
-
-		// Get the axis described by the cross product of the vectors building the angle
-		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
-		c.add( v ).add( GLOBAL.MODEL.position );
-
-		// Use "the other side of the angle" if it doesn't point inside the hole
-		if( c.length() < vClone.length() ) { // TODO: Um... can this be right?
-			angle = 360.0 - angle;
-		}
-
-		return angle;
 	},
 
 
@@ -501,17 +415,6 @@ var HoleFilling = {
 
 
 	/**
-	 * Get the average length of two vectors.
-	 * @param  {THREE.Vector3} vp Vector.
-	 * @param  {THREE.Vector3} vn Vector.
-	 * @return {float}            Average length.
-	 */
-	getAverageLength: function( vp, vn ) {
-		return ( vp.length() + vn.length() ) / 2;
-	},
-
-
-	/**
 	 * Get all the connected border points starting from one of the border points.
 	 * Returns one hole in the mesh, if there is at least one.
 	 * @param  {THREE.Mesh}     model  The model to search holes in.
@@ -607,42 +510,6 @@ var HoleFilling = {
 
 
 	/**
-	 * Check, if two points lie on the same side of a line (2D).
-	 * @param  {THREE.Vector2} p1
-	 * @param  {THREE.Vector2} p2
-	 * @param  {THREE.Vector2} a
-	 * @param  {THREE.Vector2} b
-	 * @return {boolean}          True, if on the same side, false otherwise.
-	 */
-	isSameSide: function( p1, p2, a, b ) {
-	    var cp1 = new THREE.Vector3().crossVectors(
-	    	b.clone().sub( a ), p1.clone().sub( a )
-	    );
-	    var cp2 = new THREE.Vector3().crossVectors(
-	    	b.clone().sub( a ), p2.clone().sub( a )
-	    );
-	    return ( cp1.dot( cp2 ) >= 0 );
-	},
-
-
-	/**
-	 * Checks if a point lies in a triangle (2D).
-	 * @param  {THREE.Vector2} p The point to check.
-	 * @param  {THREE.Vector2} a Point A describing the triangle.
-	 * @param  {THREE.Vector2} b Point B describing the triangle.
-	 * @param  {THREE.Vector2} c Point C describing the triangle.
-	 * @return {boolean}         True, if point is inside triangle, false otherwise.
-	 */
-	isPointInTriangle: function( p, a, b, c ) {
-	    if( this.isSameSide( p, a, b, c ) && this.isSameSide( p, b, a, c )
-	    		&& this.isSameSide( p, c, a, b ) ) {
-	    	return true;
-	    }
-	    return false;
-	},
-
-
-	/**
 	 * Check, if a vector is inside the hole or has left the boundary.
 	 * @param  {Array}         front The current front of the hole.
 	 * @param  {THREE.Vector3} v     The vector to check.
@@ -665,7 +532,7 @@ var HoleFilling = {
 			b = new THREE.Vector2( b.x, b.y );
 			c = new THREE.Vector2( c.x, c.y );
 
-			if( this.isPointInTriangle( v2D, a, b, c ) ) {
+			if( Utils.isPointInTriangle( v2D, a, b, c ) ) {
 				return false;
 			}
 		}
@@ -684,7 +551,7 @@ var HoleFilling = {
 	 * @return {THREE.Vector3}      Adjusted vector.
 	 */
 	keepNearPlane: function( v, vn, vNew ) {
-		var variance = this.calculateVariances( [v, vn] );
+		var variance = Utils.calculateVariances( [v, vn] );
 
 		// TODO: Threshold?
 		if( variance.x < variance.y ) {
@@ -710,6 +577,10 @@ var HoleFilling = {
 
 	/**
 	 * Merge vertices that are close together.
+	 * @param {THREE.Geometry}       front   The current hole front.
+	 * @param {THREE.Geometry}       filling The current hole filling.
+	 * @param {THREE.Vector3}        v       The new vertex, otheres may be merged into.
+	 * @param {Array<THREE.Vector3>} ignore  Vertices to ignore, that won't be merged.
 	 */
 	mergeByDistance: function( front, filling, v, ignore ) {
 		var vIndex = filling.vertices.indexOf( v ),
@@ -770,6 +641,12 @@ var HoleFilling = {
 	},
 
 
+	/**
+	 * Update the front according to the merged points.
+	 * @param  {THREE.Geometry} front The current hole front.
+	 * @param  {THREE.Vector3} v      The new vertex.
+	 * @param  {THREE.Vector3} t      The merged-away vertex.
+	 */
 	mergeUpdateFront: function( front, v, t ) {
 		var ixFrom = front.vertices.indexOf( t ),
 		    ixTo = front.vertices.indexOf( v );

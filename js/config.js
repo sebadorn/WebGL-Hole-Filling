@@ -35,7 +35,7 @@ var CONFIG = {
 		},
 		FILLING: {
 			COLOR: 0x87C3EC,
-			LINE_WIDTH: 2,
+			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,
 			THRESHOLD_MERGE: 0.12
