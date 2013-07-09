@@ -12,11 +12,11 @@ var CONFIG = {
 		ANGLE: 45,
 		POSITION: {
 			X: 0,
-			Y: 5,
-			Z: -14
+			Y: 0,
+			Z: -24
 		},
 		ZFAR: 2500,
-		ZNEAR: 0.1
+		ZNEAR: 0.01
 	},
 	CONTROLS: { // Trackball controls
 		PAN_SPEED: 0.8,
@@ -31,14 +31,13 @@ var CONFIG = {
 		BORDER: {
 			COLOR: [0xFF0000, 0xFF57DE, 0xFFC620, 0x74FF3A],
 			LINE_WIDTH: 2,
-			SHOW_POINTS: true
+			SHOW_POINTS: false
 		},
 		FILLING: {
-			COLOR: 0xFFFF00,
+			COLOR: 0x87C3EC,
 			LINE_WIDTH: 2,
-			SHOW_POINTS: true,
 			SHOW_SOLID: true,
-			SHOW_WIREFRAME: true,
+			SHOW_WIREFRAME: false,
 			THRESHOLD_MERGE: 0.12
 		}
 	},

@@ -134,7 +134,7 @@ var UI = {
 		var d = document;
 		var buttonShowEdges;
 
-		buttonShowEdges = d.getElementById( "hf_showedges" );
+		buttonShowEdges = d.getElementById( "hf_findedges" );
 		buttonShowEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
 	},
 
