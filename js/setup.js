@@ -6,9 +6,10 @@ var GLOBAL = {
 	CONTAINER: null,
 	CONTROLS: null,
 	HALFEDGE: null,
+	HOLES: [],
 	LIGHTS: {
-		AMBIENT: null,
-		DIRECTIONAL: null
+		AMBIENT: [],
+		DIRECTIONAL: []
 	},
 	MODEL: null,
 	RENDERER: null,

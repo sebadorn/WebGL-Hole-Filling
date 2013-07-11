@@ -293,6 +293,32 @@ var Scene = {
 
 
 	/**
+	 * Focus on the found hole.
+	 */
+	focusHole: function( e ) {
+		var g = GLOBAL,
+		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
+
+		if( isNaN( index ) ) {
+			console.error( "Not a valid hole index." );
+			return;
+		}
+		if( g.HOLES.length <= index ) {
+			console.error( "No hole exists for this index." );
+			return;
+		}
+
+		var bbox = Utils.getBoundingBox( g.HOLES[index] );
+		// TODO: bbox plane, cross vector, move camera
+		GLOBAL.CAMERA.position.x = 0;
+		GLOBAL.CAMERA.position.y = 0;
+		GLOBAL.CAMERA.position.z = 0;
+
+		render();
+	},
+
+
+	/**
 	 * Prepare the model as mesh.
 	 * @param  {THREE.Geometry} geometry Geometry of the model.
 	 * @return {THREE.Mesh}              Model as mesh.
@@ -388,11 +414,12 @@ var Scene = {
 		}
 		render();
 
+		g.HOLES = border.holes;
 		UI.showWindowHoles( border.lines.length );
 
-		// TODO: Not here, only do if requested
-		HoleFilling.advancingFront( g.MODEL, border.holes );
-		render();
+		// // TODO: Not here, only do if requested
+		// AdvancingFront.afmStart( g.MODEL, border.holes );
+		// render();
 	},
 
 

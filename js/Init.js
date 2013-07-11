@@ -68,6 +68,35 @@ var Init = {
 
 
 	/**
+	 * Initialize lights. Scene has to be initialized first.
+	 */
+	lights: function() {
+		var g = GLOBAL,
+		    l = CONFIG.LIGHTS;
+		var ambient, directional;
+		var lDir;
+
+		// Lighting: Ambient
+		for( var i = 0; i < l.AMBIENT.length; i++ ) {
+			ambient = new THREE.AmbientLight( l.AMBIENT[i].color );
+			g.LIGHTS.AMBIENT.push( ambient );
+			g.SCENE.add( ambient );
+		}
+
+		// Lighting: Directional
+		for( var i = 0; i < l.DIRECTIONAL.length; i++ ) {
+			lDir = l.DIRECTIONAL[i];
+			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
+			directional.position.set(
+				lDir.position[0], lDir.position[1], lDir.position[2]
+			);
+			g.LIGHTS.DIRECTIONAL.push( directional );
+			g.SCENE.add( directional );
+		}
+	},
+
+
+	/**
 	 * Initialize the renderer.
 	 */
 	renderer: function() {
@@ -93,17 +122,11 @@ var Init = {
 			Scene.addAxis();
 		}
 
-		// Lighting: Ambient
-		g.LIGHTS.AMBIENT = new THREE.AmbientLight( 0x101010 );
-		g.SCENE.add( g.LIGHTS.AMBIENT );
-
-		// Lighting: Directional
-		g.LIGHTS.DIRECTIONAL = new THREE.DirectionalLight( 0xF4F4F4 );
-		g.LIGHTS.DIRECTIONAL.position.set( -1, 0, -1 ).normalize();
-		g.SCENE.add( g.LIGHTS.DIRECTIONAL );
+		this.lights();
 	}
 
 };
+
 
 
 /**
@@ -180,7 +203,7 @@ var Utils = {
 	computeAngle: function( vp, v, vn, move ) {
 		var vpClone = vp.clone().sub( v ),
 		    vnClone = vn.clone().sub( v ),
-		    vClone = v.clone().add( move ); // TODO: Why am I doing this?
+		    vClone = v.clone().add( move );
 		var angle, c;
 
 		// Get angle and change radians to degree
@@ -211,6 +234,40 @@ var Utils = {
 
 
 	/**
+	 * Get the bounding box for a bunch of geometries.
+	 * @param  {Array}  geometries
+	 * @return {Object}            Bounding box.
+	 */
+	getBoundingBox: function( geometries ) {
+		var g = geometries[0];
+		var bbox = {
+			min: { x: g.x, y: g.y, z: g.z },
+			max: { x: g.x, y: g.y, z: g.z }
+		};
+
+		for( var i = 1; i < geometries.length; i++ ) {
+			g = geometries[i];
+
+			bbox.min.x = ( g.x < bbox.min.x ) ? g.x : bbox.min.x;
+			bbox.min.y = ( g.y < bbox.min.y ) ? g.y : bbox.min.y;
+			bbox.min.z = ( g.z < bbox.min.z ) ? g.z : bbox.min.z;
+
+			bbox.max.x = ( g.x > bbox.max.x ) ? g.x : bbox.max.x;
+			bbox.max.y = ( g.y > bbox.max.y ) ? g.y : bbox.max.y;
+			bbox.max.z = ( g.z > bbox.max.z ) ? g.z : bbox.max.z;
+		}
+
+		bbox.center = {
+			x: ( bbox.min.x + bbox.max.x ) / 2,
+			y: ( bbox.min.y + bbox.max.y ) / 2,
+			z: ( bbox.min.z + bbox.max.z ) / 2
+		};
+
+		return bbox;
+	},
+
+
+	/**
 	 * Checks if a point lies in a triangle (2D).
 	 * @param  {THREE.Vector2} p The point to check.
 	 * @param  {THREE.Vector2} a Point A describing the triangle.
@@ -219,7 +276,8 @@ var Utils = {
 	 * @return {boolean}         True, if point is inside triangle, false otherwise.
 	 */
 	isPointInTriangle: function( p, a, b, c ) {
-	    if( this.isSameSide( p, a, b, c ) && this.isSameSide( p, b, a, c )
+	    if( this.isSameSide( p, a, b, c )
+	    		&& this.isSameSide( p, b, a, c )
 	    		&& this.isSameSide( p, c, a, b ) ) {
 	    	return true;
 	    }
@@ -236,12 +294,10 @@ var Utils = {
 	 * @return {boolean}          True, if on the same side, false otherwise.
 	 */
 	isSameSide: function( p1, p2, a, b ) {
-	    var cp1 = new THREE.Vector3().crossVectors(
-	    	b.clone().sub( a ), p1.clone().sub( a )
-	    );
-	    var cp2 = new THREE.Vector3().crossVectors(
-	    	b.clone().sub( a ), p2.clone().sub( a )
-	    );
+		var bClone = b.clone().sub( a );
+	    var cp1 = new THREE.Vector3().crossVectors( bClone, p1.clone().sub( a ) );
+	    var cp2 = new THREE.Vector3().crossVectors( bClone, p2.clone().sub( a ) );
+
 	    return ( cp1.dot( cp2 ) >= 0 );
 	}
 

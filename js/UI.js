@@ -213,9 +213,19 @@ var UI = {
 			this.TOOLWINDOW.removeAttribute( "hidden" );
 		}
 
-		var section = this.TOOLWINDOW.querySelector( "section" );
+		var d = document,
+		    section = this.TOOLWINDOW.querySelector( "section" );
+		var btnFocusHole;
 
-		section.textContent = foundHoles;
+		for( var i = 0; i < foundHoles; i++ ) {
+			btnFocusHole = d.createElement( "input" );
+			btnFocusHole.type = "button";
+			btnFocusHole.value = "Hole " + ( i + 1 );
+			btnFocusHole.setAttribute( "data-index", i );
+			btnFocusHole.addEventListener( "click", Scene.focusHole, false );
+
+			section.appendChild( btnFocusHole );
+		}
 	}
 
 };
