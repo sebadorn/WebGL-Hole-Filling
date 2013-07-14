@@ -50,7 +50,7 @@
 			<legend>Renderer</legend>
 
 			<section>
-				<input type="radio" name="render_mode" id="render_solid" value="solid" checked />
+				<input type="radio" name="render_mode" id="render_solid" value="solid" />
 				<label for="render_solid">Solid</label>
 				<input type="radio" name="render_mode" id="render_wireframe" value="wireframe" />
 				<label for="render_wireframe">Wireframe</label>
@@ -59,14 +59,9 @@
 			<section>
 				<input type="radio" name="shading" id="shading_flat" value="flat" />
 				<label for="shading_flat">Flat</label>
-				<input type="radio" name="shading" id="shading_phong" value="phong" checked />
+				<input type="radio" name="shading" id="shading_phong" value="phong" />
 				<label for="shading_phong">Phong</label>
 				<span class="description">Shading</span>
-			</section>
-
-			<section>
-				<input type="range" name="shininess" id="shininess" min="0" max="100" step="1" value="30" />
-				<span class="description">Shininess</span>
 			</section>
 		</div>
 	</li>
@@ -91,11 +86,6 @@
 				<input type="radio" name="light_directional" id="light_directional_off" value="off" />
 				<label for="light_directional_off">Off</label>
 				<span class="description">Directional</span>
-			</section>
-
-			<section>
-				<input type="range" name="light_position" id="light_position" />
-				<span class="description">Position</span>
 			</section>
 		</fieldset>
 	</li>
@@ -149,15 +139,27 @@
 </ul>
 
 
-<div id="tool-extra-window" class="toolwindow" style="left: 76px; top: 16px;" hidden>
-	<span class="icon icon-close"></span>
-	<fieldset>
-		<legend>Found holes</legend>
+<div class="details" id="details">
 
-		<section>
-		</section>
-	</fieldset>
+	<!-- details for hole filling -->
+	<ul class="details-collection details-holefilling" hidden>
+		<!-- found holes -->
+		<li class="detail detail-foundholes">
+			<div class="caption">Found Holes</div>
+			<fieldset>
+			</fieldset>
+		</li>
+
+		<!-- fill hole -->
+		<li class="detail detail-fillhole">
+			<div class="caption">Fill Hole<span class="number">-</span></div>
+			<fieldset>
+			</fieldset>
+		</li>
+	</ul>
+
 </div>
+
 
 </body>
 </html>

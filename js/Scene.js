@@ -112,7 +112,7 @@ var Loader = {
  */
 var Scene = {
 
-	LIGHT: {
+	LIGHT_STATUS: {
 		AMBIENT: true,
 		DIRECTIONAL: true
 	},
@@ -293,11 +293,31 @@ var Scene = {
 
 
 	/**
+	 * Start the hole filling.
+	 */
+	fillHole: function( e ) {
+		var g = GLOBAL;
+		var index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 );
+
+		if( isNaN( index ) ) {
+			console.error( "Not a valid hole index." );
+			return;
+		}
+		if( g.HOLES.length <= index ) {
+			console.error( "No hole exists for this index." );
+			return;
+		}
+
+		AdvancingFront.afmStart( g.MODEL, g.HOLES[index] );
+	},
+
+
+	/**
 	 * Focus on the found hole.
 	 */
-	focusHole: function( e ) {
-		var g = GLOBAL,
-		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
+	focusHole: function( index ) {
+		var cfgCam = CONFIG.CAMERA,
+		    g = GLOBAL;
 
 		if( isNaN( index ) ) {
 			console.error( "Not a valid hole index." );
@@ -309,12 +329,15 @@ var Scene = {
 		}
 
 		var bbox = Utils.getBoundingBox( g.HOLES[index] );
-		// TODO: bbox plane, cross vector, move camera
-		GLOBAL.CAMERA.position.x = 0;
-		GLOBAL.CAMERA.position.y = 0;
-		GLOBAL.CAMERA.position.z = 0;
 
-		render();
+		bbox.center.add( GLOBAL.MODEL.position );
+		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS_HOLE.DISTANCE );
+
+		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ) / cfgCam.FOCUS_HOLE.STEPS,
+		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ) / cfgCam.FOCUS_HOLE.STEPS,
+		    stepZ = ( bbox.center.z - GLOBAL.CAMERA.position.z ) / cfgCam.FOCUS_HOLE.STEPS;
+
+		Scene.moveToHole( stepX, stepY, stepZ, 0 );
 	},
 
 
@@ -355,6 +378,32 @@ var Scene = {
 				return THREE.SmoothShading;
 			default:
 				return false;
+		}
+	},
+
+
+	/**
+	 * Move the camera (more-or-less) fluently to a position.
+	 * @param {float} stepX Step length in X direction.
+	 * @param {float} stepY Step length in Y direction.
+	 * @param {float} stepZ Step length in Z direction.
+	 * @param {int}   count Counter to know when to stop.
+	 */
+	moveToHole: function( stepX, stepY, stepZ, count ) {
+		GLOBAL.CAMERA.position.x += stepX;
+		GLOBAL.CAMERA.position.y += stepY;
+		GLOBAL.CAMERA.position.z += stepZ;
+		render();
+
+		if( count >= CONFIG.CAMERA.FOCUS_HOLE.STEPS ) {
+			return;
+		}
+		else {
+			count++;
+			setTimeout(
+				function() { Scene.moveToHole( stepX, stepY, stepZ, count ); },
+				CONFIG.CAMERA.FOCUS_HOLE.TIMEOUTS
+			);
 		}
 	},
 
@@ -415,11 +464,7 @@ var Scene = {
 		render();
 
 		g.HOLES = border.holes;
-		UI.showWindowHoles( border.lines.length );
-
-		// // TODO: Not here, only do if requested
-		// AdvancingFront.afmStart( g.MODEL, border.holes );
-		// render();
+		UI.showDetailHoles( border.lines.length );
 	},
 
 
@@ -429,20 +474,20 @@ var Scene = {
 	toggleLight: function( e ) {
 		var g = GLOBAL,
 		    lightType = e.target.name;
-		var light, lightStatus;
+		var lights, lightStatus;
 
 		switch( lightType ) {
 
 			case "light_ambient":
-				light = g.LIGHTS.AMBIENT;
-				lightStatus = this.LIGHT.AMBIENT;
-				this.LIGHT.AMBIENT = !lightStatus;
+				lights = g.LIGHTS.AMBIENT;
+				lightStatus = this.LIGHT_STATUS.AMBIENT;
+				this.LIGHT_STATUS.AMBIENT = !lightStatus;
 				break;
 
 			case "light_directional":
-				light = g.LIGHTS.DIRECTIONAL;
-				lightStatus = this.LIGHT.DIRECTIONAL;
-				this.LIGHT.DIRECTIONAL = !lightStatus;
+				lights = g.LIGHTS.DIRECTIONAL;
+				lightStatus = this.LIGHT_STATUS.DIRECTIONAL;
+				this.LIGHT_STATUS.DIRECTIONAL = !lightStatus;
 				break;
 
 			default:
@@ -451,7 +496,19 @@ var Scene = {
 
 		}
 
-		lightStatus ? g.SCENE.remove( light ) : g.SCENE.add( light );
+		var len = lights.length;
+
+		if( lightStatus ) {
+			for( var i = 0; i < len; i++ ) {
+				g.SCENE.remove( lights[i] );
+			}
+		}
+		else {
+			for( var i = 0; i < len; i++ ) {
+				g.SCENE.add( lights[i] );
+			}
+		}
+
 		render();
 	}
 

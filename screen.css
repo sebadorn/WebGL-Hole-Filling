@@ -29,6 +29,7 @@
 }
 
 html, body {
+	cursor: default;
 	height: 100%;
 }
 
@@ -62,8 +63,17 @@ canvas {
 	display: block;
 }
 
+fieldset {
+	border: 0;
+}
+
 p {
 	margin-bottom: 8px;
+}
+
+ol,
+ul {
+	list-style-type: none;
 }
 
 label {
@@ -72,7 +82,6 @@ label {
 
 canvas,
 legend {
-	cursor: default;
 	   -moz-user-select: none;
 	    -ms-user-select: none;
 	     -o-user-select: none;
@@ -84,14 +93,14 @@ legend {
 /* Sidebar */
 /* ------- */
 
-.tools {
+.tools,
+.details {
 	background-color: #303030;
 	-moz-box-sizing: border-box;
 	     box-sizing: border-box;
 	display: block;
 	height: 100%;
 	left: 0;
-	list-style-type: none;
 	position: absolute;
 	top: 0;
 	width: 60px;
@@ -102,8 +111,8 @@ legend {
 		margin-bottom: 0;
 	}
 
-	.tool {
-		display: block;
+	.tool,
+	.detail {
 		height: 60px;
 		margin-bottom: 1px;
 		position: relative;
@@ -113,7 +122,6 @@ legend {
 		.tools fieldset,
 		.toolwindow fieldset {
 			background-color: #333748;
-			border: 0;
 			border-bottom-right-radius: 2px;
 			border-top-right-radius: 2px;
 			-moz-box-sizing: border-box;
@@ -163,6 +171,36 @@ legend {
 		display: inline-block;
 		margin-left: 8px;
 	}
+
+
+.details {
+	left: auto;
+	right: 0;
+	width: 200px;
+	z-index: 450;
+}
+
+	.detail {
+		height: auto;
+		margin-top: 1px;
+	}
+
+		.detail .caption {
+			background-color: #101010;
+			display: block;
+			padding: 6px 16px;
+		}
+
+			.detail .number {
+				background-color: #2D90EA;
+				display: inline-block;
+				margin-left: 6px;
+				padding: 0 4px;
+			}
+
+		.detail fieldset {
+			padding: 10px;
+		}
 
 
 /* Tool specific */
@@ -218,7 +256,6 @@ legend {
 .icon {
 	background-color: #101010;
 	color: #ffffff;
-	cursor: default;
 	display: block;
 	font-family: "IconicFill Web";
 	font-size: 24px;
@@ -280,7 +317,6 @@ input[type="range"] {
 	border-left-color: #303030;
 	border-right: 0;
 	color: #b0b0b0;
-	cursor: default;
 	display: inline-block;
 	margin-right: -4px;
 	padding: 6px 16px;
@@ -321,4 +357,55 @@ input[type="range"] {
 	background-image: -webkit-linear-gradient( top, #404040, #606060 );
 	background-image:         linear-gradient( to bottom, #404040, #606060 );
 	color: #000000;
+}
+
+.selectContainer {
+	border: 1px solid #606060;
+	border-radius: 1px;
+	max-height: 100px;
+	overflow-y: auto;
+	position: relative;
+	width: 100%;
+}
+
+	.selectContainer input {
+		background-color: #101010;
+		-moz-box-sizing: border-box;
+		     box-sizing: border-box;
+		border: 0;
+		color: #ffffff;
+		margin-bottom: 1px;
+		padding: 6px 0;
+		text-align: center;
+		width: 100%;
+	}
+
+	.selectContainer input:last-child {
+		margin-bottom: 0;
+	}
+
+	.selectContainer input:hover,
+	.selectContainer .active,
+	.message {
+		background-color: #2D90EA;
+		background-image:     -ms-linear-gradient( bottom, #1F78CA, #2D90EA );
+		background-image:      -o-linear-gradient( bottom, #1F78CA, #2D90EA );
+		background-image: -webkit-linear-gradient( bottom, #1F78CA, #2D90EA );
+		background-image:         linear-gradient( to top, #1F78CA, #2D90EA );
+	}
+
+
+/* Special */
+/* ------- */
+
+.button.foundHole {
+	display: block;
+	margin-bottom: 4px;
+	min-width: 90px;
+}
+
+.message {
+	border-radius: 2px;
+	margin: 0;
+	padding: 1px 4px;
 }

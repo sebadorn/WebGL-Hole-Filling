@@ -241,8 +241,8 @@ var Utils = {
 	getBoundingBox: function( geometries ) {
 		var g = geometries[0];
 		var bbox = {
-			min: { x: g.x, y: g.y, z: g.z },
-			max: { x: g.x, y: g.y, z: g.z }
+			min: new THREE.Vector3( g.x, g.y, g.z ),
+			max: new THREE.Vector3( g.x, g.y, g.z )
 		};
 
 		for( var i = 1; i < geometries.length; i++ ) {
@@ -257,11 +257,11 @@ var Utils = {
 			bbox.max.z = ( g.z > bbox.max.z ) ? g.z : bbox.max.z;
 		}
 
-		bbox.center = {
-			x: ( bbox.min.x + bbox.max.x ) / 2,
-			y: ( bbox.min.y + bbox.max.y ) / 2,
-			z: ( bbox.min.z + bbox.max.z ) / 2
-		};
+		bbox.center = new THREE.Vector3(
+			( bbox.min.x + bbox.max.x ) / 2,
+			( bbox.min.y + bbox.max.y ) / 2,
+			( bbox.min.z + bbox.max.z ) / 2
+		);
 
 		return bbox;
 	},

@@ -13,14 +13,14 @@ var AdvancingFront = {
 	/**
 	 * Fill the hole using the advancing front algorithm.
 	 * @param {THREE.Mesh}        model The model to fill the holes in.
-	 * @param {Array<THREE.Line>} holes List of the holes.
+	 * @param {Array<THREE.Line>} hole  The hole described by lines.
 	 */
-	afmStart: function( model, holes ) {
+	afmStart: function( model, hole ) {
 		var filling = new THREE.Geometry(),
 		    front = new THREE.Geometry();
 
-		front.vertices = holes[0].slice( 0 );
-		filling.vertices = holes[0].slice( 0 );
+		front.vertices = hole.slice( 0 );
+		filling.vertices = hole.slice( 0 );
 		front.mergeVertices();
 
 		var ca = this.computeAngles( front.vertices ),
@@ -104,7 +104,7 @@ var AdvancingFront = {
 
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
-			this.mergeByDistance( front, filling, vNew, holes[0] );
+			this.mergeByDistance( front, filling, vNew, hole );
 		}
 
 		console.log(

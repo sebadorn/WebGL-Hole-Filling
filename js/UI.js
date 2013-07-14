@@ -7,19 +7,27 @@
  */
 var UI = {
 
-	MOUSE: {
-		X: null,
-		Y: null
+	/**
+	 * Remove all child nodes of a node.
+	 * @param  {DOMElement} node
+	 * @return {DOMElement} The given node after removing the child nodes.
+	 */
+	cleanOfChildNodes: function( node ) {
+		for( var i = node.childNodes.length - 1; i >= 0; i-- ) {
+			node.removeChild( node.childNodes[i] );
+		}
+		return node;
 	},
-	TOOLWINDOW: null,
 
 
 	/**
-	 * Hide the extra tool window.
+	 * Hide all details.
 	 */
-	closeToolWindow: function() {
-		if( !this.TOOLWINDOW.hasAttribute( "hidden" ) ) {
-			this.TOOLWINDOW.setAttribute( "hidden" );
+	hideAllDetails: function() {
+		var details = document.getElementById( "details" ).querySelectorAll( ".details-collection" );
+
+		for( var i = details.length - 1; i >= 0; i-- ) {
+			details[i].setAttribute( "hidden", "hidden" );
 		}
 	},
 
@@ -28,79 +36,8 @@ var UI = {
 	 * Init everything related to UI.
 	 */
 	init: function() {
-		this.initToolWindow();
+		this.syncInterfaceWithConfig();
 		this.registerEvents();
-	},
-
-
-	/**
-	 * Init the extra tool window.
-	 */
-	initToolWindow: function() {
-		var buttonClose, topBar;
-
-		this.TOOLWINDOW = document.getElementById( "tool-extra-window" );
-
-		buttonClose = this.TOOLWINDOW.querySelector( ".icon-close" );
-		buttonClose.addEventListener( "click", this.closeToolWindow.bind( this ), false );
-
-		topBar = this.TOOLWINDOW.querySelector( "legend" );
-		document.addEventListener( "mouseup", this.moveToolWindowEnd.bind( this ), false );
-		topBar.addEventListener( "mousedown", this.moveToolWindowStart.bind( this ), false );
-	},
-
-
-	/**
-	 * Move the tool window with the mouse.
-	 */
-	moveToolWindow: function( e ) {
-		var tw = UI.TOOLWINDOW,
-		    oldX = tw.offsetLeft,
-		    oldY = tw.offsetTop,
-		    posX = oldX + ( e.clientX - UI.MOUSE.X ),
-		    posY = oldY + ( e.clientY - UI.MOUSE.Y );
-
-		// X limits
-		if( posX < 76 ) {
-			posX = 76;
-		}
-		else if( posX > window.innerWidth - tw.offsetWidth - 16 ) {
-			posX = window.innerWidth - tw.offsetWidth - 16;
-		}
-
-		// Y limits
-		if( posY < 16 ) {
-			posY = 16;
-		}
-		else if( posY > window.innerHeight - tw.offsetHeight - 16 ) {
-			posY = window.innerHeight - tw.offsetHeight - 16;
-		}
-
-		UI.MOUSE.X = e.clientX;
-		UI.MOUSE.Y = e.clientY;
-
-		tw.style.left = posX + "px";
-		tw.style.top = posY + "px";
-	},
-
-
-	/**
-	 * Initialize moving of tool window.
-	 */
-	moveToolWindowEnd: function( e ) {
-		document.removeEventListener( "mousemove", this.moveToolWindow, false );
-		this.MOUSE.X = null;
-		this.MOUSE.Y = null;
-	},
-
-
-	/**
-	 * Initialize moving of tool window.
-	 */
-	moveToolWindowStart: function( e ) {
-		this.MOUSE.X = e.clientX;
-		this.MOUSE.Y = e.clientY;
-		document.addEventListener( "mousemove", this.moveToolWindow, false );
 	},
 
 
@@ -205,26 +142,100 @@ var UI = {
 
 
 	/**
-	 * Show a little window with information about the found holes.
-	 * @param {int} foundHoles New number of found holes.
+	 * Select a hole. Focus on it and show additional details.
 	 */
-	showWindowHoles: function( foundHoles ) {
-		if( this.TOOLWINDOW.hasAttribute( "hidden" ) ) {
-			this.TOOLWINDOW.removeAttribute( "hidden" );
+	selectHole: function( e ) {
+		var d = document;
+		var children = e.target.parentNode.childNodes,
+		    detailFillHole = d.getElementById( "details" ).querySelector( ".detail-fillhole" ),
+		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
+		var area, btnFill, number;
+
+		for( var i = 0, len = children.length; i < len; i++ ) {
+			children[i].className = children[i].className.replace( " active", "" );
+		}
+		e.target.className += " active";
+
+		Scene.focusHole( index );
+
+		number = detailFillHole.querySelector( ".caption .number" );
+		number.textContent = index + 1;
+
+		btnFill = d.createElement( "input" );
+		btnFill.type = "button";
+		btnFill.className = "button";
+		btnFill.value = "Advancing Front";
+		btnFill.setAttribute( "data-fillhole", index );
+		btnFill.addEventListener( "click", Scene.fillHole.bind( Scene ), false );
+
+		area = detailFillHole.querySelector( "fieldset" );
+		this.cleanOfChildNodes( area );
+		area.appendChild( btnFill );
+	},
+
+
+	/**
+	 * List the found holes.
+	 * @param {int} foundHoles Number of found holes.
+	 */
+	showDetailHoles: function( foundHoles ) {
+		var d = document,
+		    details = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
+		    section = details.querySelector( ".detail-foundholes fieldset" ),
+		    selection = d.createElement( "div" );
+
+		this.cleanOfChildNodes( section );
+		selection.className = "selectContainer foundHoles";
+
+		if( foundHoles > 0 ) {
+			var btnFocusHole;
+
+			for( var i = 0; i < foundHoles; i++ ) {
+				btnFocusHole = d.createElement( "input" );
+				btnFocusHole.type = "button";
+				btnFocusHole.value = "Hole " + ( i + 1 );
+				btnFocusHole.className = "foundHole";
+				btnFocusHole.setAttribute( "data-index", i );
+				btnFocusHole.addEventListener( "click", this.selectHole.bind( this ), false );
+
+				selection.appendChild( btnFocusHole );
+			}
+			section.appendChild( selection );
+		}
+		else {
+			var msg = d.createElement( "p" );
+			msg.className = "message";
+			msg.textContent = "No holes found."
+
+			section.appendChild( msg );
 		}
 
-		var d = document,
-		    section = this.TOOLWINDOW.querySelector( "section" );
-		var btnFocusHole;
+		this.hideAllDetails();
+		details.removeAttribute( "hidden" );
+	},
 
-		for( var i = 0; i < foundHoles; i++ ) {
-			btnFocusHole = d.createElement( "input" );
-			btnFocusHole.type = "button";
-			btnFocusHole.value = "Hole " + ( i + 1 );
-			btnFocusHole.setAttribute( "data-index", i );
-			btnFocusHole.addEventListener( "click", Scene.focusHole, false );
 
-			section.appendChild( btnFocusHole );
+	/**
+	 * Set the user interface settings according to the settings in the config file (config.js).
+	 */
+	syncInterfaceWithConfig: function() {
+		var cfg = CONFIG,
+		    d = document;
+
+		// Rendering: Mode
+		if( cfg.MODE == "solid" ) {
+			d.getElementById( "render_solid" ).setAttribute( "checked", "checked" );
+		}
+		else if( cfg.MODE == "wireframe" ) {
+			d.getElementById( "render_wireframe" ).setAttribute( "checked", "checked" );
+		}
+
+		// Rendering: Shading
+		if( cfg.SHADING == "phong" ) {
+			d.getElementById( "shading_phong" ).setAttribute( "checked", "checked" );
+		}
+		else if( cfg.SHADING == "flat" ) {
+			d.getElementById( "shading_flat" ).setAttribute( "checked", "checked" );
 		}
 	}
 
