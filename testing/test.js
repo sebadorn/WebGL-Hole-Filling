@@ -13,25 +13,30 @@ function test() {
 
 	var gs = GLOBAL.SCENE;
 
-	var o = new THREE.Vector3(),
-	    m = new THREE.Vector3( 0.7, 1.3, 0.2 ),
-	    p = new THREE.Vector3( -2, 0, 0 ).add( m ),
-	    q = new THREE.Vector3( 3, 1, 1 ).add( m );
-	var v = new THREE.Vector3( 2, 1, 2 ).add( m );
+	var a = new THREE.Vector3( 1, 1, 0 ),
+	    b = new THREE.Vector3( 1.5, 2, 0 ),
+	    c = new THREE.Vector3( 2, 1, 0 ),
+	    p = new THREE.Vector3( 1.5, 1.6, 0 );
 
-	gs.add( Scene.createPoint( m, 0.04, 0x101010 ) );
-	gs.add( Scene.createPoint( p, 0.04, 0x101010 ) );
-	gs.add( Scene.createPoint( q, 0.04, 0x101010 ) );
-	gs.add( Scene.createLine( m, p, 2, 0xFFFFFF ) );
-	gs.add( Scene.createLine( m, q, 2, 0xFFFFFF ) );
+	gs.add( Scene.createPoint( a, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( b, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( c, 0.04, 0x101010 ) );
+	gs.add( Scene.createPoint( p, 0.04, 0xd00000 ) );
 
-	gs.add( Scene.createPoint( v, 0.04, 0xD00000 ) );
+	gs.add( Scene.createLine( a, b, 1, 0x101010 ) );
+	gs.add( Scene.createLine( b, c, 1, 0x101010 ) );
+	gs.add( Scene.createLine( c, a, 1, 0x101010 ) );
 
-	var cross = v.clone().sub( q ).cross( p.clone().sub( q ) );
-	cross.normalize().add( m );
-	console.log( cross );
+	var cross1 = new THREE.Vector3().crossVectors( b.clone().sub( a ), p.clone().sub( a ) ),
+	    cross2 = new THREE.Vector3().crossVectors( b.clone().sub( a ), c.clone().sub( a ) );
 
-	gs.add( Scene.createPoint( cross, 0.04, 0x00E000 ) );
+	console.log( cross1.dot( cross2 ) );
+
+	cross1.add( a );
+	cross2.add( a );
+
+	gs.add( Scene.createPoint( cross1, 0.04, 0xd06060 ) );
+	gs.add( Scene.createPoint( cross2, 0.04, 0x0000d0 ) );
 
 	render();
 }

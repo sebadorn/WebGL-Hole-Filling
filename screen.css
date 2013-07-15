@@ -51,6 +51,7 @@ a:hover {
 }
 
 canvas {
+	background-color: #ffffff;
 	background-image:     -ms-linear-gradient( top, #909090, #ffffff );
 	background-image:      -o-linear-gradient( top, #909090, #ffffff );
 	background-image: -webkit-linear-gradient( top, #909090, #ffffff );
@@ -362,7 +363,7 @@ input[type="range"] {
 .selectContainer {
 	border: 1px solid #606060;
 	border-radius: 1px;
-	max-height: 100px;
+	max-height: 110px;
 	overflow-y: auto;
 	position: relative;
 	width: 100%;
