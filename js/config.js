@@ -15,13 +15,13 @@ var CONFIG = {
 		ANGLE: 45,
 		FOCUS_HOLE: {
 			DISTANCE: 8.0,
-			STEPS: 30,
+			STEPS: 0,
 			TIMEOUTS: 30
 		},
 		POSITION: {
-			X: 0,
-			Y: 0,
-			Z: -24
+			X: 20,
+			Y: 20,
+			Z: 0
 		},
 		ZFAR: 2500,
 		ZNEAR: 0.01

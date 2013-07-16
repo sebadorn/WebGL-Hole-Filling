@@ -22,6 +22,7 @@ var AdvancingFront = {
 		front.vertices = hole.slice( 0 );
 		filling.vertices = hole.slice( 0 );
 		front.mergeVertices();
+		filling.mergeVertices();
 
 		var ca = this.computeAngles( front.vertices ),
 		    j = ca.smallest.index;
@@ -45,7 +46,13 @@ var AdvancingFront = {
 			if( stopIter !== false && count == stopIter - 1 ) { // for debugging
 				this.LAST_ITERATION = true;
 			}
+			// close last hole
 			if( len == 3 ) {
+				filling.faces.push( new THREE.Face3(
+					filling.vertices.indexOf( front.vertices[0] ),
+					filling.vertices.indexOf( front.vertices[1] ),
+					filling.vertices.indexOf( front.vertices[2] )
+				) );
 				break;
 			}
 
@@ -117,6 +124,8 @@ var AdvancingFront = {
 		}
 
 		this.showFilling( filling );
+
+		UI.checkHoleFinished( GLOBAL.HOLES.indexOf( hole ) );
 	},
 
 
@@ -818,6 +827,10 @@ var HoleFilling = {
 				v.neighbours = bp.edges;
 				geometry.vertices.push( v );
 				ignore.push( bp.index );
+
+				if( bp.firstEdge == null ) {
+					break;
+				}
 				bp = bp.firstEdge.vertex;
 			}
 			else {

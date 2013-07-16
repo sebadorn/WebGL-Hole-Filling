@@ -68,6 +68,7 @@ var Loader = {
 		g.MODEL = Scene.geometryToMesh( geometry );
 		g.MODEL = Scene.centerModel( g.MODEL );
 
+		UI.resetInterface();
 		Scene.clearModels();
 		Scene.resetCamera();
 		Scene.renderBoundingBox( g.MODEL );
@@ -128,7 +129,6 @@ var Scene = {
 		var axis = new THREE.AxisHelper( CONFIG.AXIS.SIZE );
 
 		axis.name = "axis";
-
 		GLOBAL.SCENE.add( axis );
 	},
 
@@ -333,9 +333,15 @@ var Scene = {
 		bbox.center.add( GLOBAL.MODEL.position );
 		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS_HOLE.DISTANCE );
 
-		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ) / cfgCam.FOCUS_HOLE.STEPS,
-		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ) / cfgCam.FOCUS_HOLE.STEPS,
-		    stepZ = ( bbox.center.z - GLOBAL.CAMERA.position.z ) / cfgCam.FOCUS_HOLE.STEPS;
+		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ),
+		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ),
+		    stepZ = ( bbox.center.z - GLOBAL.CAMERA.position.z );
+
+		if( cfgCam.FOCUS_HOLE.STEPS > 0 ) {
+			stepX /= cfgCam.FOCUS_HOLE.STEPS;
+		    stepY /= cfgCam.FOCUS_HOLE.STEPS;
+		    stepZ /= cfgCam.FOCUS_HOLE.STEPS;
+		}
 
 		Scene.moveToHole( stepX, stepY, stepZ, 0 );
 	},
@@ -395,11 +401,12 @@ var Scene = {
 		GLOBAL.CAMERA.position.z += stepZ;
 		render();
 
+		count++;
+
 		if( count >= CONFIG.CAMERA.FOCUS_HOLE.STEPS ) {
 			return;
 		}
 		else {
-			count++;
 			setTimeout(
 				function() { Scene.moveToHole( stepX, stepY, stepZ, count ); },
 				CONFIG.CAMERA.FOCUS_HOLE.TIMEOUTS
@@ -464,7 +471,7 @@ var Scene = {
 		render();
 
 		g.HOLES = border.holes;
-		UI.showDetailHoles( border.lines.length );
+		UI.showDetailHoles( border.lines );
 	},
 
 

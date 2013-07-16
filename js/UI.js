@@ -8,6 +8,24 @@
 var UI = {
 
 	/**
+	 * Signal in the hole selection that a hole has already been filled.
+	 * @param {int} index Index of the hole.
+	 */
+	checkHoleFinished: function( index ) {
+		var holesSelect = document.getElementById( "details" ).querySelector( ".foundHoles" );
+		var holeBtn;
+
+		for( var i = holesSelect.childNodes.length - 1; i >= 0; i-- ) {
+			holeBtn = holesSelect.childNodes[i];
+			if( holeBtn.getAttribute( "data-index" ) == index ) {
+				holeBtn.className += " filled";
+				break;
+			}
+		}
+	},
+
+
+	/**
 	 * Remove all child nodes of a node.
 	 * @param  {DOMElement} node
 	 * @return {DOMElement} The given node after removing the child nodes.
@@ -45,21 +63,24 @@ var UI = {
 	 * Add all the needed event listeners.
 	 */
 	registerEvents: function() {
-		var d = document;
-		var buttonResetCamera, inputUpload;
-
 		this.resize();
 		window.addEventListener( "resize", this.resize, false );
 
-		inputUpload = d.getElementById( "import_file" );
-		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
-
+		this.registerImport();
 		this.registerLightingOptions();
 		this.registerModeOptions();
 		this.registerShadingOptions();
 		this.registerHoleFillingOptions();
+		this.registerCameraReset();
+	},
 
-		buttonResetCamera = d.getElementById( "controls_reset" );
+
+	/**
+	 * Listen to events of the camera reset button.
+	 */
+	registerCameraReset: function() {
+		var buttonResetCamera = document.getElementById( "controls_reset" );
+
 		buttonResetCamera.addEventListener( "click", Scene.resetCamera.bind( Scene ), false );
 	},
 
@@ -73,6 +94,16 @@ var UI = {
 
 		buttonShowEdges = d.getElementById( "hf_findedges" );
 		buttonShowEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
+	},
+
+
+	/**
+	 * Listen to events of the import field.
+	 */
+	registerImport: function() {
+		var inputUpload = document.getElementById( "import_file" );
+
+		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
 	},
 
 
@@ -125,6 +156,24 @@ var UI = {
 
 
 	/**
+	 * Reset the interface.
+	 */
+	resetInterface: function() {
+		var details = document.querySelector( ".details-holefilling" ),
+		    detailFoundHoles = details.querySelector( ".detail-foundholes fieldset" ),
+		    detailHoleInfoVertices = details.querySelector( "#holeinfo-vertices" ),
+		    detailFillHole = details.querySelector( ".detail-fillhole fieldset" ),
+		    detailFillHoleNumber = details.querySelector( ".detail-fillhole .number" );
+
+		details.setAttribute( "hidden", "hidden" );
+		this.cleanOfChildNodes( detailFoundHoles );
+		this.cleanOfChildNodes( detailFillHole );
+		detailFillHoleNumber.textContent = "-";
+		detailHoleInfoVertices.textContent = "-";
+	},
+
+
+	/**
 	 * Adjust camera and renderer to new window size.
 	 */
 	resize: function() {
@@ -148,8 +197,9 @@ var UI = {
 		var d = document;
 		var children = e.target.parentNode.childNodes,
 		    detailFillHole = d.getElementById( "details" ).querySelector( ".detail-fillhole" ),
+		    detailHoleInfo = d.getElementById( "details" ).querySelector( ".detail-holeinfo" ),
 		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
-		var area, btnFill, number;
+		var area, btnFill, infoVertices, number;
 
 		for( var i = 0, len = children.length; i < len; i++ ) {
 			children[i].className = children[i].className.replace( " active", "" );
@@ -158,6 +208,7 @@ var UI = {
 
 		Scene.focusHole( index );
 
+		// Detail: Fill Hole
 		number = detailFillHole.querySelector( ".caption .number" );
 		number.textContent = index + 1;
 
@@ -171,12 +222,16 @@ var UI = {
 		area = detailFillHole.querySelector( "fieldset" );
 		this.cleanOfChildNodes( area );
 		area.appendChild( btnFill );
+
+		// Detail: Hole Info
+		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
+		infoVertices.textContent = GLOBAL.HOLES[index].length;
 	},
 
 
 	/**
 	 * List the found holes.
-	 * @param {int} foundHoles Number of found holes.
+	 * @param {Array<THREE.Line>} foundHoles The found holes.
 	 */
 	showDetailHoles: function( foundHoles ) {
 		var d = document,
@@ -187,14 +242,15 @@ var UI = {
 		this.cleanOfChildNodes( section );
 		selection.className = "selectContainer foundHoles";
 
-		if( foundHoles > 0 ) {
+		if( foundHoles.length > 0 ) {
 			var btnFocusHole;
 
-			for( var i = 0; i < foundHoles; i++ ) {
+			for( var i = 0; i < foundHoles.length; i++ ) {
 				btnFocusHole = d.createElement( "input" );
 				btnFocusHole.type = "button";
 				btnFocusHole.value = "Hole " + ( i + 1 );
 				btnFocusHole.className = "foundHole";
+				btnFocusHole.style.borderLeftColor = "#" + foundHoles[i].material.color.getHexString();
 				btnFocusHole.setAttribute( "data-index", i );
 				btnFocusHole.addEventListener( "click", this.selectHole.bind( this ), false );
 
