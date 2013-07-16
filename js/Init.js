@@ -192,6 +192,60 @@ var Utils = {
 
 
 	/**
+	 * Check if two lines intersect.
+	 * @param  {THREE.Vector2} p1
+	 * @param  {THREE.Vector2} p2
+	 * @param  {THREE.Vector2} q1
+	 * @param  {THREE.Vector2} q2
+	 * @return {boolean}          True, if lines intersect, false otherwise.
+	 */
+	checkIntersectionOfLines2D: function( p1, p2, q1, q2 ) {
+		var s, t;
+
+		s = ( q2.x - q1.x ) * ( p1.y - q1.y ) - ( q2.y - q1.y ) * ( p1.x - q1.x );
+		s /= ( q2.y - q1.y ) * ( p2.x - p1.x ) - ( q2.x - q1.x ) * ( p2.y - p1.y );
+		t = ( p2.x - p1.x ) * ( p1.y - q1.y ) - ( p2.y - p1.y ) * ( p1.x - q1.x );
+		t /= ( q2.y - q1.y ) * ( p2.x - p1.x ) - ( q2.x - q1.x ) * ( p2.y - p1.y );
+
+		return ( s > 0 && s < 1 && t > 0 && t < 1 );
+	},
+
+
+	/**
+	 * CHeck if lines of two triangles intersect.
+	 * @param  {THREE.Vector2} a
+	 * @param  {THREE.Vector2} b
+	 * @param  {THREE.Vector2} c
+	 * @param  {THREE.Vector2} fromA
+	 * @param  {THREE.Vector2} fromB
+	 * @param  {THREE.Vector2} v
+	 * @return {boolean}             True, if triangles intersect, false otherwise.
+	 */
+	checkIntersectionOfTriangles2D: function( a, b, c, fromA, fromB, v ) {
+		if( this.checkIntersectionOfLines2D( a, b, fromA, v ) ) {
+			return true;
+		}
+		if( this.checkIntersectionOfLines2D( a, b, fromB, v ) ) {
+			return true;
+		}
+		if( this.checkIntersectionOfLines2D( b, c, fromA, v ) ) {
+			return true;
+		}
+		if( this.checkIntersectionOfLines2D( b, c, fromB, v ) ) {
+			return true;
+		}
+		if( this.checkIntersectionOfLines2D( c, a, fromA, v ) ) {
+			return true;
+		}
+		if( this.checkIntersectionOfLines2D( c, a, fromB, v ) ) {
+			return true;
+		}
+
+		return false;
+	},
+
+
+	/**
 	 * Compute the angle between two vertices.
 	 * Angle is in degree.
 	 * @param  {THREE.Vector3} vp   The previous vertex.

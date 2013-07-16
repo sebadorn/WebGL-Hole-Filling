@@ -7,7 +7,7 @@
  */
 var AdvancingFront = {
 
-	LAST_ITERATION: false, // TODO: only for debugging, remove later
+	LAST_ITERATION: false, // for debugging
 
 
 	/**
@@ -34,19 +34,21 @@ var AdvancingFront = {
 		    count = 0,
 		    ignoredAngles = 0,
 		    loopCounter = 0;
-		var stopIter = false; // for debugging
+		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debuggin
 
 		while( true ) {
 			len = front.vertices.length;
 			count++;
 
-			if( stopIter !== false && ++count > stopIter ) { // for debugging
+			// for debugging
+			if( stopIter !== false && ++count > stopIter ) {
 				break;
 			}
-			if( stopIter !== false && count == stopIter - 1 ) { // for debugging
+			if( stopIter !== false && count == stopIter - 1 ) {
 				this.LAST_ITERATION = true;
 			}
-			// close last hole
+
+			// Close last hole
 			if( len == 3 ) {
 				filling.faces.push( new THREE.Face3(
 					filling.vertices.indexOf( front.vertices[0] ),
@@ -123,7 +125,7 @@ var AdvancingFront = {
 			console.warn( "Ignored " + ignoredAngles + " angles, because they were >= 180°." );
 		}
 
-		this.showFilling( filling );
+		this.showFilling( front, filling );
 
 		UI.checkHoleFinished( GLOBAL.HOLES.indexOf( hole ) );
 	},
@@ -429,7 +431,8 @@ var AdvancingFront = {
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
 	isInHole: function( front, filling, v, fromA, fromB ) {
-		var a, b, c, face, v2D, variance;
+		var a, b, c, face, fromA2D, fromB2D, v2D, variance;
+		var s, t;
 
 		for( var i = 0; i < filling.faces.length; i++ ) {
 			face = filling.faces[i];
@@ -446,12 +449,16 @@ var AdvancingFront = {
 					b = new THREE.Vector2( b.y, b.z );
 					c = new THREE.Vector2( c.y, c.z );
 					v2D = new THREE.Vector2( v.y, v.z );
+					fromA2D = new THREE.Vector2( fromA.y, fromA.z );
+					fromB2D = new THREE.Vector2( fromB.y, fromB.z );
 				}
 				else {
 					a = new THREE.Vector2( a.x, a.y );
 					b = new THREE.Vector2( b.x, b.y );
 					c = new THREE.Vector2( c.x, c.y );
 					v2D = new THREE.Vector2( v.x, v.y );
+					fromA2D = new THREE.Vector2( fromA.x, fromA.y );
+					fromB2D = new THREE.Vector2( fromB.x, fromB.y );
 				}
 			}
 			else {
@@ -460,16 +467,20 @@ var AdvancingFront = {
 					b = new THREE.Vector2( b.x, b.z );
 					c = new THREE.Vector2( c.x, c.z );
 					v2D = new THREE.Vector2( v.x, v.z );
+					fromA2D = new THREE.Vector2( fromA.x, fromA.z );
+					fromB2D = new THREE.Vector2( fromB.x, fromB.z );
 				}
 				else {
 					a = new THREE.Vector2( a.x, a.y );
 					b = new THREE.Vector2( b.x, b.y );
 					c = new THREE.Vector2( c.x, c.y );
 					v2D = new THREE.Vector2( v.x, v.y );
+					fromA2D = new THREE.Vector2( fromA.x, fromA.y );
+					fromB2D = new THREE.Vector2( fromB.x, fromB.y );
 				}
 			}
 
-			if( Utils.isPointInTriangle( v2D, a, b, c ) ) {
+			if( Utils.checkIntersectionOfTriangles2D( a, b, c, fromA2D, fromB2D, v2D ) ) {
 				return false;
 			}
 		}
@@ -627,9 +638,10 @@ var AdvancingFront = {
 	/**
 	 * Render the finished hole filling.
 	 * Create a mesh from the computed data and render it.
+	 * @param {THREE.Geometry} front   Front of the hole.
 	 * @param {THREE.Geometry} filling Filling of the hole.
 	 */
-	showFilling: function( filling ) {
+	showFilling: function( front, filling ) {
 		var model = GLOBAL.MODEL;
 
 		// Filling as solid form

@@ -35,7 +35,9 @@ var CONFIG = {
 	// Debug
 	DEBUG: {
 		SHOW_FRONT: false,
-		SHOW_MERGING: false
+		SHOW_MERGING: true,
+		// <int>: stop after x iterations; <false>: stop when finished
+		AFM_STOP_AFTER_ITER: 30000
 	},
 	// Hole Filling
 	HF: {
@@ -51,7 +53,7 @@ var CONFIG = {
 			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,
-			THRESHOLD_MERGE: 0.12
+			THRESHOLD_MERGE: 0.16
 		}
 	},
 	// Lights of the scene
