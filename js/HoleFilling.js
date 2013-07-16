@@ -7,6 +7,7 @@
  */
 var AdvancingFront = {
 
+	HOLE_INDEX: -1,
 	LAST_ITERATION: false, // for debugging
 
 
@@ -18,6 +19,8 @@ var AdvancingFront = {
 	afmStart: function( model, hole ) {
 		var filling = new THREE.Geometry(),
 		    front = new THREE.Geometry();
+
+		this.HOLE_INDEX = GLOBAL.HOLES.indexOf( hole );
 
 		front.vertices = hole.slice( 0 );
 		filling.vertices = hole.slice( 0 );
@@ -34,7 +37,7 @@ var AdvancingFront = {
 		    count = 0,
 		    ignoredAngles = 0,
 		    loopCounter = 0;
-		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debuggin
+		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
 
 		while( true ) {
 			len = front.vertices.length;
@@ -114,6 +117,8 @@ var AdvancingFront = {
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
 			this.mergeByDistance( front, filling, vNew, hole );
+
+			this.showFilling( front, filling );
 		}
 
 		console.log(
@@ -126,8 +131,7 @@ var AdvancingFront = {
 		}
 
 		this.showFilling( front, filling );
-
-		UI.checkHoleFinished( GLOBAL.HOLES.indexOf( hole ) );
+		UI.checkHoleFinished( this.HOLE_INDEX );
 	},
 
 
@@ -642,10 +646,22 @@ var AdvancingFront = {
 	 * @param {THREE.Geometry} filling Filling of the hole.
 	 */
 	showFilling: function( front, filling ) {
-		var model = GLOBAL.MODEL;
+		var g = GLOBAL,
+		    model = g.MODEL;
+
+		if( !g.FILLINGS.hasOwnProperty( this.HOLE_INDEX ) ) {
+			g.FILLINGS[this.HOLE_INDEX] = {
+				solid: false,
+				wireframe: false
+			};
+		}
 
 		// Filling as solid form
 		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
+			if( g.FILLINGS[this.HOLE_INDEX].solid ) {
+				g.SCENE.remove( g.FILLINGS[this.HOLE_INDEX].solid );
+			}
+
 			var materialSolid = new THREE.MeshPhongMaterial( {
 				color: CONFIG.HF.FILLING.COLOR,
 				shading: THREE.FlatShading,
@@ -662,6 +678,7 @@ var AdvancingFront = {
 			meshSolid.geometry.computeVertexNormals();
 			meshSolid.geometry.computeBoundingBox();
 
+			g.FILLINGS[this.HOLE_INDEX].solid = meshSolid;
 			GLOBAL.SCENE.add( meshSolid );
 		}
 

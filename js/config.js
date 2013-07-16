@@ -35,7 +35,7 @@ var CONFIG = {
 	// Debug
 	DEBUG: {
 		SHOW_FRONT: false,
-		SHOW_MERGING: true,
+		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
 		AFM_STOP_AFTER_ITER: 30000
 	},

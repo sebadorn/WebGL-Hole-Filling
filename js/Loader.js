@@ -73,6 +73,8 @@ var Loader = {
 		Scene.resetCamera();
 		Scene.renderBoundingBox( g.MODEL );
 
+		g.FILLINGS = {};
+
 		g.SCENE.add( g.MODEL );
 		render();
 	},

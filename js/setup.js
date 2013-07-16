@@ -5,6 +5,7 @@ var GLOBAL = {
 	CAMERA: null,
 	CONTAINER: null,
 	CONTROLS: null,
+	FILLINGS: {},
 	HALFEDGE: null,
 	HOLES: [],
 	LIGHTS: {
