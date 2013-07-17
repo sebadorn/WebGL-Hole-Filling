@@ -70,6 +70,7 @@ var AdvancingFront = {
 				loopCounter = 0;
 				appliedBefore = applied;
 				applied = 0;
+				// this.showFilling( front, filling );
 			}
 
 			vectors = this.getNextVectors( front.vertices, j, len );
@@ -117,8 +118,6 @@ var AdvancingFront = {
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
 			this.mergeByDistance( front, filling, vNew, hole );
-
-			this.showFilling( front, filling );
 		}
 
 		console.log(

@@ -52,10 +52,10 @@ a:hover {
 
 canvas {
 	background-color: #ffffff;
-	background-image:     -ms-linear-gradient( top, #909090, #ffffff );
-	background-image:      -o-linear-gradient( top, #909090, #ffffff );
-	background-image: -webkit-linear-gradient( top, #909090, #ffffff );
-	background-image:         linear-gradient( to bottom, #909090, #ffffff );
+	background-image:     -ms-linear-gradient( top, #e0e0e0, #ffffff );
+	background-image:      -o-linear-gradient( top, #e0e0e0, #ffffff );
+	background-image: -webkit-linear-gradient( top, #e0e0e0, #ffffff );
+	background-image:         linear-gradient( to bottom, #e0e0e0, #ffffff );
 	display: block;
 }
 
