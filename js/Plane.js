@@ -15,7 +15,7 @@ function Plane( p, v1, v2 ) {
 	this.p.normalize();
 	this.v1.normalize();
 	this.v2.normalize();
-};
+}
 
 
 /**

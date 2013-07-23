@@ -227,43 +227,6 @@ legend {
 }
 
 
-/* Tool extra window */
-/* ----------------- */
-
-.toolwindow {
-	border: 1px solid rgba( 255, 255, 255, 0.4 );
-	border-radius: 2px;
-	position: absolute;
-	width: 200px;
-	z-index: 10;
-}
-
-	.toolwindow legend {
-		cursor: move;
-	}
-
-	.toolwindow .icon-close {
-		display: inline-block;
-		height: 24px;
-		left: auto;
-		line-height: 24px;
-		right: 6px;
-		text-align: right;
-		top: 6px;
-		z-index: 20;
-		width: 24px;
-	}
-
-	.toolwindow .icon-close:hover {
-		color: #DA6F2C;
-	}
-
-	.toolwindow fieldset {
-		display: block;
-		position: static;
-	}
-
-
 /* Icons */
 /* ----- */
 
@@ -311,11 +274,11 @@ input[type="range"] {
 	vertical-align: middle;
 }
 
-.tool input[type="radio"] {
+input[type="radio"].newradio {
 	display: none;
 }
 
-.tool input[type="radio"]:checked + label,
+input[type="radio"].newradio:checked + label.newradio,
 .button {
 	background-color: #404040;
 	background-image:     -ms-linear-gradient( top, #606060, #404040 );
@@ -325,7 +288,7 @@ input[type="range"] {
 	color: #ffffff;
 }
 
-.tool label {
+label.newradio {
 	background-color: #101010;
 	border: 1px solid #101010;
 	border-left-color: #303030;
@@ -336,17 +299,17 @@ input[type="range"] {
 	padding: 6px 16px;
 }
 
-.tool label:hover {
+label.newradio:hover {
 	color: #ffffff;
 }
 
-.tool section label:first-of-type {
+label.newradio:first-of-type {
 	border-left-color: #101010;
 	border-bottom-left-radius: 3px;
 	border-top-left-radius: 3px;
 }
 
-.tool section label:last-of-type {
+label.newradio:last-of-type {
 	border-right: 1px solid #101010;
 	border-bottom-right-radius: 3px;
 	border-top-right-radius: 3px;

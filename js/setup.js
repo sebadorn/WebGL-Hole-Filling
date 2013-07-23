@@ -37,4 +37,15 @@ function render() {
 }
 
 
+/**
+ * Error handler for requestFileSystem.
+ * @param {FileError} errorFS FileError object.
+ */
+function errorHandlerFS( errorFS ) {
+	console.error( errorFS );
+}
+
+
+window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;
+
 window.addEventListener( "load", Init.all.bind( Init ), false );

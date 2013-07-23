@@ -187,6 +187,35 @@ var Scene = {
 
 
 	/**
+	 * Export the model.
+	 * @param  {String} format Name of the format to use.
+	 * @return {String}        Exported model data.
+	 */
+	exportModel: function( format ) {
+		var exportData;
+
+		switch( format ) {
+
+			case "obj":
+				exportData = exportOBJ( GLOBAL.MODEL );
+				break;
+
+			case "stl":
+				exportData = exportSTL( GLOBAL.MODEL );
+				console.error( "STL export not implemented." );
+				break;
+
+			default:
+				console.error( "Unknown export format: " + format );
+				return false;
+
+		}
+
+		return exportData;
+	},
+
+
+	/**
 	 * Start the hole filling.
 	 */
 	fillHole: function( e ) {

@@ -72,6 +72,7 @@ var UI = {
 		this.registerShadingOptions();
 		this.registerHoleFillingOptions();
 		this.registerCameraReset();
+		this.registerExport();
 	},
 
 
@@ -85,14 +86,19 @@ var UI = {
 	},
 
 
+	registerExport: function() {
+		var buttonShowExport = document.getElementById( "export_options" );
+
+		buttonShowExport.addEventListener( "click", this.showDetailExport.bind( this ), false );
+	},
+
+
 	/**
 	 * Listen to events of the hole filling options.
 	 */
 	registerHoleFillingOptions: function() {
-		var d = document;
-		var buttonShowEdges;
+		var buttonShowEdges = document.getElementById( "hf_findedges" );
 
-		buttonShowEdges = d.getElementById( "hf_findedges" );
 		buttonShowEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
 	},
 
@@ -230,13 +236,64 @@ var UI = {
 
 
 	/**
+	 * Show further options for the export.
+	 */
+	showDetailExport: function() {
+		var d = document,
+		    detail = d.getElementById( "details" ).querySelector( ".details-export" ),
+		    formats = CONFIG.EXPORT.FORMATS,
+		    section = detail.querySelector( ".detail-exportformat fieldset" );
+		var btnExport, format, input, label;
+
+		this.cleanOfChildNodes( section );
+
+		// Export formats
+		for( var i = 0; i < formats.length; i++ ) {
+			format = formats[i];
+
+			input = d.createElement( "input" );
+			label = d.createElement( "label" );
+
+			input.className = "newradio";
+			input.type = "radio";
+			input.name = "export";
+			input.id = "export_" + formats[i];
+			input.value = formats[i];
+
+			if( i == 0 ) {
+				input.setAttribute( "checked", "checked" );
+			}
+
+			label.className = "newradio";
+			label.setAttribute( "for", "export_" + formats[i] );
+			label.textContent = formats[i];
+
+			section.appendChild( input );
+			section.appendChild( label );
+		}
+
+		// Button to start export
+		btnExport = d.createElement( "input" );
+		btnExport.className = "button";
+		btnExport.type = "button";
+		btnExport.value = "Export";
+		btnExport.addEventListener( "click", this.startExport.bind( section ), false );
+
+		section.appendChild( btnExport );
+
+		this.hideAllDetails();
+		detail.removeAttribute( "hidden" );
+	},
+
+
+	/**
 	 * List the found holes.
 	 * @param {Array<THREE.Line>} foundHoles The found holes.
 	 */
 	showDetailHoles: function( foundHoles ) {
 		var d = document,
-		    details = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
-		    section = details.querySelector( ".detail-foundholes fieldset" ),
+		    detail = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
+		    section = detail.querySelector( ".detail-foundholes fieldset" ),
 		    selection = d.createElement( "div" );
 
 		this.cleanOfChildNodes( section );
@@ -267,7 +324,33 @@ var UI = {
 		}
 
 		this.hideAllDetails();
-		details.removeAttribute( "hidden" );
+		detail.removeAttribute( "hidden" );
+	},
+
+
+	/**
+	 * Trigger the export.
+	 * this == export section
+	 * Source: http://thiscouldbebetter.wordpress.com/2012/12/18/loading-editing-and-saving-a-text-file-in-html5-using-javascrip/
+	 */
+	startExport: function( e ) {
+		var d = document;
+		var format = this.querySelector( "input.newradio:checked" );
+		var exportData;
+
+		format = format.value.toLowerCase();
+		exportData = Scene.exportModel( format );
+
+		var content = new Blob( [exportData], { type: "text/plain" } );
+		var download = d.createElement( "a" );
+
+		download.download = "export." + format;
+		download.href = window.URL.createObjectURL( content );
+		download.addEventListener( "click", Utils.selfRemoveFromDOM, false );
+		download.setAttribute( "hidden", "hidden" );
+
+		d.body.appendChild( download );
+		download.click();
 	},
 
 

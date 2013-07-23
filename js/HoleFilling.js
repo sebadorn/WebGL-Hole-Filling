@@ -70,7 +70,6 @@ var AdvancingFront = {
 				loopCounter = 0;
 				appliedBefore = applied;
 				applied = 0;
-				// this.showFilling( front, filling );
 			}
 
 			vectors = this.getNextVectors( front.vertices, j, len );

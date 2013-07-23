@@ -212,7 +212,7 @@ var Utils = {
 
 
 	/**
-	 * CHeck if lines of two triangles intersect.
+	 * Check if lines of two triangles intersect.
 	 * @param  {THREE.Vector2} a
 	 * @param  {THREE.Vector2} b
 	 * @param  {THREE.Vector2} c
@@ -353,6 +353,14 @@ var Utils = {
 	    var cp2 = new THREE.Vector3().crossVectors( bClone, p2.clone().sub( a ) );
 
 	    return ( cp1.dot( cp2 ) >= 0 );
+	},
+
+
+	/**
+	 * Remove child from its parent.
+	 */
+	selfRemoveFromDOM: function( e ) {
+		e.target.parentNode.removeChild( e.target );
 	}
 
 };

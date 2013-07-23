@@ -39,6 +39,9 @@ var CONFIG = {
 		// <int>: stop after x iterations; <false>: stop when finished
 		AFM_STOP_AFTER_ITER: 30000
 	},
+	EXPORT: {
+		FORMATS: ["OBJ", "STL"]
+	},
 	// Hole Filling
 	HF: {
 		// Border of the hole(s)
