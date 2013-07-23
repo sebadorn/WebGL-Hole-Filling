@@ -64,7 +64,7 @@ var Loader = {
 
 		content = loader.parse( e.target.result );
 		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
-
+console.log(content);
 		g.MODEL = Scene.geometryToMesh( geometry );
 		g.MODEL = Scene.centerModel( g.MODEL );
 

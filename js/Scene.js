@@ -201,8 +201,7 @@ var Scene = {
 				break;
 
 			case "stl":
-				exportData = exportSTL( GLOBAL.MODEL );
-				console.error( "STL export not implemented." );
+				exportData = exportSTL( GLOBAL.MODEL, "test" ); // TODO: name for model
 				break;
 
 			default:

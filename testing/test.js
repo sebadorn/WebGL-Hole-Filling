@@ -11,6 +11,10 @@ function test_setup() {
 function test() {
 	test_setup();
 
+	var sem = Utils.floatToSignExponentMantissa( 0.15625 );
+	console.log( sem );
+
+	/*
 	var gs = GLOBAL.SCENE;
 
 	var a = new THREE.Vector3( 1, 1, 0 ),
@@ -37,6 +41,7 @@ function test() {
 
 	gs.add( Scene.createPoint( cross1, 0.04, 0xd06060 ) );
 	gs.add( Scene.createPoint( cross2, 0.04, 0x0000d0 ) );
+	*/
 
 	render();
 }

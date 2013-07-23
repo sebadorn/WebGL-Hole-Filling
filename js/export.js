@@ -3,16 +3,16 @@
 
 /**
  * Export model as OBJ.
+ * (Vertices and faces only.)
  * @param  {THREE.Mesh} model The model to export.
  * @return {String}           The content for an OBJ file.
  */
 function exportOBJ( model ) {
 	var objF = "",
-	    objV = "",
-	    objVN = "";
+	    objV = "";
 	var faces = model.geometry.faces,
 	    vertices = model.geometry.vertices;
-	var f, v, vn;
+	var f, v;
 
 	// Vertices
 	for( var i = 0; i < vertices.length; i++ ) {
@@ -20,22 +20,68 @@ function exportOBJ( model ) {
 		objV += "v " + v.x + " " + v.y + " " + v.z + "\n";
 	}
 
-	// Faces and vertex normals
+	// Faces
 	for( var i = 0; i < faces.length; i++ ) {
 		f = faces[i];
-		objF += "f "
-				+ f.a + "//" + f.a + " "
-				+ f.b + "//" + f.b + " "
-				+ f.c + "//" + f.c + "\n";
-
-		vn = f.normal;
-		objVN += "vn " + vn.x + " " + vn.y + " " + vn.z + "\n";
+		objF += "f " + ( f.a + 1 ) + " " + ( f.b + 1 ) + " " + ( f.c + 1 ) + "\n";
 	}
 
-	return objV + "\n\n" + objVN + "\n\n" + objF + "\n";
+	return objV + "\n" + objF;
 }
 
 
-function exportSTL( model ) {
+/**
+ * Export model as STL.
+ * @param  {THREE.Mesh} model The model to export.
+ * @return {String}           The content for an STL file.
+ */
+function exportSTL( model, modelName ) {
+	var data = "",
+	    faces = model.geometry.faces,
+	    vertices = model.geometry.vertices;
+	var f, fn, x, y, z;
 
+	if( !modelName ) {
+		modelName = "";
+	}
+
+	// Name: optional, but not the "solid " at the beginning
+	data += "solid " + modelName + "\n\n";
+
+	// Faces, normals, vertices
+	for( var i = 0; i < faces.length; i++ ) {
+		f = faces[i];
+		fn = f.normal;
+
+		x = Utils.floatToSignExponentMantissa( fn.x );
+		y = Utils.floatToSignExponentMantissa( fn.y );
+		z = Utils.floatToSignExponentMantissa( fn.z );
+
+		data += "  facet normal " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "    outer loop\n";
+
+		x = Utils.floatToSignExponentMantissa( vertices[f.a].x );
+		y = Utils.floatToSignExponentMantissa( vertices[f.a].y );
+		z = Utils.floatToSignExponentMantissa( vertices[f.a].z );
+
+		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+
+		x = Utils.floatToSignExponentMantissa( vertices[f.b].x );
+		y = Utils.floatToSignExponentMantissa( vertices[f.b].y );
+		z = Utils.floatToSignExponentMantissa( vertices[f.b].z );
+
+		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+
+		x = Utils.floatToSignExponentMantissa( vertices[f.c].x );
+		y = Utils.floatToSignExponentMantissa( vertices[f.c].y );
+		z = Utils.floatToSignExponentMantissa( vertices[f.c].z );
+
+		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "    endloop\n";
+		data += "  endfacet\n";
+	}
+
+	data += "endsolid " + modelName + "\n";
+
+	return data;
 }
