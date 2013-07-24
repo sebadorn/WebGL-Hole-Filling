@@ -161,8 +161,8 @@ var AdvancingFront = {
 			// Close last hole
 			if( len == 3 ) {
 				filling.faces.push( new THREE.Face3(
-					filling.vertices.indexOf( front.vertices[0] ),
 					filling.vertices.indexOf( front.vertices[1] ),
+					filling.vertices.indexOf( front.vertices[0] ),
 					filling.vertices.indexOf( front.vertices[2] )
 				) );
 				break;
@@ -377,7 +377,7 @@ var AdvancingFront = {
 		var vnIndex = filling.vertices.indexOf( vn ),
 		    vIndex = filling.vertices.indexOf( v );
 
-		filling.faces.push( new THREE.Face3( vIndex, vnIndex, len - 1 ) );
+		filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
 
 		// Update front
 		var ix = front.vertices.indexOf( v );

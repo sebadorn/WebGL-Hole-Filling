@@ -255,17 +255,20 @@ var UI = {
 	 * Reset the interface.
 	 */
 	resetInterface: function() {
-		var details = document.querySelector( ".details-holefilling" ),
-		    detailFoundHoles = details.querySelector( ".detail-foundholes fieldset" ),
-		    detailHoleInfoVertices = details.querySelector( "#holeinfo-vertices" ),
-		    detailFillHole = details.querySelector( ".detail-fillhole fieldset" ),
-		    detailFillHoleNumber = details.querySelector( ".detail-fillhole .number" );
+		var d = document;
+		var details = d.body.querySelectorAll( ".details-collection" ),
+		    detailFieldsets = d.body.querySelectorAll( ".detail fieldset" ),
+		    detailFillHoleNumber = d.body.querySelector( ".detail-fillhole .number" );
 
-		details.setAttribute( "hidden", "hidden" );
-		this.cleanOfChildNodes( detailFoundHoles );
-		this.cleanOfChildNodes( detailFillHole );
+		for( var i = 0; i < detailFieldsets.length; i++ ) {
+			this.cleanOfChildNodes( detailFieldsets[i] );
+		}
+
+		for( var i = 0; i < details.length; i++ ) {
+			details[i].setAttribute( "hidden", "hidden" );
+		}
+
 		detailFillHoleNumber.textContent = "-";
-		detailHoleInfoVertices.textContent = "-";
 	},
 
 
@@ -292,8 +295,9 @@ var UI = {
 	selectHole: function( e ) {
 		var d = document;
 		var children = e.target.parentNode.childNodes,
-		    detailFillHole = d.getElementById( "details" ).querySelector( ".detail-fillhole" ),
-		    detailHoleInfo = d.getElementById( "details" ).querySelector( ".detail-holeinfo" ),
+		    details = d.getElementById( "details" ),
+		    detailFillHole = details.querySelector( ".detail-fillhole" ),
+		    detailHoleInfo = details.querySelector( ".detail-holeinfo" ),
 		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
 		var area, btnFill, infoVertices, number;
 
@@ -375,35 +379,54 @@ var UI = {
 	showDetailHoles: function( foundHoles ) {
 		var d = document,
 		    detail = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
-		    section = detail.querySelector( ".detail-foundholes fieldset" ),
-		    selection = d.createElement( "div" );
+		    sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
+		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" );
+		var selection = d.createElement( "div" );
+		var info, infoLabel;
 
-		this.cleanOfChildNodes( section );
+		this.cleanOfChildNodes( sectionFoundHoles );
+		this.cleanOfChildNodes( sectionHoleInfo );
+
+
+		// Found holes
 		selection.className = "selectContainer foundHoles";
 
 		if( foundHoles.length > 0 ) {
 			var btnFocusHole;
 
 			for( var i = 0; i < foundHoles.length; i++ ) {
-				btnFocusHole = d.createElement( "input" );
-				btnFocusHole.type = "button";
-				btnFocusHole.value = "Hole " + ( i + 1 );
+				btnFocusHole = this.createButton(
+					"Hole " + ( i + 1 ), this.selectHole.bind( this )
+				);
 				btnFocusHole.className = "foundHole";
 				btnFocusHole.style.borderLeftColor = "#" + foundHoles[i].material.color.getHexString();
 				btnFocusHole.setAttribute( "data-index", i );
-				btnFocusHole.addEventListener( "click", this.selectHole.bind( this ), false );
 
 				selection.appendChild( btnFocusHole );
 			}
-			section.appendChild( selection );
+			sectionFoundHoles.appendChild( selection );
 		}
 		else {
 			var msg = d.createElement( "p" );
 			msg.className = "message";
 			msg.textContent = "No holes found."
 
-			section.appendChild( msg );
+			sectionFoundHoles.appendChild( msg );
 		}
+
+
+		// Hole information
+		info = d.createElement( "span" );
+		info.className = "info";
+		info.id = "holeinfo-vertices";
+		info.textContent = "-";
+
+		infoLabel = d.createElement( "label" );
+		infoLabel.textContent = "front vertices";
+
+		sectionHoleInfo.appendChild( info );
+		sectionHoleInfo.appendChild( infoLabel );
+
 
 		this.hideAllDetails();
 		detail.removeAttribute( "hidden" );
