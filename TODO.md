@@ -2,7 +2,6 @@
 
 * `Critical` Merge created filling with original model
 * `Critical` Test collision not only with filling, but the whole mesh
-* `Critical` Export
 * `Improve` Choose file name for export
 * `Improve` Parallelization through Workers
 * `Improve` Refine AFM based on Poisson equation OR radial basis functions

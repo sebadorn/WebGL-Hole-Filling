@@ -149,42 +149,77 @@ var Utils = {
 
 
 	/**
-	 * Split a float value into its sign, exponent and mantissa part.
-	 * Source: http://stackoverflow.com/a/10564792
+	 * Convert the format of a float into a scientific notiation.
 	 * @param  {float} value The value to convert.
-	 * @return {Object}      An object with the values of the sign, exponent and mantissa.
+	 * @return {String}      The scientific notation.
 	 */
-	floatToSignExponentMantissa: function( value ) {
-		var buffer = new ArrayBuffer( 4 ),
-		    dataView = new DataView( buffer );
-		var bitstring, exponent, mantissa, sign;
+	floatToScientific: function( value ) {
+		// var buffer = new ArrayBuffer( 4 ),
+		//     dataView = new DataView( buffer );
+		// var bitstring, exponent, mantissa, sign;
 
-		// Convert float to binary (string)
-		dataView.setFloat32( 0, value );
-		bitstring = dataView.getInt32( 0 ).toString( 2 );
 
-		// Leading zeros are omitted, but we need those
-		if( bitstring.length < 32 ) {
-			bitstring = new Array( 32 - bitstring.length + 1 ).join( "0" ) + bitstring;
+		var valueStr = value.toString( 10 );
+		var splitted = valueStr.split( "." );
+		var a = splitted[0];
+		var b = splitted[1];
+
+		var sign = ( a.substr( 0, 1 ) == "-" ) ? "-" : "";
+		if( sign == "-" ) {
+			a = a.substr( 1 );
 		}
 
-		// Now just extract the bits
-		sign = bitstring.substr( 0, 1 );     // leftmost bit: sign
-		exponent = bitstring.substr( 1, 8 ); // the next 8 bits: exponent
-		mantissa = bitstring.substr( 9 );    // the next 23 bits: mantissa
+		var exp = a.length - 1;
 
-		sign = parseInt( sign, 2 ); // Still Strings, turn them into integers
-		exponent = 127 - parseInt( exponent, 2 );
-		mantissa = parseInt( mantissa, 2 );
+		if( a == "0" ) {
+			exp--;
+			while( b.indexOf( "0" ) == 0 ) {
+				exp--;
+				b = b.substr( 1 );
+			}
+		}
 
-		return {
-			sign: sign,
-			exponent: exponent,
-			mantissa: mantissa,
-			string: ( sign ? "" : "-" )
-					+ mantissa.toString( 10 ).substr( 0, 1 ) + "." + mantissa.toString( 10 ).substr( 1 )
-					+ "e" + ( exponent >= 0 ? "+" : "" ) + exponent.toString( 10 )
-		};
+		var expSign = ( exp < 0 ) ? "" : "+";
+
+		if( exp < 0 ) {
+			a = b[0];
+			b = b.substr( 1 );
+		}
+		else {
+			b = a.substr( 1 ) + b;
+			a = a.substr( 0, 1 );
+		}
+
+
+		return ( sign + a + "." + b + "e" + expSign + exp );
+
+
+		// // Convert float to binary (string)
+		// dataView.setFloat32( 0, value );
+		// bitstring = dataView.getInt32( 0 ).toString( 2 );
+
+		// // Leading zeros are omitted, but we need those
+		// if( bitstring.length < 32 ) {
+		// 	bitstring = new Array( 32 - bitstring.length + 1 ).join( "0" ) + bitstring;
+		// }
+
+		// // Now just extract the bits
+		// sign = bitstring.substr( 0, 1 );     // leftmost bit: sign
+		// exponent = bitstring.substr( 1, 8 ); // the next 8 bits: exponent
+		// mantissa = bitstring.substr( 9 );    // the next 23 bits: mantissa
+
+		// sign = parseInt( sign, 2 ); // Still Strings, turn them into integers
+		// exponent = parseInt( exponent, 2 );
+		// mantissa = parseInt( mantissa, 2 );
+
+		// return {
+		// 	sign: sign,
+		// 	exponent: exponent,
+		// 	mantissa: mantissa,
+		// 	string: ( sign ? "" : "-" )
+		// 			+ mantissa.toString( 10 ).substr( 0, 1 ) + "." + mantissa.toString( 10 ).substr( 1 )
+		// 			+ "e" + ( exponent >= 0 ? "+" : "" ) + exponent.toString( 10 )
+		// };
 	},
 
 

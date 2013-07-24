@@ -11,7 +11,7 @@ function test_setup() {
 function test() {
 	test_setup();
 
-	var sem = Utils.floatToSignExponentMantissa( 0.15625 );
+	var sem = Utils.floatToScientific( -100.00047827823783454 );
 	console.log( sem );
 
 	/*

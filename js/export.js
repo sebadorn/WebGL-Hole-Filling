@@ -53,30 +53,30 @@ function exportSTL( model, modelName ) {
 		f = faces[i];
 		fn = f.normal;
 
-		x = Utils.floatToSignExponentMantissa( fn.x );
-		y = Utils.floatToSignExponentMantissa( fn.y );
-		z = Utils.floatToSignExponentMantissa( fn.z );
+		x = Utils.floatToScientific( fn.x );
+		y = Utils.floatToScientific( fn.y );
+		z = Utils.floatToScientific( fn.z );
 
-		data += "  facet normal " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "  facet normal " + x + " " + y + " " + z + "\n";
 		data += "    outer loop\n";
 
-		x = Utils.floatToSignExponentMantissa( vertices[f.a].x );
-		y = Utils.floatToSignExponentMantissa( vertices[f.a].y );
-		z = Utils.floatToSignExponentMantissa( vertices[f.a].z );
+		x = Utils.floatToScientific( vertices[f.a].x );
+		y = Utils.floatToScientific( vertices[f.a].y );
+		z = Utils.floatToScientific( vertices[f.a].z );
 
-		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "      vertex " + x + " " + y + " " + z + "\n";
 
-		x = Utils.floatToSignExponentMantissa( vertices[f.b].x );
-		y = Utils.floatToSignExponentMantissa( vertices[f.b].y );
-		z = Utils.floatToSignExponentMantissa( vertices[f.b].z );
+		x = Utils.floatToScientific( vertices[f.b].x );
+		y = Utils.floatToScientific( vertices[f.b].y );
+		z = Utils.floatToScientific( vertices[f.b].z );
 
-		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "      vertex " + x + " " + y + " " + z + "\n";
 
-		x = Utils.floatToSignExponentMantissa( vertices[f.c].x );
-		y = Utils.floatToSignExponentMantissa( vertices[f.c].y );
-		z = Utils.floatToSignExponentMantissa( vertices[f.c].z );
+		x = Utils.floatToScientific( vertices[f.c].x );
+		y = Utils.floatToScientific( vertices[f.c].y );
+		z = Utils.floatToScientific( vertices[f.c].z );
 
-		data += "      vertex " + x.string + " " + y.string + " " + z.string + "\n";
+		data += "      vertex " + x + " " + y + " " + z + "\n";
 		data += "    endloop\n";
 		data += "  endfacet\n";
 	}
