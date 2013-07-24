@@ -46,7 +46,9 @@ var CONFIG = {
 		AFM_STOP_AFTER_ITER: 30000
 	},
 
+	// Export of model
 	EXPORT: {
+		DEFAULT_FORMAT: "STL",
 		FORMATS: ["OBJ", "STL"]
 	},
 

@@ -8,6 +8,18 @@
 var UI = {
 
 	/**
+	 * Change the export filename according to the chosen file format.
+	 */
+	changeExportName: function( e ) {
+		var format = e.target.value.toLowerCase(),
+		    textInput = document.getElementById( "export_name" );
+		var nameParts = textInput.value.split( "." );
+
+		textInput.value = textInput.value.replace( nameParts[nameParts.length - 1], format );
+	},
+
+
+	/**
 	 * Signal in the hole selection that a hole has already been filled.
 	 * @param {int} index Index of the hole.
 	 */
@@ -17,6 +29,7 @@ var UI = {
 
 		for( var i = holesSelect.childNodes.length - 1; i >= 0; i-- ) {
 			holeBtn = holesSelect.childNodes[i];
+
 			if( holeBtn.getAttribute( "data-index" ) == index ) {
 				holeBtn.className += " filled";
 				break;
@@ -34,7 +47,84 @@ var UI = {
 		for( var i = node.childNodes.length - 1; i >= 0; i-- ) {
 			node.removeChild( node.childNodes[i] );
 		}
+
 		return node;
+	},
+
+
+	/**
+	 * Create a button.
+	 * @param  {String}     value     Value of the input.
+	 * @param  {Function}   clickCall Function to call if input is clicked. (optional)
+	 * @param  {String}     id        ID for the input element. (optional)
+	 * @return {HTMLObject}           The created input button.
+	 */
+	createButton: function( value, clickCall, id ) {
+		var btn = document.createElement( "input" );
+
+		btn.className = "button";
+		btn.type = "button";
+		btn.value = value;
+
+		if( id ) {
+			btn.id = id;
+		}
+
+		if( typeof clickCall == "function" ) {
+			btn.addEventListener( "click", clickCall, false );
+		}
+
+		return btn;
+	},
+
+
+	/**
+	 * Create a pair of hidden radio element and button, that checks it.
+	 * @param  {String} group      Name of the radio group the pair belongs to.
+	 * @param  {String} id         ID for the radio element.
+	 * @param  {String} radioValue Value for the radio element.
+	 * @param  {String} btnText    Text for the button.
+	 * @return {Object}            Object with the radio element and the button.
+	 */
+	createRadioPair: function( group, id, radioValue, btnText ) {
+		var input = document.createElement( "input" ),
+		    label = document.createElement( "label" );
+
+		input.className = "newradio";
+		input.type = "radio";
+		input.name = group;
+		input.id = id;
+		input.value = radioValue;
+
+		label.className = "newradio";
+		label.setAttribute( "for", id );
+		label.textContent = btnText;
+
+		return {
+			radio: input,
+			button: label
+		};
+	},
+
+
+	/**
+	 * Create a text input field.
+	 * @param  {String}     value Initial value of the field.
+	 * @param  {String}     id    ID for the field. (optional)
+	 * @return {HTMLObject}       The created input text field.
+	 */
+	createTextField: function( value, id ) {
+		var text = document.createElement( "input" );
+
+		text.className = "textinput";
+		text.type = "text";
+		text.value = value;
+
+		if( id ) {
+			text.id = id;
+		}
+
+		return text;
 	},
 
 
@@ -218,12 +308,8 @@ var UI = {
 		number = detailFillHole.querySelector( ".caption .number" );
 		number.textContent = index + 1;
 
-		btnFill = d.createElement( "input" );
-		btnFill.type = "button";
-		btnFill.className = "button";
-		btnFill.value = "Advancing Front";
+		btnFill = this.createButton( "Advancing Front", Scene.fillHole.bind( Scene ) );
 		btnFill.setAttribute( "data-fillhole", index );
-		btnFill.addEventListener( "click", Scene.fillHole.bind( Scene ), false );
 
 		area = detailFillHole.querySelector( "fieldset" );
 		this.cleanOfChildNodes( area );
@@ -239,47 +325,43 @@ var UI = {
 	 * Show further options for the export.
 	 */
 	showDetailExport: function() {
-		var d = document,
-		    detail = d.getElementById( "details" ).querySelector( ".details-export" ),
+		var detail = document.getElementById( "details" ).querySelector( ".details-export" ),
 		    formats = CONFIG.EXPORT.FORMATS,
-		    section = detail.querySelector( ".detail-exportformat fieldset" );
-		var btnExport, format, input, label;
+		    sectionFormat = detail.querySelector( ".detail-exportformat fieldset" ),
+		    sectionName = detail.querySelector( ".detail-exportname fieldset" ),
+		    sectionExport = detail.querySelector( ".detail-export fieldset" );
+		var defaultName, format, radioPair;
 
-		this.cleanOfChildNodes( section );
+		this.cleanOfChildNodes( sectionFormat );
+		this.cleanOfChildNodes( sectionName );
+		this.cleanOfChildNodes( sectionExport );
 
 		// Export formats
 		for( var i = 0; i < formats.length; i++ ) {
 			format = formats[i];
 
-			input = d.createElement( "input" );
-			label = d.createElement( "label" );
+			radioPair = this.createRadioPair( "export", "export_" + format, format, format );
+			radioPair.radio.addEventListener( "change", this.changeExportName, false );
 
-			input.className = "newradio";
-			input.type = "radio";
-			input.name = "export";
-			input.id = "export_" + formats[i];
-			input.value = formats[i];
-
-			if( i == 0 ) {
-				input.setAttribute( "checked", "checked" );
+			if( format == CONFIG.EXPORT.DEFAULT_FORMAT ) {
+				radioPair.radio.setAttribute( "checked", "checked" );
 			}
 
-			label.className = "newradio";
-			label.setAttribute( "for", "export_" + formats[i] );
-			label.textContent = formats[i];
-
-			section.appendChild( input );
-			section.appendChild( label );
+			sectionFormat.appendChild( radioPair.radio );
+			sectionFormat.appendChild( radioPair.button );
 		}
 
-		// Button to start export
-		btnExport = d.createElement( "input" );
-		btnExport.className = "button";
-		btnExport.type = "button";
-		btnExport.value = "Export";
-		btnExport.addEventListener( "click", this.startExport.bind( section ), false );
+		// Insert name for model
+		defaultName = GLOBAL.MODEL.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
 
-		section.appendChild( btnExport );
+		sectionName.appendChild(
+			this.createTextField( defaultName, "export_name" )
+		);
+
+		// Button to start export
+		sectionExport.appendChild(
+			this.createButton( "Export", this.startExport.bind( detail ) )
+		);
 
 		this.hideAllDetails();
 		detail.removeAttribute( "hidden" );
@@ -330,21 +412,21 @@ var UI = {
 
 	/**
 	 * Trigger the export.
-	 * this == export section
+	 * this == export detail
 	 * Source: http://thiscouldbebetter.wordpress.com/2012/12/18/loading-editing-and-saving-a-text-file-in-html5-using-javascrip/
 	 */
 	startExport: function( e ) {
 		var d = document;
-		var format = this.querySelector( "input.newradio:checked" );
-		var exportData;
+		var format = this.querySelector( ".detail-exportformat input.newradio:checked" ),
+		    name = this.querySelector( "#export_name" );
+		var content, download, exportData;
 
 		format = format.value.toLowerCase();
 		exportData = Scene.exportModel( format );
+		content = new Blob( [exportData], { type: "text/plain" } );
 
-		var content = new Blob( [exportData], { type: "text/plain" } );
-		var download = d.createElement( "a" );
-
-		download.download = "export." + format;
+		download = d.createElement( "a" );
+		download.download = name.value;
 		download.href = window.URL.createObjectURL( content );
 		download.addEventListener( "click", Utils.selfRemoveFromDOM, false );
 		download.setAttribute( "hidden", "hidden" );

@@ -46,7 +46,7 @@ var Loader = {
 	/**
 	 * Read the model data from the file and load it into the scene.
 	 */
-	loadModel: function( e, extension ) {
+	loadModel: function( e, filename, extension ) {
 		var g = GLOBAL;
 		var content, geometry, loader;
 
@@ -67,15 +67,17 @@ var Loader = {
 
 		g.MODEL = Scene.geometryToMesh( geometry );
 		g.MODEL = Scene.centerModel( g.MODEL );
+		g.MODEL.name = filename.replace( "." + extension, "" );
 
 		UI.resetInterface();
+
 		Scene.clearModels();
 		Scene.resetCamera();
 		Scene.renderBoundingBox( g.MODEL );
 
 		g.FILLINGS = {};
-
 		g.SCENE.add( g.MODEL );
+
 		render();
 	},
 
@@ -90,7 +92,7 @@ var Loader = {
 		var reader = new FileReader();
 
 		reader.addEventListener( "load", function( e ) {
-			callback( e, extension );
+			callback( e, file.name, extension );
 		}, false );
 		reader.readAsText( file );
 	},

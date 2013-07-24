@@ -101,11 +101,15 @@ legend {
 	     box-sizing: border-box;
 	display: block;
 	height: 100%;
-	left: 0;
 	position: absolute;
 	top: 0;
-	width: 60px;
+	width: 61px;
 	z-index: 500;
+}
+
+.tools {
+	border-right: 1px solid #404040;
+	left: 0;
 }
 
 	.tool p:last-child {
@@ -120,8 +124,7 @@ legend {
 		width: 100%;
 	}
 
-		.tools fieldset,
-		.toolwindow fieldset {
+		.tools fieldset {
 			background-color: #333748;
 			border-bottom-right-radius: 2px;
 			border-top-right-radius: 2px;
@@ -137,8 +140,7 @@ legend {
 			z-index: 110;
 		}
 
-		.tools legend,
-		.toolwindow legend {
+		.tools legend {
 			background-color: #101010;
 			-moz-box-sizing: border-box;
 			     box-sizing: border-box;
@@ -154,6 +156,13 @@ legend {
 			display: block;
 		}
 
+
+hr {
+	border: 0;
+	border-bottom: 1px solid #101010;
+	display: block;
+	margin: 10px 0;
+}
 
 .tool section {
 	border-bottom: 1px solid #101010;
@@ -175,8 +184,7 @@ legend {
 
 
 .details {
-	font-size: 90%;
-	left: auto;
+	border-left: 1px solid #404040;
 	right: 0;
 	width: 200px;
 	z-index: 450;
@@ -189,8 +197,11 @@ legend {
 
 		.detail .caption {
 			background-color: #101010;
-			border-top: 1px solid #404040;
+			border: 1px solid #404040;
+			border-left: 0;
+			border-right: 0;
 			display: block;
+			font-weight: bold;
 			padding: 6px 16px;
 		}
 
@@ -265,6 +276,7 @@ textarea {
 	border: 1px solid #d0d0d0;
 	border-radius: 1px;
 	color: #000000;
+	font-family: "OpenSans Web", "Open Sans", Helvetica, Arial, sans-serif;
 	font-size: 100%;
 }
 
@@ -334,6 +346,15 @@ label.newradio:last-of-type {
 	background-image: -webkit-linear-gradient( top, #404040, #606060 );
 	background-image:         linear-gradient( to bottom, #404040, #606060 );
 	color: #000000;
+}
+
+.textinput {
+	-moz-box-sizing: border-box;
+	     box-sizing: border-box;
+	border: 0;
+	font-size: 100%;
+	padding: 2px 4px;
+	width: 100%;
 }
 
 .selectContainer {
