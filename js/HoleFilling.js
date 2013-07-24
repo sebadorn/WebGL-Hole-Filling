@@ -2,6 +2,112 @@
 
 
 /**
+ * Class for finding the hole front.
+ * @type {Object}
+ */
+var HoleFilling = {
+
+	/**
+	 * Find the border edges of a hole inside a half-edge structure.
+	 * @param  {THREE.Mesh} model  The model to find holes in.
+	 * @return {Object}            Arrays of lines and points, depending on configuration.
+	 */
+	findBorderEdges: function( model ) {
+		var colors = CONFIG.HF.BORDER.COLOR,
+		    holes = [],
+		    ignore = [],
+		    lines = [],
+		    points = [],
+		    pos = new THREE.Vector3();
+		var geometry, line, material, mesh, v, vertex;
+
+		mesh = new HalfEdgeMesh( model.geometry );
+
+		for( var i = 0; i < mesh.vertices.length; i++ ) {
+			vertex = mesh.vertices[i];
+
+			if( ignore.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
+				// New hole, add first vertex
+				holes.push( [model.geometry.vertices[vertex.index]] );
+
+				// Find connected border points
+				geometry = this.getNeighbouringBorderPoints( model, ignore, vertex );
+
+				for( var j = 0; j < geometry.vertices.length; j++ ) {
+					v = geometry.vertices[j];
+					holes[holes.length - 1].push( v );
+				}
+
+				// Lines
+				material = new THREE.LineBasicMaterial( {
+					color: colors[lines.length % colors.length],
+					linewidth: CONFIG.HF.BORDER.LINE_WIDTH
+				} );
+
+				line = new THREE.Line( geometry, material );
+				line.position = model.position;
+				lines.push( line );
+
+				// Points
+				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
+					for( var j = 0; j < geometry.vertices.length; j++ ) {
+						v = geometry.vertices[j];
+						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
+					}
+				}
+			}
+		}
+
+		GLOBAL.HALFEDGE = mesh;
+
+		return {
+			holes: holes,
+			lines: lines,
+			points: points
+		};
+	},
+
+
+	/**
+	 * Get all the connected border points starting from one of the border points.
+	 * Returns one hole in the mesh, if there is at least one.
+	 * @param  {THREE.Mesh}     model  The model to search holes in.
+	 * @param  {Array<int>}     ignore Vertices that have already been searched and can be ignored now.
+	 * @param  {Vertex}         start  Starting vertex.
+	 * @return {THREE.Geometry}        Geometry of a hole.
+	 */
+	getNeighbouringBorderPoints: function( model, ignore, start ) {
+		var geometry = new THREE.Geometry(),
+		    bpStart = start,
+		    bp = bpStart;
+		var v;
+
+		while( true ) {
+			if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
+				v = model.geometry.vertices[bp.index];
+				v.neighbours = bp.edges;
+				geometry.vertices.push( v );
+				ignore.push( bp.index );
+
+				if( bp.firstEdge == null ) {
+					break;
+				}
+				bp = bp.firstEdge.vertex;
+			}
+			else {
+				geometry.vertices.push( model.geometry.vertices[bpStart.index] );
+				break;
+			}
+		}
+
+		return geometry;
+	}
+
+};
+
+
+
+/**
  * Class for hole finding and filling algorithms.
  * @type {Object}
  */
@@ -13,8 +119,9 @@ var AdvancingFront = {
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
-	 * @param {THREE.Mesh}        model The model to fill the holes in.
-	 * @param {Array<THREE.Line>} hole  The hole described by lines.
+	 * @param  {THREE.Mesh}        model The model to fill the holes in.
+	 * @param  {Array<THREE.Line>} hole  The hole described by lines.
+	 * @return {THREE.Geometry}          The generated filling.
 	 */
 	afmStart: function( model, hole ) {
 		var filling = new THREE.Geometry(),
@@ -130,6 +237,8 @@ var AdvancingFront = {
 
 		this.showFilling( front, filling );
 		UI.checkHoleFinished( this.HOLE_INDEX );
+
+		return filling;
 	},
 
 
@@ -761,112 +870,6 @@ var AdvancingFront = {
 				filling.faces.splice( i, 1 );
 			}
 		}
-	}
-
-};
-
-
-
-/**
- * Class for finding the hole front.
- * @type {Object}
- */
-var HoleFilling = {
-
-	/**
-	 * Find the border edges of a hole inside a half-edge structure.
-	 * @param  {THREE.Mesh} model  The model to find holes in.
-	 * @return {Object}            Arrays of lines and points, depending on configuration.
-	 */
-	findBorderEdges: function( model ) {
-		var colors = CONFIG.HF.BORDER.COLOR,
-		    holes = [],
-		    ignore = [],
-		    lines = [],
-		    points = [],
-		    pos = new THREE.Vector3();
-		var geometry, line, material, mesh, v, vertex;
-
-		mesh = new HalfEdgeMesh( model.geometry );
-
-		for( var i = 0; i < mesh.vertices.length; i++ ) {
-			vertex = mesh.vertices[i];
-
-			if( ignore.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
-				// New hole, add first vertex
-				holes.push( [model.geometry.vertices[vertex.index]] );
-
-				// Find connected border points
-				geometry = this.getNeighbouringBorderPoints( model, ignore, vertex );
-
-				for( var j = 0; j < geometry.vertices.length; j++ ) {
-					v = geometry.vertices[j];
-					holes[holes.length - 1].push( v );
-				}
-
-				// Lines
-				material = new THREE.LineBasicMaterial( {
-					color: colors[lines.length % colors.length],
-					linewidth: CONFIG.HF.BORDER.LINE_WIDTH
-				} );
-
-				line = new THREE.Line( geometry, material );
-				line.position = model.position;
-				lines.push( line );
-
-				// Points
-				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
-					for( var j = 0; j < geometry.vertices.length; j++ ) {
-						v = geometry.vertices[j];
-						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
-					}
-				}
-			}
-		}
-
-		GLOBAL.HALFEDGE = mesh;
-
-		return {
-			holes: holes,
-			lines: lines,
-			points: points
-		};
-	},
-
-
-	/**
-	 * Get all the connected border points starting from one of the border points.
-	 * Returns one hole in the mesh, if there is at least one.
-	 * @param  {THREE.Mesh}     model  The model to search holes in.
-	 * @param  {Array<int>}     ignore Vertices that have already been searched and can be ignored now.
-	 * @param  {Vertex}         start  Starting vertex.
-	 * @return {THREE.Geometry}        Geometry of a hole.
-	 */
-	getNeighbouringBorderPoints: function( model, ignore, start ) {
-		var geometry = new THREE.Geometry(),
-		    bpStart = start,
-		    bp = bpStart;
-		var v;
-
-		while( true ) {
-			if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
-				v = model.geometry.vertices[bp.index];
-				v.neighbours = bp.edges;
-				geometry.vertices.push( v );
-				ignore.push( bp.index );
-
-				if( bp.firstEdge == null ) {
-					break;
-				}
-				bp = bp.firstEdge.vertex;
-			}
-			else {
-				geometry.vertices.push( model.geometry.vertices[bpStart.index] );
-				break;
-			}
-		}
-
-		return geometry;
 	}
 
 };

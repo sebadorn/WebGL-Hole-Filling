@@ -188,10 +188,11 @@ var Scene = {
 
 	/**
 	 * Export the model.
-	 * @param  {String} format Name of the format to use.
-	 * @return {String}        Exported model data.
+	 * @param  {String} format    Name of the format to use.
+	 * @param  {String} modelName Name for the model. (optional)
+	 * @return {String}           Exported model data.
 	 */
-	exportModel: function( format ) {
+	exportModel: function( format, modelName ) {
 		var exportData;
 
 		switch( format ) {
@@ -201,12 +202,11 @@ var Scene = {
 				break;
 
 			case "stl":
-				exportData = exportSTL( GLOBAL.MODEL, "test" ); // TODO: name for model
+				exportData = exportSTL( GLOBAL.MODEL, modelName );
 				break;
 
 			default:
-				console.error( "Unknown export format: " + format );
-				return false;
+				throw new Error( "Unknown export format: " + format );
 
 		}
 
@@ -230,7 +230,9 @@ var Scene = {
 			return;
 		}
 
-		AdvancingFront.afmStart( g.MODEL, g.HOLES[index] );
+		var filling = AdvancingFront.afmStart( g.MODEL, g.HOLES[index] );
+
+		THREE.GeometryUtils.merge( g.MODEL.geometry, filling );
 	},
 
 

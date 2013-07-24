@@ -2,14 +2,18 @@
 
 
 var CONFIG = {
+
 	ALLOWED_FILE_EXTENSIONS: ["obj", "ply", "stl"],
+
 	// Axis
 	AXIS: {
 		SHOW: true,
 		SIZE: 40
 	},
+
 	// Bounding Box
 	BBOX_COLOR: 0x37FEFE,
+
 	// Camera. Always looking at (0,0,0)
 	CAMERA: {
 		ANGLE: 45,
@@ -26,12 +30,14 @@ var CONFIG = {
 		ZFAR: 2500,
 		ZNEAR: 0.01
 	},
+
 	// Trackball controls
 	CONTROLS: {
 		PAN_SPEED: 0.8,
 		ROT_SPEED: 1.5,
 		ZOOM_SPEED: 1.5
 	},
+
 	// Debug
 	DEBUG: {
 		SHOW_FRONT: false,
@@ -39,9 +45,11 @@ var CONFIG = {
 		// <int>: stop after x iterations; <false>: stop when finished
 		AFM_STOP_AFTER_ITER: 30000
 	},
+
 	EXPORT: {
 		FORMATS: ["OBJ", "STL"]
 	},
+
 	// Hole Filling
 	HF: {
 		// Border of the hole(s)
@@ -59,6 +67,7 @@ var CONFIG = {
 			THRESHOLD_MERGE: 0.16
 		}
 	},
+
 	// Lights of the scene
 	LIGHTS: {
 		AMBIENT: [
@@ -77,7 +86,10 @@ var CONFIG = {
 			}
 		]
 	},
+
 	// Model rendering
 	MODE: "solid",
+
 	SHADING: "flat"
+
 };

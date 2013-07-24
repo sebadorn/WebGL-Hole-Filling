@@ -32,8 +32,9 @@ function exportOBJ( model ) {
 
 /**
  * Export model as STL.
- * @param  {THREE.Mesh} model The model to export.
- * @return {String}           The content for an STL file.
+ * @param  {THREE.Mesh} model     The model to export.
+ * @param  {String}     modelName A name for the model. (optional)
+ * @return {String}               The content for an STL file.
  */
 function exportSTL( model, modelName ) {
 	var data = "",
@@ -46,7 +47,7 @@ function exportSTL( model, modelName ) {
 	}
 
 	// Name: optional, but not the "solid " at the beginning
-	data += "solid " + modelName + "\n\n";
+	data += "solid " + modelName + "\n";
 
 	// Faces, normals, vertices
 	for( var i = 0; i < faces.length; i++ ) {

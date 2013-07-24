@@ -154,72 +154,51 @@ var Utils = {
 	 * @return {String}      The scientific notation.
 	 */
 	floatToScientific: function( value ) {
-		// var buffer = new ArrayBuffer( 4 ),
-		//     dataView = new DataView( buffer );
-		// var bitstring, exponent, mantissa, sign;
+		var splitted = value.toString( 10 ).split( "." ),
+		    a = splitted[0],
+		    b = splitted[1];
+		var exp = 0,
+		    expSign = "+",
+		    sign = "";
 
-
-		var valueStr = value.toString( 10 );
-		var splitted = valueStr.split( "." );
-		var a = splitted[0];
-		var b = splitted[1];
-
-		var sign = ( a.substr( 0, 1 ) == "-" ) ? "-" : "";
-		if( sign == "-" ) {
-			a = a.substr( 1 );
+		// Shorten the decimal values a little
+		if( b.length > 6 ) {
+			b = b.substr( 0, 6 );
 		}
 
-		var exp = a.length - 1;
+		// Negative value
+		if( a[0] == "-" ) {
+			a = a.substr( 1 );
+			sign = "-";
+		}
 
+		// Value less than 1
 		if( a == "0" ) {
 			exp--;
+
 			while( b.indexOf( "0" ) == 0 ) {
 				exp--;
 				b = b.substr( 1 );
 			}
 		}
+		// Value equal to or more than 1
+		else {
+			exp = a.length - 1;
+		}
 
-		var expSign = ( exp < 0 ) ? "" : "+";
-
+		// Move decimal point
 		if( exp < 0 ) {
 			a = b[0];
 			b = b.substr( 1 );
+			expSign = ""; // negative values bring their own minus sign
 		}
 		else {
 			b = a.substr( 1 ) + b;
-			a = a.substr( 0, 1 );
+			a = a[0];
 		}
 
 
 		return ( sign + a + "." + b + "e" + expSign + exp );
-
-
-		// // Convert float to binary (string)
-		// dataView.setFloat32( 0, value );
-		// bitstring = dataView.getInt32( 0 ).toString( 2 );
-
-		// // Leading zeros are omitted, but we need those
-		// if( bitstring.length < 32 ) {
-		// 	bitstring = new Array( 32 - bitstring.length + 1 ).join( "0" ) + bitstring;
-		// }
-
-		// // Now just extract the bits
-		// sign = bitstring.substr( 0, 1 );     // leftmost bit: sign
-		// exponent = bitstring.substr( 1, 8 ); // the next 8 bits: exponent
-		// mantissa = bitstring.substr( 9 );    // the next 23 bits: mantissa
-
-		// sign = parseInt( sign, 2 ); // Still Strings, turn them into integers
-		// exponent = parseInt( exponent, 2 );
-		// mantissa = parseInt( mantissa, 2 );
-
-		// return {
-		// 	sign: sign,
-		// 	exponent: exponent,
-		// 	mantissa: mantissa,
-		// 	string: ( sign ? "" : "-" )
-		// 			+ mantissa.toString( 10 ).substr( 0, 1 ) + "." + mantissa.toString( 10 ).substr( 1 )
-		// 			+ "e" + ( exponent >= 0 ? "+" : "" ) + exponent.toString( 10 )
-		// };
 	},
 
 
