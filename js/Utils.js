@@ -118,6 +118,50 @@ var Utils = {
 
 
 	/**
+	 * Check if lines of one triangle intersects with surface of another.
+	 * Source: http://geomalgorithms.com/a06-_intersect-2.html
+	 * @param  {THREE.Vector3} a
+	 * @param  {THREE.Vector3} b
+	 * @param  {THREE.Vector3} c
+	 * @param  {THREE.Vector3} fromA
+	 * @param  {THREE.Vector3} fromB
+	 * @param  {THREE.Vector3} p
+	 * @return {boolean}             True, if triangles intersect, false otherwise.
+	 */
+	checkIntersectionOfTriangles3D: function( a, b, c, fromA, fromB, p ) {
+		var u = b.clone().sub( a ),
+		    v = c.clone().sub( a );
+		var d = Math.pow( u.dot( v ), 2 ) - u.dot( u ) * v.dot( v ),
+		    planeOfTriangle = new Plane( a, u, v ),
+		    test = [fromA, fromB];
+		var r, s, t, w;
+
+		for( var i = 0; i < test.length; i++ ) {
+			r = planeOfTriangle.getIntersection( test[i], p );
+
+			if( !r ) {
+				continue;
+			}
+
+			w = r.clone().sub( a );
+
+			s = u.dot( v ) * w.dot( v ) - v.dot( v ) * w.dot( u );
+			s /= d;
+
+			t = u.dot( v ) * w.dot( u ) - u.dot( u ) * w.dot( v );
+			t /= d;
+
+			// Intersection of line with triangle found
+			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
+				return true;
+			}
+		}
+
+		return false;
+	},
+
+
+	/**
 	 * Compute the angle between two vertices.
 	 * Angle is in degree.
 	 * @param  {THREE.Vector3} vp   The previous vertex.
@@ -145,6 +189,37 @@ var Utils = {
 		}
 
 		return angle;
+	},
+
+
+	/**
+	 * Convert a 3D vector to a 2D vector by looking at the previously
+	 * computed variance of relevant points.
+	 * @param  {Object}        variance Variance to consider.
+	 * @param  {THREE.Vector3} v        Vector to flatten.
+	 * @return {THREE.Vector2}          Flattened vector.
+	 */
+	flattenByVariance: function( variance, v ) {
+		var vFlat;
+
+		if( variance.x < variance.y ) {
+			if( variance.x < variance.z ) {
+				vFlat = new THREE.Vector2( v.y, v.z );
+			}
+			else {
+				vFlat = new THREE.Vector2( v.x, v.y );
+			}
+		}
+		else {
+			if( variance.y < variance.z ) {
+				vFlat = new THREE.Vector2( v.x, v.z );
+			}
+			else {
+				vFlat = new THREE.Vector2( v.x, v.y );
+			}
+		}
+
+		return vFlat;
 	},
 
 

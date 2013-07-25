@@ -542,56 +542,50 @@ var AdvancingFront = {
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
 	isInHole: function( front, filling, v, fromA, fromB ) {
+		var modelGeo = GLOBAL.MODEL.geometry;
 		var a, b, c, face, fromA2D, fromB2D, v2D, variance;
-		var s, t;
+
+		// for( var i = 0; i < filling.faces.length; i++ ) {
+		// 	face = filling.faces[i];
+
+		// 	a = filling.vertices[face.a].clone();
+		// 	b = filling.vertices[face.b].clone();
+		// 	c = filling.vertices[face.c].clone();
+
+		// 	variance = Utils.calculateVariances( [a, b, c, v] );
+
+		// 	a = Utils.flattenByVariance( variance, a );
+		// 	b = Utils.flattenByVariance( variance, b );
+		// 	c = Utils.flattenByVariance( variance, c );
+		// 	v2D = Utils.flattenByVariance( variance, v );
+		// 	fromA2D = Utils.flattenByVariance( variance, fromA );
+		// 	fromB2D = Utils.flattenByVariance( variance, fromB );
+
+		// 	if( Utils.checkIntersectionOfTriangles2D( a, b, c, fromA2D, fromB2D, v2D ) ) {
+		// 		return false;
+		// 	}
+		// }
 
 		for( var i = 0; i < filling.faces.length; i++ ) {
 			face = filling.faces[i];
 
-			a = filling.vertices[face.a].clone();
-			b = filling.vertices[face.b].clone();
-			c = filling.vertices[face.c].clone();
+			a = filling.vertices[face.a];
+			b = filling.vertices[face.b];
+			c = filling.vertices[face.c];
 
-			variance = Utils.calculateVariances( [a, b, c, v] );
-
-			if( variance.x < variance.y ) {
-				if( variance.x < variance.z ) {
-					a = new THREE.Vector2( a.y, a.z );
-					b = new THREE.Vector2( b.y, b.z );
-					c = new THREE.Vector2( c.y, c.z );
-					v2D = new THREE.Vector2( v.y, v.z );
-					fromA2D = new THREE.Vector2( fromA.y, fromA.z );
-					fromB2D = new THREE.Vector2( fromB.y, fromB.z );
-				}
-				else {
-					a = new THREE.Vector2( a.x, a.y );
-					b = new THREE.Vector2( b.x, b.y );
-					c = new THREE.Vector2( c.x, c.y );
-					v2D = new THREE.Vector2( v.x, v.y );
-					fromA2D = new THREE.Vector2( fromA.x, fromA.y );
-					fromB2D = new THREE.Vector2( fromB.x, fromB.y );
-				}
+			if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
+				return false;
 			}
-			else {
-				if( variance.y < variance.z ) {
-					a = new THREE.Vector2( a.x, a.z );
-					b = new THREE.Vector2( b.x, b.z );
-					c = new THREE.Vector2( c.x, c.z );
-					v2D = new THREE.Vector2( v.x, v.z );
-					fromA2D = new THREE.Vector2( fromA.x, fromA.z );
-					fromB2D = new THREE.Vector2( fromB.x, fromB.z );
-				}
-				else {
-					a = new THREE.Vector2( a.x, a.y );
-					b = new THREE.Vector2( b.x, b.y );
-					c = new THREE.Vector2( c.x, c.y );
-					v2D = new THREE.Vector2( v.x, v.y );
-					fromA2D = new THREE.Vector2( fromA.x, fromA.y );
-					fromB2D = new THREE.Vector2( fromB.x, fromB.y );
-				}
-			}
+		}
 
-			if( Utils.checkIntersectionOfTriangles2D( a, b, c, fromA2D, fromB2D, v2D ) ) {
+		for( var i = 0; i < modelGeo.faces.length; i++ ) {
+			face = modelGeo.faces[i];
+
+			a = modelGeo.vertices[face.a];
+			b = modelGeo.vertices[face.b];
+			c = modelGeo.vertices[face.c];
+
+			if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
 				return false;
 			}
 		}
@@ -612,7 +606,6 @@ var AdvancingFront = {
 	keepNearPlane: function( v, vn, vNew ) {
 		var variance = Utils.calculateVariances( [v, vn] );
 
-		// TODO: Threshold?
 		if( variance.x < variance.y ) {
 			if( variance.x < variance.z ) {
 				vNew.x = variance.average.x;
