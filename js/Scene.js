@@ -55,12 +55,21 @@ var Scene = {
 		}
 
 		switch( value ) {
+
 			case "solid":
 				model.material.wireframe = false;
+				for( var key in GLOBAL.FILLINGS ) {
+					GLOBAL.FILLINGS[key].solid.material.wireframe = false;
+				}
 				break;
+
 			case "wireframe":
 				model.material.wireframe = true;
+				for( var key in GLOBAL.FILLINGS ) {
+					GLOBAL.FILLINGS[key].solid.material.wireframe = true;
+				}
 				break;
+
 			default:
 				return false;
 		}
@@ -77,40 +86,38 @@ var Scene = {
 		var g = GLOBAL,
 		    model = g.MODEL,
 		    value = e.target.value;
-		var material;
+		var shading;
 
 		if( !e.target.checked || model === null ) {
 			return false;
 		}
 
 		switch( value ) {
+
 			case "none":
-				material = new THREE.MeshPhongMaterial( {
-					shading: THREE.NoShading,
-					side: THREE.DoubleSide,
-					wireframe: ( this.MODE == "wireframe" )
-				} );
+				shading = THREE.NoShading;
 				break;
+
 			case "flat":
-				material = new THREE.MeshPhongMaterial( {
-					shading: THREE.FlatShading,
-					side: THREE.DoubleSide,
-					wireframe: ( this.MODE == "wireframe" )
-				} );
+				shading = THREE.FlatShading;
 				break;
+
 			case "phong":
-				material = new THREE.MeshPhongMaterial( {
-					shading: THREE.SmoothShading,
-					side: THREE.DoubleSide,
-					wireframe: ( this.MODE == "wireframe" )
-				} );
+				shading = THREE.SmoothShading;
 				break;
+
 			default:
 				return false;
+
 		}
 
-		model.setMaterial( material );
+		model.material.shading = shading;
 		model.geometry.normalsNeedUpdate = true;
+
+		for( var key in g.FILLINGS ) {
+			g.FILLINGS[key].solid.material.shading = shading;
+			g.FILLINGS[key].solid.geometry.normalsNeedUpdate = true;
+		}
 
 		this.SHADING = value;
 		render();
@@ -232,7 +239,9 @@ var Scene = {
 
 		var filling = AdvancingFront.afmStart( g.MODEL, g.HOLES[index] );
 
+		// Merge original model with the new filling
 		THREE.GeometryUtils.merge( g.MODEL.geometry, filling );
+		g.MODEL.geometry.mergeVertices();
 	},
 
 

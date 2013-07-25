@@ -808,6 +808,7 @@ var AdvancingFront = {
 			meshWire.geometry.computeVertexNormals();
 			meshWire.geometry.computeBoundingBox();
 
+			g.FILLINGS[this.HOLE_INDEX].wireframe = meshWire;
 			GLOBAL.SCENE.add( meshWire );
 		}
 
