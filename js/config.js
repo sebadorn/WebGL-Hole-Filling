@@ -43,7 +43,7 @@ var CONFIG = {
 		SHOW_FRONT: false,
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 30000
+		AFM_STOP_AFTER_ITER: 20000
 	},
 
 	// Export of model
@@ -63,6 +63,11 @@ var CONFIG = {
 		// The filling to be created
 		FILLING: {
 			COLOR: 0x87C3EC,
+			// COLLISION_TEST values: "filling" or "all"
+			// "all" will test to whole mesh for collisions with a newly created point,
+			// while "filling" only tests the hole filling.
+			// "all" is really slow.
+			COLLISION_TEST: "filling",
 			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,

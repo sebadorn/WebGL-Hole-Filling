@@ -116,6 +116,17 @@ var AdvancingFront = {
 	HOLE_INDEX: -1,
 	LAST_ITERATION: false, // for debugging
 
+	HEAP_ANGLES: {
+		rule1: [],
+		rule2: [],
+		rule3: []
+	},
+	HEAP_RULES: {
+		rule1: {},
+		rule2: {},
+		rule3: {}
+	},
+
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
@@ -146,6 +157,36 @@ var AdvancingFront = {
 		    loopCounter = 0;
 		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
 
+		var prev, newAngle, next;
+
+		// Initialize heaps
+		for( var i = 0; i < ca.angles.length; i++ ) {
+			angle = ca.angles[i];
+
+			if( angle.degree <= 75.0 ) {
+				this.HEAP_ANGLES.rule1.push( angle.degree );
+				this.HEAP_RULES.rule1[angle.degree] = angle;
+			}
+			else if( angle.degree <= 135.0 ) {
+				this.HEAP_ANGLES.rule2.push( angle.degree );
+				this.HEAP_RULES.rule2[angle.degree] = angle;
+			}
+			else if( angle.degree < 180.0 ) {
+				this.HEAP_ANGLES.rule3.push( angle.degree );
+				this.HEAP_RULES.rule3[angle.degree] = angle;
+			}
+			// else {
+			// 	heapAngleRest.push( angle.degree );
+			// 	heapRest[angle.degree] = angle;
+			// }
+		}
+
+		this.HEAP_ANGLES.rule1.sort();
+		this.HEAP_ANGLES.rule2.sort();
+		this.HEAP_ANGLES.rule3.sort();
+		// heapAngleRest.sort();
+
+
 		while( true ) {
 			len = front.vertices.length;
 			count++;
@@ -168,55 +209,86 @@ var AdvancingFront = {
 				break;
 			}
 
-			// Each round, we only apply one of the three rules.
-			// And we strongly favor rule 1 and rule 2, because
-			// rule 3 is really unrealiable. So we want to use it
-			// as little as possible.
-			if( loopCounter++ >= len ) {
-				applyRule = this.getNextRule( applyRule, applied, appliedBefore );
-				loopCounter = 0;
-				appliedBefore = applied;
-				applied = 0;
-			}
+			vNew = false;
 
-			vectors = this.getNextVectors( front.vertices, j, len );
-			if( !vectors ) {
+			if( this.HEAP_ANGLES.rule1.length > 0 ) {
+				degree = this.HEAP_ANGLES.rule1.splice( 0, 1 );
+				angle = this.HEAP_RULES.rule1[degree];
+
+				this.afRule1(
+					front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2]
+				);
+
+				prev = angle.previous;
+				angle.previous.setVertices( [prev.vertices[0], prev.vertices[1], angle.vertices[2]] );
+				angle.previous.next = angle.next;
+				this.heapRemove( prev );
+				this.heapInsert( prev );
+
+				next = angle.next;
+				angle.next.setVertices( [angle.vertices[0], next.vertices[1], next.vertices[2]] );
+				angle.next.previous = angle.previous;
+				this.heapRemove( next );
+				this.heapInsert( next );
+
+				delete this.HEAP_RULES.rule1[degree];
+			}
+			else if( this.HEAP_ANGLES.rule2.length > 0 ) {
+				degree = this.HEAP_ANGLES.rule2.splice( 0, 1 );
+				angle = this.HEAP_RULES.rule2[degree];
+
+				vNew = this.afRule2(
+					front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2]
+				);
+
+				if( vNew ) {
+					angle.setVertices( [angle.vertices[0], vNew, angle.vertices[2]] );
+					this.heapRemove( angle );
+					this.heapInsert( angle );
+
+					prev = angle.previous;
+					angle.previous.setVertices( [prev.vertices[0], prev.vertices[1], vNew] );
+					this.heapRemove( prev );
+					this.heapInsert( prev );
+
+					next = angle.next;
+					angle.next.setVertices( [vNew, next.vertices[1], next.vertices[2]] );
+					this.heapRemove( next );
+					this.heapInsert( next );
+				}
+
 				j++;
-				continue;
 			}
-			vp = vectors.vp;
-			v = vectors.v;
-			vn = vectors.vn;
+			else if( this.HEAP_ANGLES.rule3.length > 0 ) {
+				degree = this.HEAP_ANGLES.rule3.splice( 0, 1 );
+				angle = this.HEAP_RULES.rule3[degree];
 
-			// Calculate the angle between two adjacent vertices.
-			angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
+				vNew = this.afRule3(
+					front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2], degree
+				);
 
-			if( isNaN( angle ) ) {
-				console.error( "Angle is NaN!\n", vp, v, vn );
-			}
+				if( vNew ) {
+					newAngle = new Angle( [angle.vertices[1], vNew, angle.vertices[2]] );
+					newAngle.previous = angle;
+					newAngle.next = angle.next;
+					this.heapInsert( newAngle );
 
-			// Create new triangles on the plane.
-			if( applyRule == 1 && angle <= 75.0 ) {
-				vNew = this.afRule1( front, filling, vp, v, vn );
-				applied++;
-			}
-			else if( applyRule == 2 && angle <= 135.0 ) {
-				vNew = this.afRule2( front, filling, vp, v, vn );
-				j++;
-				applied++;
-			}
-			else if( applyRule == 3 && angle > 135.0 && angle < 180.0 ) {
-				vNew = this.afRule3( front, filling, vp, v, vn, angle );
+					next = angle.next;
+					angle.next.setVertices( [vNew, next.vertices[1], next.vertices[2]] );
+					angle.next.previous = newAngle;
+					this.heapRemove( next );
+					this.heapInsert( next );
+
+					angle.setVertices( [angle.vertices[0], angle.vertices[1], vNew] );
+					angle.next = newAngle;
+					this.heapRemove( angle );
+					this.heapInsert( angle );
+				}
+
 				j += 2;
-				applied++;
-			}
-			// TODO: Angle >= 180.0 not handled.
-			else if( angle >= 180.0 ) {
-				ignoredAngles++;
-				j++;
-				continue;
 			}
 			else {
+				ignoredAngles++;
 				j++;
 				continue;
 			}
@@ -225,6 +297,93 @@ var AdvancingFront = {
 			// vertex and see, if they can be merged.
 			this.mergeByDistance( front, filling, vNew, hole );
 		}
+
+
+		// while( true ) {
+		// 	len = front.vertices.length;
+		// 	count++;
+
+		// 	// for debugging
+		// 	if( stopIter !== false && ++count > stopIter ) {
+		// 		break;
+		// 	}
+		// 	if( stopIter !== false && count == stopIter - 1 ) {
+		// 		this.LAST_ITERATION = true;
+		// 	}
+
+		// 	// Close last hole
+		// 	if( len == 3 ) {
+		// 		filling.faces.push( new THREE.Face3(
+		// 			filling.vertices.indexOf( front.vertices[1] ),
+		// 			filling.vertices.indexOf( front.vertices[0] ),
+		// 			filling.vertices.indexOf( front.vertices[2] )
+		// 		) );
+		// 		break;
+		// 	}
+
+		// 	// Each round, we only apply one of the three rules.
+		// 	// And we strongly favor rule 1 and rule 2, because
+		// 	// rule 3 is really unrealiable. So we want to use it
+		// 	// as little as possible.
+		// 	if( loopCounter++ >= len ) {
+		// 		applyRule = this.getNextRule( applyRule, applied, appliedBefore );
+		// 		loopCounter = 0;
+		// 		appliedBefore = applied;
+		// 		applied = 0;
+		// 	}
+
+		// 	vectors = this.getNextVectors( front.vertices, j, len );
+		// 	if( !vectors ) {
+		// 		j++;
+		// 		continue;
+		// 	}
+		// 	vp = vectors.vp;
+		// 	v = vectors.v;
+		// 	vn = vectors.vn;
+
+		// 	// Calculate the angle between two adjacent vertices.
+		// 	angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
+
+		// 	if( isNaN( angle ) ) {
+		// 		console.error( "Angle is NaN!\n", vp, v, vn );
+		// 	}
+
+		// 	// Create new triangles on the plane.
+		// 	vNew = false;
+
+		// 	if( applyRule == 1 && angle <= 75.0 ) {
+		// 		this.afRule1( front, filling, vp, v, vn );
+		// 		applied++;
+		// 	}
+		// 	else if( applyRule == 2 && angle <= 135.0 ) {
+		// 		vNew = this.afRule2( front, filling, vp, v, vn );
+		// 		j++;
+		// 		if( vNew ) {
+		// 			applied++;
+		// 		}
+		// 	}
+		// 	else if( applyRule == 3 && angle > 135.0 && angle < 180.0 ) {
+		// 		vNew = this.afRule3( front, filling, vp, v, vn, angle );
+		// 		j += 2;
+		// 		if( vNew ) {
+		// 			applied++;
+		// 		}
+		// 	}
+		// 	// TODO: Angle >= 180.0 not handled.
+		// 	else if( angle >= 180.0 ) {
+		// 		ignoredAngles++;
+		// 		j++;
+		// 		continue;
+		// 	}
+		// 	else {
+		// 		j++;
+		// 		continue;
+		// 	}
+
+		// 	// Compute the distances between each new created
+		// 	// vertex and see, if they can be merged.
+		// 	this.mergeByDistance( front, filling, vNew, hole );
+		// }
 
 		console.log(
 			"Finished after " + count + " iterations.\n",
@@ -255,6 +414,10 @@ var AdvancingFront = {
 		var vIndex = filling.vertices.indexOf( v ),
 		    vnIndex = filling.vertices.indexOf( vn ),
 		    vpIndex = filling.vertices.indexOf( vp );
+
+		// if( !this.isInHole( front, filling, vp.clone(), vn.clone(), vn.clone(), null ) ) {
+		// 	return false;
+		// }
 
 		filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
 
@@ -364,9 +527,9 @@ var AdvancingFront = {
 		vNew.add( v ).add( halfWay );
 		vNew = this.keepNearPlane( v, vn, vNew );
 
-		if( !this.isInHole( front, filling, vNew.clone(), vp.clone(), vn.clone() ) ) {
-			return false;
-		}
+		// if( !this.isInHole( front, filling, vNew.clone(), vp.clone(), vn.clone() ) ) {
+		// 	return false;
+		// }
 
 
 		// New vertex
@@ -399,21 +562,28 @@ var AdvancingFront = {
 				angle: 361.0,
 				index: -1
 		    };
-		var angle, v, vn, vp;
+		var angle, prev, v, vn, vp;
 
 		for( var i = 0, len = front.length; i < len; i++ ) {
 			vp = front[( i == 0 ) ? len - 2 : i - 1];
 			v = front[i];
 			vn = front[( i + 1 ) % len];
 
-			angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
-			angles.push( angle );
+			prev = ( i == 0 ) ? null : angles[angles.length - 1];
 
-			if( smallest.angle > angle ) {
-				smallest.angle = angle;
+			angle = new Angle( [vp, v, vn] );
+			angle.previous = prev;
+
+			angles.push( angle );
+			angles[angles.length - 2].next = angles[angles.length - 1];
+
+			if( smallest.angle > angle.degree ) {
+				smallest.angle = angle.degree;
 				smallest.index = i;
 			}
 		}
+
+		angles[0].previous = angles[angles.length - 1];
 
 		return {
 			angles: angles,
@@ -536,35 +706,59 @@ var AdvancingFront = {
 
 
 	/**
+	 * Insert an angle into the corresponding heap.
+	 * @param {Angle} angle The angle to insert.
+	 */
+	heapInsert: function( angle ) {
+		if( angle.degree <= 75.0 ) {
+			this.HEAP_ANGLES.rule1.push( angle );
+			this.HEAP_ANGLES.rule1.sort();
+			this.HEAP_RULES.rule1[angle.degree] = angle;
+		}
+		else if( angle.degree <= 135.0 ) {
+			this.HEAP_ANGLES.rule2.push( angle );
+			this.HEAP_ANGLES.rule2.sort();
+			this.HEAP_RULES.rule2[angle.degree] = angle;
+		}
+		else if( angle.degree < 180.0 ) {
+			this.HEAP_ANGLES.rule3.push( angle );
+			this.HEAP_ANGLES.rule3.sort();
+			this.HEAP_RULES.rule3[angle.degree] = angle;
+		}
+	},
+
+
+	/**
+	 * Remove an angle from its heap(s).
+	 * @param {Angle} angle The angle to remove.
+	 */
+	heapRemove: function( angle ) {
+		if( angle.degree <= 75.0 ) {
+			this.HEAP_ANGLES.rule1.splice( this.HEAP_ANGLES.rule1.indexOf( angle.degree ), 1 );
+			delete this.HEAP_RULES.rule1[angle.degree];
+		}
+		else if( angle.degree <= 135.0 ) {
+			this.HEAP_ANGLES.rule2.splice( this.HEAP_ANGLES.rule2.indexOf( angle.degree ), 1 );
+			delete this.HEAP_RULES.rule2[angle.degree];
+		}
+		else if( angle.degree < 180.0 ) {
+			this.HEAP_ANGLES.rule3.splice( this.HEAP_ANGLES.rule3.indexOf( angle.degree ), 1 );
+			delete this.HEAP_RULES.rule3[angle.degree];
+		}
+	},
+
+
+	/**
 	 * Check, if a vector is inside the hole or has left the boundary.
 	 * @param  {Array}         front The current front of the hole.
 	 * @param  {THREE.Vector3} v     The vector to check.
+	 * @param  {THREE.Vector3} fromA
+	 * @param  {THREE.Vector3} fromB
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
 	isInHole: function( front, filling, v, fromA, fromB ) {
 		var modelGeo = GLOBAL.MODEL.geometry;
-		var a, b, c, face, fromA2D, fromB2D, v2D, variance;
-
-		// for( var i = 0; i < filling.faces.length; i++ ) {
-		// 	face = filling.faces[i];
-
-		// 	a = filling.vertices[face.a].clone();
-		// 	b = filling.vertices[face.b].clone();
-		// 	c = filling.vertices[face.c].clone();
-
-		// 	variance = Utils.calculateVariances( [a, b, c, v] );
-
-		// 	a = Utils.flattenByVariance( variance, a );
-		// 	b = Utils.flattenByVariance( variance, b );
-		// 	c = Utils.flattenByVariance( variance, c );
-		// 	v2D = Utils.flattenByVariance( variance, v );
-		// 	fromA2D = Utils.flattenByVariance( variance, fromA );
-		// 	fromB2D = Utils.flattenByVariance( variance, fromB );
-
-		// 	if( Utils.checkIntersectionOfTriangles2D( a, b, c, fromA2D, fromB2D, v2D ) ) {
-		// 		return false;
-		// 	}
-		// }
+		var a, b, c, face;
 
 		for( var i = 0; i < filling.faces.length; i++ ) {
 			face = filling.faces[i];
@@ -573,20 +767,67 @@ var AdvancingFront = {
 			b = filling.vertices[face.b];
 			c = filling.vertices[face.c];
 
-			if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
+			if( a.equals( fromA ) || a.equals( fromB )
+					|| b.equals( fromA ) || b.equals( fromB )
+					|| c.equals( fromA ) || c.equals( fromB ) ) {
+				continue;
+			}
+
+			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+				GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
+
+				GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
+				GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
+
+				GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
+
+				GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
+				GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
+
 				return false;
 			}
 		}
 
-		for( var i = 0; i < modelGeo.faces.length; i++ ) {
-			face = modelGeo.faces[i];
+		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+			for( var i = 0; i < modelGeo.faces.length; i++ ) {
+				face = modelGeo.faces[i];
 
-			a = modelGeo.vertices[face.a];
-			b = modelGeo.vertices[face.b];
-			c = modelGeo.vertices[face.c];
+				a = modelGeo.vertices[face.a];
+				b = modelGeo.vertices[face.b];
+				c = modelGeo.vertices[face.c];
 
-			if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
-				return false;
+				if( a.equals( fromA ) || a.equals( fromB )
+						|| b.equals( fromA ) || b.equals( fromB )
+						|| c.equals( fromA ) || c.equals( fromB ) ) {
+					continue;
+				}
+
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
+					GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
+
+					GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
+
+					GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
+
+					GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
+					GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
+
+					console.log( "a", a ); console.log( "b", b ); console.log( "c", c );
+					console.log( "fromA", fromA ); console.log( "fromB", fromB ); console.log( "v", v );
+
+					return false;
+				}
 			}
 		}
 

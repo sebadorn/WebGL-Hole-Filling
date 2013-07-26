@@ -40,11 +40,14 @@ Plane.prototype.getPoint = function( s, t ) {
 
 /**
  * Get the point of intersection of the plane and a given line.
+ * Source: http://geomalgorithms.com/a06-_intersect-2.html
  * @param  {THREE.Vector3} vStart Start of the line to find the intersection with.
  * @param  {THREE.Vector3} vEnd   End of the line to find the intersection with.
  * @return {THREE.Vector3}        Point of intersection or false if no intersection.
  */
-Plane.prototype.getIntersection = function( vStart, vEnd ) {
+Plane.prototype.getIntersection = function( v0, v1 ) {
+	var vStart = v0.clone().normalize(),
+	    vEnd = v1.clone().normalize();
 	var numerator = this.normal.dot( this.p.clone().sub( vStart ) ),
 	    denumerator = this.normal.dot( vEnd.clone().sub( vStart ) );
 
@@ -58,5 +61,5 @@ Plane.prototype.getIntersection = function( vStart, vEnd ) {
 		return false;
 	}
 
-	return vStart.clone().add( vEnd.clone().sub( vStart ).multiplyScalar( r ) );
+	return v0.clone().add( v1.clone().sub( v0 ).multiplyScalar( r ) );
 };

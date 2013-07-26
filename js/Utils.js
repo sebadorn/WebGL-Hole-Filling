@@ -123,18 +123,22 @@ var Utils = {
 	 * @param  {THREE.Vector3} a
 	 * @param  {THREE.Vector3} b
 	 * @param  {THREE.Vector3} c
+	 * @param  {THREE.Vector3} p
 	 * @param  {THREE.Vector3} fromA
 	 * @param  {THREE.Vector3} fromB
-	 * @param  {THREE.Vector3} p
 	 * @return {boolean}             True, if triangles intersect, false otherwise.
 	 */
-	checkIntersectionOfTriangles3D: function( a, b, c, fromA, fromB, p ) {
+	checkIntersectionOfTriangles3D: function( a, b, c, p, fromA, fromB ) {
 		var u = b.clone().sub( a ),
 		    v = c.clone().sub( a );
 		var d = Math.pow( u.dot( v ), 2 ) - u.dot( u ) * v.dot( v ),
 		    planeOfTriangle = new Plane( a, u, v ),
-		    test = [fromA, fromB];
+		    test = [fromA];
 		var r, s, t, w;
+
+		if( typeof fromB != "undefined" ) {
+			test.push( fromB );
+		}
 
 		for( var i = 0; i < test.length; i++ ) {
 			r = planeOfTriangle.getIntersection( test[i], p );
@@ -153,6 +157,7 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
+				GLOBAL.SCENE.add( Scene.createPoint( r, 0.04, 0x44AAFF, true ) );
 				return true;
 			}
 		}
@@ -167,7 +172,7 @@ var Utils = {
 	 * @param  {THREE.Vector3} vp   The previous vertex.
 	 * @param  {THREE.Vector3} v    The current vertex.
 	 * @param  {THREE.Vector3} vn   The next vertex.
-	 * @param  {THREE.Vector3} move Move by this vector.
+	 * @param  {THREE.Vector3} move Move by this vector. (optional)
 	 * @return {float}              Angle between the vertices in degree and flag if it has been adjusted to point into the hole.
 	 */
 	computeAngle: function( vp, v, vn, move ) {
@@ -175,6 +180,10 @@ var Utils = {
 		    vnClone = vn.clone().sub( v ),
 		    vClone = v.clone().add( move );
 		var angle, c;
+
+		if( typeof move == "undefined" ) {
+			move = new THREE.Vector3();
+		}
 
 		// Get angle and change radians to degree
 		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
