@@ -85,7 +85,6 @@ var HoleFilling = {
 		while( true ) {
 			if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
 				v = model.geometry.vertices[bp.index];
-				v.neighbours = bp.edges;
 				geometry.vertices.push( v );
 				ignore.push( bp.index );
 
@@ -145,8 +144,7 @@ var AdvancingFront = {
 		front.mergeVertices();
 		filling.mergeVertices();
 
-		var ca = this.computeAngles( front.vertices ),
-		    j = ca.smallest.index;
+		var ca = this.computeAngles( front.vertices );
 		var angle, len, v, vectors, vn, vNew, vp;
 
 		var applied = 0,
@@ -157,7 +155,7 @@ var AdvancingFront = {
 		    loopCounter = 0;
 		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
 
-		var prev, newAngle, next;
+		var degree, prev, newAngle, next;
 
 		// Initialize heaps
 		for( var i = 0; i < ca.angles.length; i++ ) {
@@ -175,16 +173,11 @@ var AdvancingFront = {
 				this.HEAP_ANGLES.rule3.push( angle.degree );
 				this.HEAP_RULES.rule3[angle.degree] = angle;
 			}
-			// else {
-			// 	heapAngleRest.push( angle.degree );
-			// 	heapRest[angle.degree] = angle;
-			// }
 		}
 
 		this.HEAP_ANGLES.rule1.sort();
 		this.HEAP_ANGLES.rule2.sort();
 		this.HEAP_ANGLES.rule3.sort();
-		// heapAngleRest.sort();
 
 
 		while( true ) {
@@ -255,9 +248,19 @@ var AdvancingFront = {
 					angle.next.setVertices( [vNew, next.vertices[1], next.vertices[2]] );
 					this.heapRemove( next );
 					this.heapInsert( next );
-				}
 
-				j++;
+					var found = false;
+					for( var i = 0; i < filling.vertices.length; i++ ) {
+						if( filling.vertices[i].equals( vNew ) ) {
+							found = true;
+							break;
+						}
+					}
+					if( !found ) {
+						console.log( "It's gone!", vNew );
+						console.log( filling.vertices[filling.vertices.length - 1] );
+					}
+				}
 			}
 			else if( this.HEAP_ANGLES.rule3.length > 0 ) {
 				degree = this.HEAP_ANGLES.rule3.splice( 0, 1 );
@@ -283,13 +286,21 @@ var AdvancingFront = {
 					angle.next = newAngle;
 					this.heapRemove( angle );
 					this.heapInsert( angle );
-				}
 
-				j += 2;
+					var found = false;
+					for( var i = 0; i < front.vertices.length; i++ ) {
+						if( front.vertices[i].equals( vNew ) ) {
+							found = true;
+							break;
+						}
+					}
+					if( !found ) {
+						console.log( "It's gone!" );
+					}
+				}
 			}
 			else {
 				ignoredAngles++;
-				j++;
 				continue;
 			}
 
@@ -298,92 +309,6 @@ var AdvancingFront = {
 			this.mergeByDistance( front, filling, vNew, hole );
 		}
 
-
-		// while( true ) {
-		// 	len = front.vertices.length;
-		// 	count++;
-
-		// 	// for debugging
-		// 	if( stopIter !== false && ++count > stopIter ) {
-		// 		break;
-		// 	}
-		// 	if( stopIter !== false && count == stopIter - 1 ) {
-		// 		this.LAST_ITERATION = true;
-		// 	}
-
-		// 	// Close last hole
-		// 	if( len == 3 ) {
-		// 		filling.faces.push( new THREE.Face3(
-		// 			filling.vertices.indexOf( front.vertices[1] ),
-		// 			filling.vertices.indexOf( front.vertices[0] ),
-		// 			filling.vertices.indexOf( front.vertices[2] )
-		// 		) );
-		// 		break;
-		// 	}
-
-		// 	// Each round, we only apply one of the three rules.
-		// 	// And we strongly favor rule 1 and rule 2, because
-		// 	// rule 3 is really unrealiable. So we want to use it
-		// 	// as little as possible.
-		// 	if( loopCounter++ >= len ) {
-		// 		applyRule = this.getNextRule( applyRule, applied, appliedBefore );
-		// 		loopCounter = 0;
-		// 		appliedBefore = applied;
-		// 		applied = 0;
-		// 	}
-
-		// 	vectors = this.getNextVectors( front.vertices, j, len );
-		// 	if( !vectors ) {
-		// 		j++;
-		// 		continue;
-		// 	}
-		// 	vp = vectors.vp;
-		// 	v = vectors.v;
-		// 	vn = vectors.vn;
-
-		// 	// Calculate the angle between two adjacent vertices.
-		// 	angle = Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
-
-		// 	if( isNaN( angle ) ) {
-		// 		console.error( "Angle is NaN!\n", vp, v, vn );
-		// 	}
-
-		// 	// Create new triangles on the plane.
-		// 	vNew = false;
-
-		// 	if( applyRule == 1 && angle <= 75.0 ) {
-		// 		this.afRule1( front, filling, vp, v, vn );
-		// 		applied++;
-		// 	}
-		// 	else if( applyRule == 2 && angle <= 135.0 ) {
-		// 		vNew = this.afRule2( front, filling, vp, v, vn );
-		// 		j++;
-		// 		if( vNew ) {
-		// 			applied++;
-		// 		}
-		// 	}
-		// 	else if( applyRule == 3 && angle > 135.0 && angle < 180.0 ) {
-		// 		vNew = this.afRule3( front, filling, vp, v, vn, angle );
-		// 		j += 2;
-		// 		if( vNew ) {
-		// 			applied++;
-		// 		}
-		// 	}
-		// 	// TODO: Angle >= 180.0 not handled.
-		// 	else if( angle >= 180.0 ) {
-		// 		ignoredAngles++;
-		// 		j++;
-		// 		continue;
-		// 	}
-		// 	else {
-		// 		j++;
-		// 		continue;
-		// 	}
-
-		// 	// Compute the distances between each new created
-		// 	// vertex and see, if they can be merged.
-		// 	this.mergeByDistance( front, filling, vNew, hole );
-		// }
 
 		console.log(
 			"Finished after " + count + " iterations.\n",
@@ -473,12 +398,26 @@ var AdvancingFront = {
 		    vIndex = filling.vertices.indexOf( v ),
 		    vnIndex = filling.vertices.indexOf( vn );
 
+	if( vnIndex == -1 ) {
+		console.log( "rule2 vnIndex", vn );
+		GLOBAL.SCENE.add( Scene.createPoint( vn, 0.04, 0xFF0000, true ) );
+	}
+	if( vpIndex == -1 ) {
+		console.log( "rule2 vpIndex", vp );
+	}
+	if( vIndex == -1 ) {
+		console.log( "rule2 vIndex", v );
+	}
+
 		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
 		filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
 
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
+	if( ix == -1 ) {
+		console.log( "fuck" );
+	}
 		front.vertices[ix] = vNew;
 
 		return vNew;
@@ -540,6 +479,13 @@ var AdvancingFront = {
 		var vnIndex = filling.vertices.indexOf( vn ),
 		    vIndex = filling.vertices.indexOf( v );
 
+	if( vnIndex == -1 ) {
+		console.log( "rule3 vnIndex", vn );
+	}
+	if( vIndex == -1 ) {
+		console.log( "rule3 vIndex", v );
+	}
+
 		filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
 
 		// Update front
@@ -570,12 +516,14 @@ var AdvancingFront = {
 			vn = front[( i + 1 ) % len];
 
 			prev = ( i == 0 ) ? null : angles[angles.length - 1];
-
 			angle = new Angle( [vp, v, vn] );
 			angle.previous = prev;
 
 			angles.push( angle );
-			angles[angles.length - 2].next = angles[angles.length - 1];
+
+			if( i > 0 ) {
+				angles[angles.length - 2].next = angles[angles.length - 1];
+			}
 
 			if( smallest.angle > angle.degree ) {
 				smallest.angle = angle.degree;
@@ -584,123 +532,11 @@ var AdvancingFront = {
 		}
 
 		angles[0].previous = angles[angles.length - 1];
+		angles[angles.length - 1].next = angles[0];
 
 		return {
 			angles: angles,
 			smallest: smallest
-		};
-	},
-
-
-	/**
-	 * Create new triangles in the hole, going from the border vertices.
-	 * @param  {THREE.Geometry} front The border of the hole.
-	 * @param  {Object}         ca    The computed angles and the smallest one found.
-	 * @return {THREE.Geometry}       Geometry of the new triangles, building a new front.
-	 */
-	createNewTriangles: function( front, ca ) {
-		var j = ca.smallest.index,
-		    len = front.length,
-		    update = new THREE.Geometry();
-		var angle, angleLast, angleNext, v, vn, vp;
-
-		while( true ) {
-			if( j >= ca.smallest.index + len ) {
-				break;
-			}
-			angle = ca.angles[j % len];
-			vp = front[( j == 0 ) ? len - 2 : ( j - 1 ) % len];
-			v = front[j % len];
-			vn = front[( j + 1 ) % len];
-
-			angleLast = ca.angles[( j - 1 ) % len];
-			angleNext = ca.angles[( j + 1 ) % len];
-
-			if( !v || !vn ) {
-				j++;
-				continue;
-			}
-
-			// Rule 1: Just close the gap.
-			if( angle <= 75.0 ) {
-				this.afRule1( update, vp, v, vn );
-			}
-			// Rule 2: Create one new vertice.
-			else if( angle <= 135.0 ) {
-				this.afRule2( update, vp, v, vn );
-			}
-			// Rule 3: Create two new vertices.
-			else if( angle < 180.0 ) {
-				this.afRule3( update, vp, v, vn, angleLast, angleNext );
-			}
-
-			j++;
-		}
-
-
-		return update;
-	},
-
-
-	/**
-	 * Get the next rule to use on the hole.
-	 * @param  {int} currentRule   Number of the rule used until now.
-	 * @param  {int} applied       How often it has been applied to the current front.
-	 * @param  {int} appliedBefore How often the former rule has been applied to the front of then.
-	 * @return {int}               The new rule to use.
-	 */
-	getNextRule: function( currentRule, applied, appliedBefore ) {
-		// Rule 3 gets always replaced. It is necessary,
-		// but is likely to introduce problematic vectors.
-		// So I really would like to avoid it as much as possible.
-		if( currentRule == 3 ) {
-			return 1;
-		}
-		// Rule 1 or 2: If there are no more targets, switch to the next one.
-		else if( applied == 0 ) {
-			if( currentRule == 1 ) {
-				return 2;
-			}
-			else if( currentRule == 2 ) {
-				// Before rule 2 comes rule 1. If rule 1 couldn't be applied in the
-				// round before, then switch to rule 3. Otherwise try rule 1 again.
-				if( appliedBefore == 0 ) {
-					return 3;
-				}
-				else {
-					return 1;
-				}
-			}
-		}
-
-		return currentRule;
-	},
-
-
-	/**
-	 * Get the next vectors for the main AFM loop.
-	 * @param  {Array<THREE.Vector3>} vertices The vertices of the moving front.
-	 * @param  {int}                  j        Current index in the front.
-	 * @param  {int}                  len      Length of the front.
-	 * @return {Object}                        The previous, current and next vector.
-	 */
-	getNextVectors: function( vertices, j, len ) {
-		var vpIndex = ( j == 0 ) ? len - 2 : ( j - 1 ) % len,
-		    vIndex = j % len,
-		    vnIndex = ( j + 1 ) % len;
-		var vp = vertices[vpIndex],
-		    v = vertices[vIndex],
-		    vn = vertices[vnIndex];
-
-		if( vp == v || v == vn || vp == vn ) {
-			console.error( "Shouldn't happen: Same vertices in front!\n", vp, v, vn );
-			return false;
-		}
-
-		return {
-			vp: vp,
-			v: v,
-			vn: vn
 		};
 	},
 
@@ -711,17 +547,17 @@ var AdvancingFront = {
 	 */
 	heapInsert: function( angle ) {
 		if( angle.degree <= 75.0 ) {
-			this.HEAP_ANGLES.rule1.push( angle );
+			this.HEAP_ANGLES.rule1.push( angle.degree );
 			this.HEAP_ANGLES.rule1.sort();
 			this.HEAP_RULES.rule1[angle.degree] = angle;
 		}
 		else if( angle.degree <= 135.0 ) {
-			this.HEAP_ANGLES.rule2.push( angle );
+			this.HEAP_ANGLES.rule2.push( angle.degree );
 			this.HEAP_ANGLES.rule2.sort();
 			this.HEAP_RULES.rule2[angle.degree] = angle;
 		}
 		else if( angle.degree < 180.0 ) {
-			this.HEAP_ANGLES.rule3.push( angle );
+			this.HEAP_ANGLES.rule3.push( angle.degree );
 			this.HEAP_ANGLES.rule3.sort();
 			this.HEAP_RULES.rule3[angle.degree] = angle;
 		}
@@ -744,6 +580,46 @@ var AdvancingFront = {
 		else if( angle.degree < 180.0 ) {
 			this.HEAP_ANGLES.rule3.splice( this.HEAP_ANGLES.rule3.indexOf( angle.degree ), 1 );
 			delete this.HEAP_RULES.rule3[angle.degree];
+		}
+	},
+
+
+	/**
+	 * Angle heaps have to be updated if vertices of the front are being merged.
+	 * @param {THREE.Vector3} vOld The old vertex.
+	 * @param {THREE.Vector3} vNew The new vertex.
+	 */
+	heapUpdateVertex: function( vOld, vNew ) {
+		var search = [
+			this.HEAP_RULES.rule1,
+			this.HEAP_RULES.rule2,
+			this.HEAP_RULES.rule3
+		];
+		var heap, prev, next;
+
+		for( var i = 0; i < search.length; i++ ) {
+			heap = search[i];
+
+			for( var key in heap ) {
+				// Match with vOld in the "middle"
+				if( heap[key].vertices[1] == vOld ) {
+					// Update this one
+					heap[key].vertices[1] = vNew;
+					heap[key].calculateAngle();
+
+					// Update the previous one
+					prev = heap[key].previous;
+					prev.vertices[2] = vNew;
+					prev.calculateAngle();
+
+					// Update the next one
+					next = heap[key].next;
+					next.vertices[0] = vNew;
+					next.calculateAngle();
+
+					break;
+				}
+			}
 		}
 	},
 
@@ -929,6 +805,7 @@ var AdvancingFront = {
 
 				this.updateFaces( filling, tIndex, vIndex );
 				this.mergeUpdateFront( front, v, t );
+				this.heapUpdateVertex( t, v );
 			}
 		}
 	},
@@ -937,8 +814,8 @@ var AdvancingFront = {
 	/**
 	 * Update the front according to the merged points.
 	 * @param  {THREE.Geometry} front The current hole front.
-	 * @param  {THREE.Vector3} v      The new vertex.
-	 * @param  {THREE.Vector3} t      The merged-away vertex.
+	 * @param  {THREE.Vector3}  v      The new vertex.
+	 * @param  {THREE.Vector3}  t      The merged-away vertex.
 	 */
 	mergeUpdateFront: function( front, v, t ) {
 		var ixFrom = front.vertices.indexOf( t ),
