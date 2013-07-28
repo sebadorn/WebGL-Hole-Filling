@@ -136,12 +136,14 @@ var AdvancingFront = {
 		this.HEAP_ANGLES = {
 			rule1: [],
 			rule2: [],
-			rule3: []
+			rule3: [],
+			rest: []
 		};
 		this.HEAP_RULES = {
 			rule1: {},
 			rule2: {},
-			rule3: {}
+			rule3: {},
+			rest: {}
 		};
 
 		front.vertices = hole.slice( 0 );
@@ -176,6 +178,10 @@ var AdvancingFront = {
 			}
 			else if( angle.degree < 180.0 ) {
 				this.HEAP_ANGLES.rule3.push( angle.degree );
+				this.HEAP_RULES.rule3[angle.degree] = angle;
+			}
+			else {
+				this.HEAP_ANGLES.rest.push( angle.degree );
 				this.HEAP_RULES.rule3[angle.degree] = angle;
 			}
 		}
@@ -226,7 +232,7 @@ var AdvancingFront = {
 					angle.next.previous = angle.previous;
 					this.heapInsert( angle.next );
 
-					delete this.HEAP_RULES.rule1[degree];
+					this.heapRemove( angle );
 				}
 				else {
 					this.HEAP_ANGLES.rule1.push( degree );
@@ -289,6 +295,7 @@ var AdvancingFront = {
 			}
 
 			else {
+				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
 				ignoredAngles++;
 				continue;
 			}
@@ -556,13 +563,16 @@ var AdvancingFront = {
 			this.HEAP_ANGLES.rule3.sort();
 			this.HEAP_RULES.rule3[angle.degree] = angle;
 		}
+		else {
+			this.HEAP_ANGLES.rest.push( angle.degree );
+			this.HEAP_RULES.rest[angle.degree] = angle;
+		}
 	},
 
 
 	/**
 	 * Remove an angle from its heap(s).
 	 * @param  {Angle} angle The angle to remove.
-	 * @return {boolean}     True, if angle has been removed, false otherwise.
 	 */
 	heapRemove: function( angle ) {
 		var ix;
@@ -598,10 +608,14 @@ var AdvancingFront = {
 			delete this.HEAP_RULES.rule3[angle.degree];
 		}
 		else {
-			return false;
-		}
+			ix = this.HEAP_ANGLES.rest.indexOf( angle.degree );
 
-		return true;
+			if( ix >= 0 ) {
+				this.HEAP_ANGLES.rest.splice( ix, 1 );
+			}
+
+			delete this.HEAP_RULES.rest[angle.degree];
+		}
 	},
 
 
@@ -615,11 +629,12 @@ var AdvancingFront = {
 		var search = [
 			this.HEAP_RULES.rule1,
 			this.HEAP_RULES.rule2,
-			this.HEAP_RULES.rule3
+			this.HEAP_RULES.rule3,
+			this.HEAP_RULES.rest
 		];
 		var angle, heap;
 
-	console.log( vOld, vNew ); // TODO: REMOVE
+	//console.log( vOld, vNew ); // TODO: REMOVE
 
 		for( var i = 0; i < search.length; i++ ) {
 			heap = search[i];
@@ -712,10 +727,8 @@ var AdvancingFront = {
 					GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
 				}
 				GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-
 				GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
-console.log( a, b, c );
-console.log( v, fromA, fromB );
+
 				return false;
 			}
 		}
@@ -747,14 +760,12 @@ console.log( v, fromA, fromB );
 					GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
 
 					GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
-					GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+					if( fromB ) {
+						GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+						GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
+					}
 					GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-
 					GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
-
-					console.log( "a", a ); console.log( "b", b ); console.log( "c", c );
-					console.log( "fromA", fromA ); console.log( "fromB", fromB ); console.log( "v", v );
 
 					return false;
 				}
