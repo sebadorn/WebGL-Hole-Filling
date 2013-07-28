@@ -136,7 +136,7 @@ var Utils = {
 		    test = [fromA];
 		var r, s, t, w;
 
-		if( typeof fromB != "undefined" ) {
+		if( typeof fromB != "undefined" && fromB != null ) {
 			test.push( fromB );
 		}
 
