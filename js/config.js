@@ -58,6 +58,7 @@ var CONFIG = {
 		BORDER: {
 			COLOR: [0xFF0000, 0xFF57DE, 0xFFC620, 0x74FF3A],
 			LINE_WIDTH: 2,
+			SHOW_LINES: true,
 			SHOW_POINTS: false
 		},
 		// The filling to be created

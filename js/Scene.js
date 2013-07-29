@@ -395,9 +395,13 @@ var Scene = {
 
 		var border = HoleFilling.findBorderEdges( g.MODEL );
 
-		for( var i = 0; i < border.lines.length; i++ ) {
-			g.SCENE.add( border.lines[i] );
+		if( CONFIG.HF.BORDER.SHOW_LINES ) {
+			for( var i = 0; i < border.lines.length; i++ ) {
+				g.SCENE.add( border.lines[i] );
+			}
 		}
+		// @see HoleFilling.findBorderEdges() for
+		// use of CONFIG.HF.BORDER.SHOW_POINTS
 		for( var j = 0; j < border.points.length; j++ ) {
 			g.SCENE.add( border.points[j] );
 		}

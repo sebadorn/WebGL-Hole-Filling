@@ -188,7 +188,7 @@ var AdvancingFront = {
 			if( stopIter !== false && count > stopIter ) {
 				break;
 			}
-			if( stopIter !== false && count == stopIter - 1 ) {
+			if( stopIter !== false && count == stopIter ) {
 				this.LAST_ITERATION = true;
 			}
 
@@ -232,6 +232,13 @@ var AdvancingFront = {
 			// Rule 2
 			else if( this.HEAP_RULE_2.length() > 0 ) {
 				angle = this.HEAP_RULE_2.removeFirst();
+
+				if( this.LAST_ITERATION ) {
+					console.log( angle );
+					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[0], 0.03, 0xFFFF00, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[1], 0.03, 0xFF0000, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[2], 0.03, 0x00FF00, true ) );
+				}
 
 				vNew = this.afRule2( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
 
@@ -284,6 +291,7 @@ var AdvancingFront = {
 				continue;
 			}
 
+
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
 			this.mergeByDistance( front, filling, vNew, hole );
@@ -291,7 +299,7 @@ var AdvancingFront = {
 
 
 		console.log(
-			"Finished after " + count + " iterations.\n",
+			"Finished after " + ( count - 1 ) + " iterations.\n",
 			"- New vertices: " + filling.vertices.length + "\n",
 			"- New faces: " + filling.faces.length
 		);
@@ -383,7 +391,6 @@ var AdvancingFront = {
 
 	if( vnIndex == -1 ) {
 		console.log( "rule2 vnIndex", vn );
-		GLOBAL.SCENE.add( Scene.createPoint( vn, 0.04, 0xFF0000, true ) );
 	}
 	if( vpIndex == -1 ) {
 		console.log( "rule2 vpIndex", vp );
@@ -398,9 +405,6 @@ var AdvancingFront = {
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
-	if( ix == -1 ) {
-		console.log( "rule2 fuck", filling.vertices.indexOf( v ), v );
-	}
 		front.vertices[ix] = vNew;
 
 		return vNew;
@@ -449,9 +453,9 @@ var AdvancingFront = {
 		vNew.add( v ).add( halfWay );
 		vNew = this.keepNearPlane( v, vn, vNew );
 
-		// if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-		// 	return false;
-		// }
+		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
+			return false;
+		}
 
 
 		// New vertex
@@ -462,20 +466,10 @@ var AdvancingFront = {
 		var vnIndex = filling.vertices.indexOf( vn ),
 		    vIndex = filling.vertices.indexOf( v );
 
-	if( vnIndex == -1 ) {
-		console.log( "rule3 vnIndex", vn );
-	}
-	if( vIndex == -1 ) {
-		console.log( "rule3 vIndex", v );
-	}
-
 		filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
 
 		// Update front
 		var ix = front.vertices.indexOf( v );
-	if( ix == -1 ) {
-		console.log( "rule3 fuck", v );
-	}
 		front.vertices.splice( ix + 1, 0, vNew );
 
 		return vNew;
@@ -497,7 +491,7 @@ var AdvancingFront = {
 		var angle, prev, v, vn, vp;
 
 		for( var i = 0, len = front.length; i < len; i++ ) {
-			vp = front[( i == 0 ) ? len - 2 : i - 1];
+			vp = front[( i == 0 ) ? len - 1 : i - 1];
 			v = front[i];
 			vn = front[( i + 1 ) % len];
 
@@ -584,8 +578,6 @@ var AdvancingFront = {
 			this.HEAP_RULE_R
 		];
 		var angle, angles, heap;
-
-	//console.log( vOld, vNew ); // TODO: REMOVE
 
 		for( var i = 0; i < search.length; i++ ) {
 			heap = search[i];

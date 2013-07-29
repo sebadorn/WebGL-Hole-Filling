@@ -1,9 +1,8 @@
 ## ToDo
 
 * `Bug` Collision test with whole model blocks almost every new point
-* `Bug` diano.obj – Filling leaves hole!
+* `Bug` diana.obj – Filling creates two new (strange) holes.
 
-* `Improve` Calculate angles once and then only update the neighbours of changed ones (also keep them in a heap or list or whatever instead of walking through the front over and over)
 * `Improve` Parallelization through Workers
 * `Improve` Refine AFM based on Poisson equation OR radial basis functions
 * `Improve` Collision test in 3D (test if triangle sides collide with triangle surface)
