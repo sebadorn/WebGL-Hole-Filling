@@ -116,8 +116,10 @@ var AdvancingFront = {
 	HOLE_INDEX: -1,
 	LAST_ITERATION: false, // for debugging
 
-	HEAP_ANGLES: null,
-	HEAP_RULES: null,
+	HEAP_RULE_1: null,
+	HEAP_RULE_2: null,
+	HEAP_RULE_3: null,
+	HEAP_RULE_R: null,
 
 
 	/**
@@ -133,18 +135,10 @@ var AdvancingFront = {
 		this.HOLE_INDEX = GLOBAL.HOLES.indexOf( hole );
 		this.LAST_ITERATION = false;
 
-		this.HEAP_ANGLES = {
-			rule1: [],
-			rule2: [],
-			rule3: [],
-			rest: []
-		};
-		this.HEAP_RULES = {
-			rule1: {},
-			rule2: {},
-			rule3: {},
-			rest: {}
-		};
+		this.HEAP_RULE_1 = new Heap( "1" );
+		this.HEAP_RULE_2 = new Heap( "2" );
+		this.HEAP_RULE_3 = new Heap( "3" );
+		this.HEAP_RULE_R = new Heap( "R" );
 
 		front.vertices = hole.slice( 0 );
 		filling.vertices = hole.slice( 0 );
@@ -169,26 +163,22 @@ var AdvancingFront = {
 			angle = ca.angles[i];
 
 			if( angle.degree <= 75.0 ) {
-				this.HEAP_ANGLES.rule1.push( angle.degree );
-				this.HEAP_RULES.rule1[angle.degree] = angle;
+				this.HEAP_RULE_1.insert( angle );
 			}
 			else if( angle.degree <= 135.0 ) {
-				this.HEAP_ANGLES.rule2.push( angle.degree );
-				this.HEAP_RULES.rule2[angle.degree] = angle;
+				this.HEAP_RULE_2.insert( angle );
 			}
 			else if( angle.degree < 180.0 ) {
-				this.HEAP_ANGLES.rule3.push( angle.degree );
-				this.HEAP_RULES.rule3[angle.degree] = angle;
+				this.HEAP_RULE_3.insert( angle );
 			}
 			else {
-				this.HEAP_ANGLES.rest.push( angle.degree );
-				this.HEAP_RULES.rule3[angle.degree] = angle;
+				this.HEAP_RULE_R.insert( angle );
 			}
 		}
 
-		this.HEAP_ANGLES.rule1.sort();
-		this.HEAP_ANGLES.rule2.sort();
-		this.HEAP_ANGLES.rule3.sort();
+		this.HEAP_RULE_1.sort();
+		this.HEAP_RULE_2.sort();
+		this.HEAP_RULE_3.sort();
 
 
 		while( true ) {
@@ -215,9 +205,8 @@ var AdvancingFront = {
 			vNew = false;
 
 			// Rule 1
-			if( this.HEAP_ANGLES.rule1.length > 0 ) {
-				degree = this.HEAP_ANGLES.rule1.splice( 0, 1 );
-				angle = this.HEAP_RULES.rule1[degree];
+			if( this.HEAP_RULE_1.length() > 0 ) {
+				angle = this.HEAP_RULE_1.removeFirst();
 
 				vNew = this.afRule1( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
 
@@ -231,25 +220,22 @@ var AdvancingFront = {
 					angle.next.setVertices( [angle.vertices[0], angle.next.vertices[1], angle.next.vertices[2]] );
 					angle.next.previous = angle.previous;
 					this.heapInsert( angle.next );
-
-					this.heapRemove( angle );
 				}
+				// It failed, so insert the Angle back in.
 				else {
-					this.HEAP_ANGLES.rule1.push( degree );
+					this.HEAP_RULE_1.insert( angle );
 				}
 
 				vNew = false;
 			}
 
 			// Rule 2
-			else if( this.HEAP_ANGLES.rule2.length > 0 ) {
-				degree = this.HEAP_ANGLES.rule2.splice( 0, 1 );
-				angle = this.HEAP_RULES.rule2[degree];
+			else if( this.HEAP_RULE_2.length() > 0 ) {
+				angle = this.HEAP_RULE_2.removeFirst();
 
 				vNew = this.afRule2( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
 
 				if( vNew ) {
-					this.heapRemove( angle );
 					angle.setVertices( [angle.vertices[0], vNew, angle.vertices[2]] );
 					this.heapInsert( angle );
 
@@ -262,16 +248,15 @@ var AdvancingFront = {
 					this.heapInsert( angle.next );
 				}
 				else {
-					this.HEAP_ANGLES.rule2.push( degree );
+					this.HEAP_RULE_2.insert( angle );
 				}
 			}
 
 			// Rule 3
-			else if( this.HEAP_ANGLES.rule3.length > 0 ) {
-				degree = this.HEAP_ANGLES.rule3.splice( 0, 1 );
-				angle = this.HEAP_RULES.rule3[degree];
+			else if( this.HEAP_RULE_3.length() > 0 ) {
+				angle = this.HEAP_RULE_3.removeFirst();
 
-				vNew = this.afRule3( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2], degree );
+				vNew = this.afRule3( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2], angle.degree );
 
 				if( vNew ) {
 					newAngle = new Angle( [angle.vertices[1], vNew, angle.vertices[2]] );
@@ -284,13 +269,12 @@ var AdvancingFront = {
 					angle.next.previous = newAngle;
 					this.heapInsert( angle.next );
 
-					this.heapRemove( angle );
 					angle.setVertices( [angle.vertices[0], angle.vertices[1], vNew] );
 					angle.next = newAngle;
 					this.heapInsert( angle );
 				}
 				else {
-					this.HEAP_ANGLES.rule3.push( degree );
+					this.HEAP_RULE_3.insert( angle );
 				}
 			}
 
@@ -549,72 +533,39 @@ var AdvancingFront = {
 	 */
 	heapInsert: function( angle ) {
 		if( angle.degree <= 75.0 ) {
-			this.HEAP_ANGLES.rule1.push( angle.degree );
-			this.HEAP_ANGLES.rule1.sort();
-			this.HEAP_RULES.rule1[angle.degree] = angle;
+			this.HEAP_RULE_1.insert( angle );
 		}
 		else if( angle.degree <= 135.0 ) {
-			this.HEAP_ANGLES.rule2.push( angle.degree );
-			this.HEAP_ANGLES.rule2.sort();
-			this.HEAP_RULES.rule2[angle.degree] = angle;
+			this.HEAP_RULE_2.insert( angle );
 		}
 		else if( angle.degree < 180.0 ) {
-			this.HEAP_ANGLES.rule3.push( angle.degree );
-			this.HEAP_ANGLES.rule3.sort();
-			this.HEAP_RULES.rule3[angle.degree] = angle;
+			this.HEAP_RULE_3.insert( angle );
 		}
 		else {
-			this.HEAP_ANGLES.rest.push( angle.degree );
-			this.HEAP_RULES.rest[angle.degree] = angle;
+			this.HEAP_RULE_R.insert( angle );
 		}
 	},
 
 
 	/**
 	 * Remove an angle from its heap(s).
-	 * @param  {Angle} angle The angle to remove.
+	 * @param {Angle} angle The angle to remove.
 	 */
 	heapRemove: function( angle ) {
-		var ix;
-
 		// Rule 1
 		if( angle.degree <= 75.0 ) {
-			ix = this.HEAP_ANGLES.rule1.indexOf( angle.degree );
-
-			if( ix >= 0 ) {
-				this.HEAP_ANGLES.rule1.splice( ix, 1 );
-			}
-
-			delete this.HEAP_RULES.rule1[angle.degree];
+			this.HEAP_RULE_1.remove( angle );
 		}
 		// Rule 2
 		else if( angle.degree <= 135.0 ) {
-			ix = this.HEAP_ANGLES.rule2.indexOf( angle.degree );
-
-			if( ix >= 0 ) {
-				this.HEAP_ANGLES.rule2.splice( ix, 1 );
-			}
-
-			delete this.HEAP_RULES.rule2[angle.degree];
+			this.HEAP_RULE_2.remove( angle );
 		}
 		// Rule 3
 		else if( angle.degree < 180.0 ) {
-			ix = this.HEAP_ANGLES.rule3.indexOf( angle.degree );
-
-			if( ix >= 0 ) {
-				this.HEAP_ANGLES.rule3.splice( ix, 1 );
-			}
-
-			delete this.HEAP_RULES.rule3[angle.degree];
+			this.HEAP_RULE_3.remove( angle );
 		}
 		else {
-			ix = this.HEAP_ANGLES.rest.indexOf( angle.degree );
-
-			if( ix >= 0 ) {
-				this.HEAP_ANGLES.rest.splice( ix, 1 );
-			}
-
-			delete this.HEAP_RULES.rest[angle.degree];
+			this.HEAP_RULE_R.remove( angle );
 		}
 	},
 
@@ -627,52 +578,56 @@ var AdvancingFront = {
 	 */
 	heapMergeVertex: function( vOld, vNew ) {
 		var search = [
-			this.HEAP_RULES.rule1,
-			this.HEAP_RULES.rule2,
-			this.HEAP_RULES.rule3,
-			this.HEAP_RULES.rest
+			this.HEAP_RULE_1,
+			this.HEAP_RULE_2,
+			this.HEAP_RULE_3,
+			this.HEAP_RULE_R
 		];
-		var angle, heap;
+		var angle, angles, heap;
 
 	//console.log( vOld, vNew ); // TODO: REMOVE
 
 		for( var i = 0; i < search.length; i++ ) {
 			heap = search[i];
 
-			for( var key in heap ) {
-				angle = heap[key];
+			for( var key in heap.values ) {
+				angles = heap.values[key];
 
-				// Match with vOld in the "middle"
-				if( angle.vertices[1] == vOld ) {
-					if( angle.previous.vertices[1] == vNew ) {
-						angle.previous.vertices[2] = angle.vertices[2];
-						angle.next.vertices[0] = vNew;
+				for( var j = 0; j < angles.length; j++ ) {
+					angle = angles[j];
+
+					// Match with vOld in the "middle"
+					if( angle.vertices[1] == vOld ) {
+						if( angle.previous.vertices[1] == vNew ) {
+							angle.previous.vertices[2] = angle.vertices[2];
+							angle.next.vertices[0] = vNew;
+						}
+						else if( angle.next.vertices[1] == vNew ) {
+							angle.previous.vertices[2] = vNew;
+							angle.next.vertices[0] = angle.vertices[0];
+						}
+						else {
+							throw new Error(
+								"Situation that shouldn't be possible. "
+								+ "Neither previous nor next angle contain the new vertex."
+							);
+						}
+
+						angle.previous.next = angle.next;
+						angle.next.previous = angle.previous;
+
+						this.heapRemove( angle.previous );
+						angle.previous.calculateAngle();
+						this.heapInsert( angle.previous );
+
+						this.heapRemove( angle.next );
+						angle.next.calculateAngle();
+						this.heapInsert( angle.next );
+
+						heap.remove( angle );
+
+						return true;
 					}
-					else if( angle.next.vertices[1] == vNew ) {
-						angle.previous.vertices[2] = vNew;
-						angle.next.vertices[0] = angle.vertices[0];
-					}
-					else {
-						throw new Error(
-							"Situation that shouldn't be possible. "
-							+ "Neither previous nor next angle contain the new vertex."
-						);
-					}
-
-					angle.previous.next = angle.next;
-					angle.next.previous = angle.previous;
-
-					angle.previous.calculateAngle();
-					this.heapRemove( angle.previous );
-					this.heapInsert( angle.previous );
-
-					angle.next.calculateAngle();
-					this.heapRemove( angle.next );
-					this.heapInsert( angle.next );
-
-					this.heapRemove( angle );
-
-					return true;
 				}
 			}
 		}
