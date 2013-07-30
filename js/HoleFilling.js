@@ -145,18 +145,10 @@ var AdvancingFront = {
 		front.mergeVertices();
 		filling.mergeVertices();
 
-		var ca = this.computeAngles( front.vertices );
-		var angle, v, vectors, vn, vNew, vp;
-
-		var applied = 0,
-		    appliedBefore = 0,
-		    applyRule = 1,
+		var ca = this.computeAngles( front.vertices ),
 		    count = 0,
-		    ignoredAngles = 0,
-		    loopCounter = 0;
-		var stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
-
-		var degree, prev, newAngle, next;
+		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
+		var angle, newAngle, vNew;
 
 		// Initialize heaps
 		for( var i = 0; i < ca.angles.length; i++ ) {
@@ -201,6 +193,10 @@ var AdvancingFront = {
 				) );
 				break;
 			}
+			else if( front.vertices.length == 1 ) {
+				GLOBAL.SCENE.add( Scene.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
+				break;
+			}
 
 			vNew = false;
 
@@ -235,9 +231,6 @@ var AdvancingFront = {
 
 				if( this.LAST_ITERATION ) {
 					console.log( angle );
-					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[0], 0.03, 0xFFFF00, true ) );
-					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[1], 0.03, 0xFF0000, true ) );
-					// GLOBAL.SCENE.add( Scene.createPoint( angle.vertices[2], 0.03, 0x00FF00, true ) );
 				}
 
 				vNew = this.afRule2( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
@@ -286,9 +279,9 @@ var AdvancingFront = {
 			}
 
 			else {
+				this.showFilling( front, filling );
+				console.log( front.vertices );
 				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
-				ignoredAngles++;
-				continue;
 			}
 
 
@@ -303,8 +296,8 @@ var AdvancingFront = {
 			"- New vertices: " + filling.vertices.length + "\n",
 			"- New faces: " + filling.faces.length
 		);
-		if( ignoredAngles > 0 ) {
-			console.warn( "Ignored " + ignoredAngles + " angles, because they were >= 180°." );
+		if( this.HEAP_RULE_R.length() > 0 ) {
+			console.warn( "Ignored " + this.HEAP_RULE_R.length() + " angles, because they were >= 180°." );
 		}
 
 		this.showFilling( front, filling );
@@ -806,9 +799,9 @@ var AdvancingFront = {
 			// Merge points if distance below threshold
 			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
 				if( CONFIG.DEBUG.SHOW_MERGING ) {
-					GLOBAL.SCENE.add( Scene.createPoint( t.clone(), 0.02, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createPoint( v.clone(), 0.012, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( t.clone(), v.clone(), 1, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( t, 0.02, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createPoint( v, 0.012, 0xFFEE00, true ) );
+					GLOBAL.SCENE.add( Scene.createLine( t, v, 1, 0xFFEE00, true ) );
 				}
 
 				tIndex = filling.vertices.indexOf( t );
@@ -816,7 +809,7 @@ var AdvancingFront = {
 				filling.vertices.splice( tIndex, 1 );
 
 				this.updateFaces( filling, tIndex, vIndex );
-				this.mergeUpdateFront( front, v, t );
+				this.mergeUpdateFront( front, t, v );
 				this.heapMergeVertex( t, v );
 			}
 		}
@@ -825,47 +818,19 @@ var AdvancingFront = {
 
 	/**
 	 * Update the front according to the merged points.
-	 * @param  {THREE.Geometry} front The current hole front.
-	 * @param  {THREE.Vector3}  v      The new vertex.
-	 * @param  {THREE.Vector3}  t      The merged-away vertex.
+	 * @param {THREE.Geometry} front The current hole front.
+	 * @param {THREE.Vector3}  vOld  The new vertex.
+	 * @param {THREE.Vector3}  vNew  The merged-away vertex.
 	 */
-	mergeUpdateFront: function( front, v, t ) {
-		var ixFrom = front.vertices.indexOf( t ),
-		    ixTo = front.vertices.indexOf( v );
-		var cutOff;
+	mergeUpdateFront: function( front, vOld, vNew ) {
+		var ixFrom = front.vertices.indexOf( vOld ),
+		    ixTo = front.vertices.indexOf( vNew );
 
-		if( ixFrom >= 0 ) {
-			front.vertices[ixFrom] = v;
-
-			if( ixTo >= 0 ) {
-				cutOff = ixTo - ixFrom;
-				cutOff = cutOff % ( front.vertices.length - 2 );
-
-				// Two vertices directly neighboured are merged
-				// -> One less in the moving front
-				if( Math.abs( cutOff ) == 1 ) {
-					front.vertices.splice( ixFrom, 1 );
-				}
-				// Two vertices more than one step apart are merged
-				// -> All vertices between them are cut off from the front
-				// -> This may create a second front, but that's a story for another time.
-				else {
-					console.warn(
-						"mergeUpdateFront: Case for cutOff > 1 not enough tested.\n",
-						"- Front vertices: " + front.vertices.length + "\n",
-						"- Cut index from: " + ixFrom + "\n",
-						"- Cut index to: " + ixTo + "\n",
-						"- Remove items: " + cutOff
-					);
-					if( cutOff > 1 ) {
-						front.vertices.splice( ixFrom, cutOff );
-					}
-					else {
-						front.vertices.splice( ixTo, -cutOff );
-					}
-				}
-			}
+		if( ixFrom < 0 || ixTo < 0 ) {
+			throw new Error( "Vertex not found in front." );
 		}
+
+		front.vertices.splice( ixFrom, 1 );
 	},
 
 

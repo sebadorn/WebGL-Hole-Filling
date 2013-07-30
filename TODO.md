@@ -1,7 +1,6 @@
 ## ToDo
 
 * `Bug` Collision test with whole model blocks almost every new point
-* `Bug` diana.obj – Filling creates two new (strange) holes.
 
 * `Improve` Parallelization through Workers
 * `Improve` Refine AFM based on Poisson equation OR radial basis functions
