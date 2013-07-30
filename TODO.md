@@ -1,6 +1,7 @@
 ## ToDo
 
 * `Bug` Collision test with whole model blocks almost every new point
+* `Bug` Seperate holes, which are connected in a vertex, aren't recognized properly
 
 * `Improve` Parallelization through Workers
 * `Improve` Refine AFM based on Poisson equation OR radial basis functions

@@ -148,7 +148,7 @@ var AdvancingFront = {
 		var ca = this.computeAngles( front.vertices ),
 		    count = 0,
 		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
-		var angle, newAngle, vNew;
+		var angle, vNew;
 
 		// Initialize heaps
 		for( var i = 0; i < ca.angles.length; i++ ) {
@@ -185,12 +185,12 @@ var AdvancingFront = {
 			}
 
 			// Close last hole
-			if( front.vertices.length == 3 ) {
-				filling.faces.push( new THREE.Face3(
-					filling.vertices.indexOf( front.vertices[1] ),
-					filling.vertices.indexOf( front.vertices[0] ),
-					filling.vertices.indexOf( front.vertices[2] )
-				) );
+			if( front.vertices.length == 4 ) {
+				filling = this.closeHole4( front, filling );
+				break;
+			}
+			else if( front.vertices.length == 3 ) {
+				filling = this.closeHole3( front, filling );
 				break;
 			}
 			else if( front.vertices.length == 1 ) {
@@ -198,104 +198,36 @@ var AdvancingFront = {
 				break;
 			}
 
-			vNew = false;
-
 			// Rule 1
 			if( this.HEAP_RULE_1.length() > 0 ) {
-				angle = this.HEAP_RULE_1.removeFirst();
-
-				vNew = this.afRule1( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
-
-				if( vNew ) {
-					this.heapRemove( angle.previous );
-					angle.previous.setVertices( [angle.previous.vertices[0], angle.previous.vertices[1], angle.vertices[2]] );
-					angle.previous.next = angle.next;
-					this.heapInsert( angle.previous );
-
-					this.heapRemove( angle.next );
-					angle.next.setVertices( [angle.vertices[0], angle.next.vertices[1], angle.next.vertices[2]] );
-					angle.next.previous = angle.previous;
-					this.heapInsert( angle.next );
-				}
-				// It failed, so insert the Angle back in.
-				else {
-					this.HEAP_RULE_1.insert( angle );
-				}
-
-				vNew = false;
+				vNew = this.applyRule1( front, filling );
 			}
-
 			// Rule 2
 			else if( this.HEAP_RULE_2.length() > 0 ) {
-				angle = this.HEAP_RULE_2.removeFirst();
-
-				if( this.LAST_ITERATION ) {
-					console.log( angle );
-				}
-
-				vNew = this.afRule2( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2] );
-
-				if( vNew ) {
-					angle.setVertices( [angle.vertices[0], vNew, angle.vertices[2]] );
-					this.heapInsert( angle );
-
-					this.heapRemove( angle.previous );
-					angle.previous.setVertices( [angle.previous.vertices[0], angle.previous.vertices[1], vNew] );
-					this.heapInsert( angle.previous );
-
-					this.heapRemove( angle.next );
-					angle.next.setVertices( [vNew, angle.next.vertices[1], angle.next.vertices[2]] );
-					this.heapInsert( angle.next );
-				}
-				else {
-					this.HEAP_RULE_2.insert( angle );
-				}
+				vNew = this.applyRule2( front, filling );
 			}
-
 			// Rule 3
 			else if( this.HEAP_RULE_3.length() > 0 ) {
-				angle = this.HEAP_RULE_3.removeFirst();
-
-				vNew = this.afRule3( front, filling, angle.vertices[0], angle.vertices[1], angle.vertices[2], angle.degree );
-
-				if( vNew ) {
-					newAngle = new Angle( [angle.vertices[1], vNew, angle.vertices[2]] );
-					newAngle.previous = angle;
-					newAngle.next = angle.next;
-					this.heapInsert( newAngle );
-
-					this.heapRemove( angle.next );
-					angle.next.setVertices( [vNew, angle.next.vertices[1], angle.next.vertices[2]] );
-					angle.next.previous = newAngle;
-					this.heapInsert( angle.next );
-
-					angle.setVertices( [angle.vertices[0], angle.vertices[1], vNew] );
-					angle.next = newAngle;
-					this.heapInsert( angle );
-				}
-				else {
-					this.HEAP_RULE_3.insert( angle );
-				}
+				vNew = this.applyRule3( front, filling );
 			}
-
 			else {
 				this.showFilling( front, filling );
-				console.log( front.vertices );
 				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
 			}
 
-
-			// Compute the distances between each new created
-			// vertex and see, if they can be merged.
-			this.mergeByDistance( front, filling, vNew, hole );
+			if( !vNew || front.vertices.length != 3 ) {
+				// Compute the distances between each new created
+				// vertex and see, if they can be merged.
+				this.mergeByDistance( front, filling, vNew, hole );
+			}
 		}
-
 
 		console.log(
 			"Finished after " + ( count - 1 ) + " iterations.\n",
 			"- New vertices: " + filling.vertices.length + "\n",
 			"- New faces: " + filling.faces.length
 		);
+
 		if( this.HEAP_RULE_R.length() > 0 ) {
 			console.warn( "Ignored " + this.HEAP_RULE_R.length() + " angles, because they were >= 180°." );
 		}
@@ -328,9 +260,6 @@ var AdvancingFront = {
 		filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
 
 		// The vector v is not a part of the (moving) hole front anymore.
-		if( front.vertices.indexOf( v ) == -1 ) {
-			console.log( "rule1 fuck", vp, v, vn );
-		}
 		front.vertices.splice( front.vertices.indexOf( v ), 1 );
 
 		return true;
@@ -381,16 +310,6 @@ var AdvancingFront = {
 		var vpIndex = filling.vertices.indexOf( vp ),
 		    vIndex = filling.vertices.indexOf( v ),
 		    vnIndex = filling.vertices.indexOf( vn );
-
-	if( vnIndex == -1 ) {
-		console.log( "rule2 vnIndex", vn );
-	}
-	if( vpIndex == -1 ) {
-		console.log( "rule2 vpIndex", vp );
-	}
-	if( vIndex == -1 ) {
-		console.log( "rule2 vIndex", v );
-	}
 
 		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
 		filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
@@ -466,6 +385,183 @@ var AdvancingFront = {
 		front.vertices.splice( ix + 1, 0, vNew );
 
 		return vNew;
+	},
+
+
+	/**
+	 * Apply AF rule 1 and organise heaps/angles.
+	 * @param  {THREE.Geometry} front   Current front of hole.
+	 * @param  {THREE.Geometry} filling Current filling of hole.
+	 * @return {boolean}                Rule 1 doesn't create a new vertex, so it will always return false.
+	 */
+	applyRule1: function( front, filling ) {
+		var angle = this.HEAP_RULE_1.removeFirst();
+
+		var vNew = this.afRule1(
+			front, filling,
+			angle.vertices[0], angle.vertices[1], angle.vertices[2]
+		);
+
+		if( vNew ) {
+			this.heapRemove( angle.previous );
+			angle.previous.setVertices( [
+				angle.previous.vertices[0],
+				angle.previous.vertices[1],
+				angle.vertices[2]
+			] );
+			angle.previous.next = angle.next;
+			this.heapInsert( angle.previous );
+
+			this.heapRemove( angle.next );
+			angle.next.setVertices( [
+				angle.vertices[0],
+				angle.next.vertices[1],
+				angle.next.vertices[2]
+			] );
+			angle.next.previous = angle.previous;
+			this.heapInsert( angle.next );
+		}
+		// It failed, so insert the Angle back in.
+		else {
+			this.HEAP_RULE_1.insert( angle );
+		}
+
+		return false;
+	},
+
+
+	/**
+	 * Apply AF rule 2 and organise heaps/angles.
+	 * @param  {THREE.Geometry} front   Current front of hole.
+	 * @param  {THREE.Geometry} filling Current filling of hole.
+	 * @return {THREE.Vector3}          New vertex.
+	 */
+	applyRule2: function( front, filling ) {
+		var angle = this.HEAP_RULE_2.removeFirst();
+
+		var vNew = this.afRule2(
+			front, filling,
+			angle.vertices[0], angle.vertices[1], angle.vertices[2]
+		);
+
+		if( vNew ) {
+			angle.setVertices( [
+				angle.vertices[0],
+				vNew,
+				angle.vertices[2]
+			] );
+			this.heapInsert( angle );
+
+			this.heapRemove( angle.previous );
+			angle.previous.setVertices( [
+				angle.previous.vertices[0],
+				angle.previous.vertices[1],
+				vNew
+			] );
+			this.heapInsert( angle.previous );
+
+			this.heapRemove( angle.next );
+			angle.next.setVertices( [
+				vNew,
+				angle.next.vertices[1],
+				angle.next.vertices[2]
+			] );
+			this.heapInsert( angle.next );
+		}
+		else {
+			this.HEAP_RULE_2.insert( angle );
+		}
+
+		return vNew;
+	},
+
+
+	/**
+	 * Apply AF rule 3 and organise heaps/angles.
+	 * @param  {THREE.Geometry} front   Current front of hole.
+	 * @param  {THREE.Geometry} filling Current filling of hole.
+	 * @return {THREE.Vector3}          New vertex.
+	 */
+	applyRule3: function( front, filling ) {
+		var angle = this.HEAP_RULE_3.removeFirst();
+
+		var vNew = this.afRule3(
+			front, filling,
+			angle.vertices[0], angle.vertices[1], angle.vertices[2],
+			angle.degree
+		);
+
+		if( vNew ) {
+			var newAngle = new Angle( [
+				angle.vertices[1],
+				vNew,
+				angle.vertices[2]
+			] );
+			newAngle.previous = angle;
+			newAngle.next = angle.next;
+			this.heapInsert( newAngle );
+
+			this.heapRemove( angle.next );
+			angle.next.setVertices( [
+				vNew,
+				angle.next.vertices[1],
+				angle.next.vertices[2]
+			] );
+			angle.next.previous = newAngle;
+			this.heapInsert( angle.next );
+
+			angle.setVertices( [
+				angle.vertices[0],
+				angle.vertices[1],
+				vNew
+			] );
+			angle.next = newAngle;
+			this.heapInsert( angle );
+		}
+		else {
+			this.HEAP_RULE_3.insert( angle );
+		}
+
+		return vNew;
+	},
+
+
+	/**
+	 * Close the last hole of only 3 vertices.
+	 * @param  {THREE.Geometry} front   Current hole front.
+	 * @param  {THREE.Geometry} filling Current hole filling.
+	 * @return {THREE.Geometry}         Completed hole filling.
+	 */
+	closeHole3: function( front, filling ) {
+		filling.faces.push( new THREE.Face3(
+			filling.vertices.indexOf( front.vertices[1] ),
+			filling.vertices.indexOf( front.vertices[0] ),
+			filling.vertices.indexOf( front.vertices[2] )
+		) );
+
+		return filling;
+	},
+
+
+	/**
+	 * Close the last hole of only 4 vertices.
+	 * @param  {THREE.Geometry} front   Current hole front.
+	 * @param  {THREE.Geometry} filling Current hole filling.
+	 * @return {THREE.Geometry}         Completed hole filling.
+	 */
+	closeHole4: function( front, filling ) {
+		filling.faces.push( new THREE.Face3(
+			filling.vertices.indexOf( front.vertices[4] ),
+			filling.vertices.indexOf( front.vertices[3] ),
+			filling.vertices.indexOf( front.vertices[5] )
+		) );
+		filling.faces.push( new THREE.Face3(
+			filling.vertices.indexOf( front.vertices[1] ),
+			filling.vertices.indexOf( front.vertices[0] ),
+			filling.vertices.indexOf( front.vertices[2] )
+		) );
+
+		return filling;
 	},
 
 
