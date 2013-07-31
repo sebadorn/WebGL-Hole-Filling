@@ -129,6 +129,15 @@ var UI = {
 
 
 	/**
+	 * Dragover event of import area.
+	 */
+	dragoverOfImport: function( e ) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+	},
+
+
+	/**
 	 * Hide all details.
 	 */
 	hideAllDetails: function() {
@@ -197,9 +206,12 @@ var UI = {
 	 * Listen to events of the import field.
 	 */
 	registerImport: function() {
-		var inputUpload = document.getElementById( "import_file" );
+		var inputUpload = document.getElementById( "import_file" ),
+		    dropzone = document.body;
 
 		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
+		dropzone.addEventListener( "dragover", this.dragoverOfImport, false );
+		dropzone.addEventListener( "drop", Loader.loadFileFromDrop.bind( Loader ), false );
 	},
 
 

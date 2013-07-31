@@ -883,7 +883,7 @@ var AdvancingFront = {
 			front.vertices[vIndexAfter]
 		];
 
-		// Compare current point to all other new points
+		// Compare the new point to its direct neighbours
 		for( var i = 0; i < compare.length; i++ ) {
 			t = compare[i];
 
@@ -955,7 +955,7 @@ var AdvancingFront = {
 
 			var materialSolid = new THREE.MeshPhongMaterial( {
 				color: CONFIG.HF.FILLING.COLOR,
-				shading: THREE.FlatShading,
+				shading: Scene.getCurrentShading(),
 				side: THREE.DoubleSide,
 				wireframe: false
 			} );
@@ -977,7 +977,7 @@ var AdvancingFront = {
 		if( CONFIG.HF.FILLING.SHOW_WIREFRAME ) {
 			var materialWire = new THREE.MeshBasicMaterial( {
 				color: 0xFFFFFF,
-				overdraw: true,
+				overdraw: true, // Doesn't seem to work
 				side: THREE.DoubleSide,
 				wireframe: true,
 				wireframeLinewidth: CONFIG.HF.FILLING.LINE_WIDTH

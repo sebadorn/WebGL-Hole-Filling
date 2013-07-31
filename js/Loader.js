@@ -23,8 +23,8 @@ var Loader = {
 	 * Evaluate and load the model file.
 	 */
 	loadFile: function( e ) {
-		if( e.target.length === 0 ) {
-			console.error( "No file selected." );
+		if( e.target.files.length === 0 ) {
+			console.log( "No file selected." );
 			return false;
 		}
 
@@ -40,6 +40,23 @@ var Loader = {
 				CONFIG.ALLOWED_FILE_EXTENSIONS
 			);
 		}
+	},
+
+
+	/**
+	 * File has been dropped in the browser.
+	 */
+	loadFileFromDrop: function( e ) {
+		e.preventDefault();
+
+		if( e.dataTransfer.files.length === 0 ) {
+			console.log( "No file selected" );
+			return false;
+		}
+
+		var dummyE = { target: { files: e.dataTransfer.files } };
+
+		this.loadFile( dummyE );
 	},
 
 
