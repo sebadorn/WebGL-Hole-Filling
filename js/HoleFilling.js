@@ -551,9 +551,9 @@ var AdvancingFront = {
 	 */
 	closeHole4: function( front, filling ) {
 		filling.faces.push( new THREE.Face3(
-			filling.vertices.indexOf( front.vertices[4] ),
 			filling.vertices.indexOf( front.vertices[3] ),
-			filling.vertices.indexOf( front.vertices[5] )
+			filling.vertices.indexOf( front.vertices[2] ),
+			filling.vertices.indexOf( front.vertices[0] )
 		) );
 		filling.faces.push( new THREE.Face3(
 			filling.vertices.indexOf( front.vertices[1] ),
