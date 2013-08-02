@@ -392,12 +392,14 @@ var UI = {
 		var d = document,
 		    detail = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
 		    sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
-		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" );
+		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
+		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" );
 		var selection = d.createElement( "div" );
-		var info, infoLabel;
+		var info, infoLabel, progress;
 
 		this.cleanOfChildNodes( sectionFoundHoles );
 		this.cleanOfChildNodes( sectionHoleInfo );
+		this.cleanOfChildNodes( sectionProgress );
 
 
 		// Found holes
@@ -438,6 +440,15 @@ var UI = {
 
 		sectionHoleInfo.appendChild( info );
 		sectionHoleInfo.appendChild( infoLabel );
+
+
+		// Progress
+		progress = d.createElement( "progress" );
+		progress.max = 100;
+		progress.value = 0;
+		progress.textContent = "0%";
+
+		sectionProgress.appendChild( progress );
 
 
 		this.hideAllDetails();

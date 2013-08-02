@@ -4,12 +4,12 @@
 /**
  * Edge structure.
  * (Original Java code by Henning Tjaden.)
- * @param {Vertex}      vertex
- * @param {Vertex}      q
- * @param {Edge}        next (Not a parameter.)
- * @param {Edge}        pair (Not a parameter.)
- * @param {THREE.Face3} face
- * @param {Edge}        prev (Not a parameter.)
+ * @param {Vertex} vertex
+ * @param {Vertex} q
+ * @param {Edge}   next   (Not a parameter.)
+ * @param {Edge}   pair   (Not a parameter.)
+ * @param {int}    face   Index of the face.
+ * @param {Edge}   prev   (Not a parameter.)
  */
 function Edge( vertex, q, face ) {
 	this.vertex = vertex;
@@ -19,6 +19,19 @@ function Edge( vertex, q, face ) {
 	this.face = face;
 	this.prev = null;
 }
+
+
+/**
+ * Check if the edge is a border edge.
+ * @return {boolean} True, if edge is a border edge, false otherwise.
+ */
+Edge.prototype.isBorderEdge = function() {
+	if( this.pair == null ) {
+		return true;
+	}
+	return false;
+};
+
 
 
 /**

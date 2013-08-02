@@ -17,11 +17,9 @@ var HoleFilling = {
 		    holes = [],
 		    ignore = [],
 		    lines = [],
-		    points = [],
-		    pos = new THREE.Vector3();
-		var geometry, line, material, mesh, v, vertex;
-
-		mesh = new HalfEdgeMesh( model.geometry );
+		    points = [];
+		var mesh = new HalfEdgeMesh( model.geometry );
+		var geometry, line, material, v, vertex;
 
 		for( var i = 0; i < mesh.vertices.length; i++ ) {
 			vertex = mesh.vertices[i];
@@ -31,7 +29,7 @@ var HoleFilling = {
 				holes.push( [model.geometry.vertices[vertex.index]] );
 
 				// Find connected border points
-				geometry = this.getNeighbouringBorderPoints( model, ignore, vertex );
+				geometry = this.getNeighbouringBorderPoints( model, ignore, mesh, vertex );
 
 				for( var j = 0; j < geometry.vertices.length; j++ ) {
 					v = geometry.vertices[j];
@@ -76,16 +74,26 @@ var HoleFilling = {
 	 * @param  {Vertex}         start  Starting vertex.
 	 * @return {THREE.Geometry}        Geometry of a hole.
 	 */
-	getNeighbouringBorderPoints: function( model, ignore, start ) {
+	getNeighbouringBorderPoints: function( model, ignore, mesh, start ) {
 		var geometry = new THREE.Geometry(),
-		    bpStart = start,
-		    bp = bpStart;
-		var v;
+		    bpStart = start;
+		var bp = bpStart;
+		var restOfHole, v;
 
 		while( true ) {
-			if( ignore.indexOf( bp.index ) < 0 && bp.isBorderPoint() ) {
-				v = model.geometry.vertices[bp.index];
+			v = model.geometry.vertices[bp.index];
+
+			if( geometry.vertices.indexOf( v ) < 0 && bp.isBorderPoint() ) {
 				geometry.vertices.push( v );
+
+				// Special case
+				if( this.isMultiBorderPoint( bp ) ) {
+					restOfHole = this.exploreEdgesOfBorderPoint( bp, start );
+					geometry.vertices = geometry.vertices.concat( restOfHole );
+					break;
+				}
+
+				// "Normal" procedure
 				ignore.push( bp.index );
 
 				if( bp.firstEdge == null ) {
@@ -100,6 +108,128 @@ var HoleFilling = {
 		}
 
 		return geometry;
+	},
+
+
+	exploreEdgesOfBorderPoint: function( bp, start ) {
+		var routes = [];
+		var completed, edge, nextBp, route, routeComplete;
+
+		// Explore edges
+		for( var i = 0; i < bp.edges.length; i++ ) {
+			edge = bp.edges[i];
+			route = [];
+
+			if( !edge.isBorderEdge() || edge == bp.prev ) {
+				continue;
+			}
+
+			nextBp = edge.vertex;
+
+			// Follow the border points of this edge
+			while( true ) {
+				if( nextBp.isBorderPoint() ) {
+					route.push( nextBp );
+
+					// We found the route that completes the hole
+					if( nextBp == start ) {
+						completed = true;
+						break;
+					}
+					// We are back at the (multi) border point
+					// and therefore didn't complete the hole
+					if( nextBp == bp ) {
+						completed = false;
+						break;
+					}
+					nextBp = nextBp.firstEdge.vertex;
+				}
+			}
+
+			// Save result of following this edge
+			if( completed ) {
+				if( routeComplete != null ) {
+					throw new Error( "More than one complete route, should not be possible!" );
+				}
+				routeComplete = route;
+			}
+			else {
+				routes.push( route.slice( 0 ) );
+			}
+		}
+
+
+		// Remove duplicate routes (same hole, but in the other direction)
+		var remove = [];
+
+		for( var i = 0; i < routes.length; i++ ) {
+			for( var j = 0; j < routes.length; j++ ) {
+				if( routes[i][1].index == routes[j][routes[j].length - 2].index ) {
+					remove.push( j );
+					break;
+				}
+			}
+		}
+
+		remove.sort();
+		for( var i = remove.length; i > 0; i-- ) {
+			routes.splice( i, 1 );
+		}
+		console.log( "Removed " + remove.length + " routes." );
+
+
+		// Ignore "inner holes" and merge complete route with "outer holes"
+		var angleAverage, ixPrev, vp, v, vn;
+		var modelVertices = GLOBAL.MODEL.geometry.vertices;
+
+		for( var i = 0; i < routes.length; i++ ) {
+			angleAverage = 0.0;
+
+			for( var j = 0; j < routes[i].length; j++ ) {
+				ixPrev = routes[i][j].index - 1;
+				vp = modelVertices[ixPrev < 0 ? 0 : ixPrev];
+				v = modelVertices[routes[i][j].index];
+				vn = modelVertices[(routes[i][j].index + 1 ) % modelVertices.length];
+
+				angleAverage += Utils.computeAngle( vp, v, vn, GLOBAL.MODEL.position );
+			}
+
+			angleAverage /= routes[i].length;
+
+			// "outer hole" -> add to complete route
+			if( angleAverage >= 180.0 ) {
+				console.log( "outer hole" );
+
+				for( var j = routes[i].length; j > 0; j-- ) {
+					routeComplete.splice( 0, 0, routes[i][j] );
+				}
+			}
+			// "inner hole" -> ignore
+			else {
+				console.log( "inner hole" );
+			}
+		}
+
+
+		return routeComplete;
+	},
+
+
+	/**
+	 * Check if a vertex belongs to the borders of multiple holes.
+	 * @param  {Vertex}  bp Vertex to check.
+	 * @return {boolean}    True, if vertex is part of multiple borders, false otherwise.
+	 */
+	isMultiBorderPoint: function( bp ) {
+		var count = 0;
+
+		for( var i = 0; i < bp.edges.length; i++ ) {
+			if( bp.edges[i].isBorderEdge() ) {
+				count++;
+			}
+		}
+
+		return ( count >= 2 );
 	}
 
 };

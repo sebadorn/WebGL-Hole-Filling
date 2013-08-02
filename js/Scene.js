@@ -242,6 +242,9 @@ var Scene = {
 		// Merge original model with the new filling
 		THREE.GeometryUtils.merge( g.MODEL.geometry, filling );
 		g.MODEL.geometry.mergeVertices();
+		g.MODEL.geometry.computeFaceNormals();
+		g.MODEL.geometry.computeVertexNormals();
+		g.MODEL.geometry.computeBoundingBox();
 	},
 
 

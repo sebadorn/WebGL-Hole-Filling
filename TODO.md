@@ -5,7 +5,6 @@
 
 * `Improve` Parallelization through Workers
 * `Improve` Refine AFM based on Poisson equation OR radial basis functions
-* `Improve` Collision test in 3D (test if triangle sides collide with triangle surface)
 
 * `Feature` Progress bar for export and filling
 * `Feature` Show in-between steps of filling
