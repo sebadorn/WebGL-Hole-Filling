@@ -53,6 +53,7 @@ var HoleFilling = {
 						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
+				break; // TODO: REMOVE
 			}
 		}
 
@@ -88,7 +89,7 @@ var HoleFilling = {
 
 				// Special case
 				if( this.isMultiBorderPoint( bp ) ) {
-					restOfHole = this.exploreEdgesOfBorderPoint( bp, start );
+					restOfHole = this.exploreEdgesOfBorderPoint( bp, start, ignore );
 					geometry.vertices = geometry.vertices.concat( restOfHole );
 					break;
 				}
@@ -111,9 +112,21 @@ var HoleFilling = {
 	},
 
 
-	exploreEdgesOfBorderPoint: function( bp, start ) {
+	/**
+	 * Handle the special case where a border point belongs to more than one hole border.
+	 * @param  {Vertex}               bp     Multiple border point that triggered this routine.
+	 * @param  {Vertex}               start  Starting point of the hole.
+	 * @param  {Array<int>}           ignore Border points to ignroe in the main loop.
+	 * @return {Array<THREE.Vector3>}        The border points to add the hole so far in order to complete it.
+	 */
+	exploreEdgesOfBorderPoint: function( bp, start, ignore ) {
 		var routes = [];
 		var completed, edge, nextBp, route, routeComplete;
+
+		var gs = GLOBAL.SCENE,
+		    gv = GLOBAL.MODEL.geometry.vertices;
+
+		//gs.add( Scene.createPoint( gv[bp.index], 0.03, 0x99CCFF, true ) );
 
 		// Explore edges
 		for( var i = 0; i < bp.edges.length; i++ ) {
@@ -142,6 +155,7 @@ var HoleFilling = {
 						completed = false;
 						break;
 					}
+					var prev = nextBp;
 					nextBp = nextBp.firstEdge.vertex;
 				}
 			}
@@ -198,16 +212,23 @@ var HoleFilling = {
 
 			// "outer hole" -> add to complete route
 			if( angleAverage >= 180.0 ) {
-				console.log( "outer hole" );
+				console.log( "outer hole", angleAverage );
 
-				for( var j = routes[i].length; j > 0; j-- ) {
+				for( var j = routes[i].length - 1; j >= 0; j-- ) {
 					routeComplete.splice( 0, 0, routes[i][j] );
 				}
 			}
 			// "inner hole" -> ignore
 			else {
-				console.log( "inner hole" );
+				console.log( "inner hole", angleAverage );
 			}
+		}
+
+
+		// Change HalfEdge Vertices into THREE.Vector3
+		for( var i = 0; i < routeComplete.length; i++ ) {
+			ignore.push( routeComplete[i].index );
+			routeComplete[i] = GLOBAL.MODEL.geometry.vertices[routeComplete[i].index];
 		}
 
 
@@ -324,6 +345,7 @@ var AdvancingFront = {
 				break;
 			}
 			else if( front.vertices.length == 1 ) {
+				// TODO: REMOVE?
 				GLOBAL.SCENE.add( Scene.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
 				break;
 			}
@@ -879,21 +901,21 @@ var AdvancingFront = {
 			}
 
 			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-				GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
 
-				GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
-				GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
+				// GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
 
-				GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
-				if( fromB ) {
-					GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
-				}
-				GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-				GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
+				// GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
+				// if( fromB ) {
+				// 	GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+				// 	GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
+				// }
+				// GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
+				// GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
 
 				return false;
 			}
@@ -917,21 +939,21 @@ var AdvancingFront = {
 				}
 
 				if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
-					GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
 
-					GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
+					// GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
 
-					GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
-					if( fromB ) {
-						GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
-						GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
-					}
-					GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
+					// GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
+					// if( fromB ) {
+					// 	GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
+					// 	GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
+					// }
+					// GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
+					// GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
 
 					return false;
 				}
