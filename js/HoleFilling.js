@@ -7,6 +7,10 @@
  */
 var HoleFilling = {
 
+	visitedBorderPoints: null,
+	debugFlag: false, // TODO: REMOVE
+
+
 	/**
 	 * Find the border edges of a hole inside a half-edge structure.
 	 * @param  {THREE.Mesh} model  The model to find holes in.
@@ -15,21 +19,30 @@ var HoleFilling = {
 	findBorderEdges: function( model ) {
 		var colors = CONFIG.HF.BORDER.COLOR,
 		    holes = [],
-		    ignore = [],
 		    lines = [],
 		    points = [];
 		var mesh = new HalfEdgeMesh( model.geometry );
 		var geometry, line, material, v, vertex;
 
+		this.visitedBorderPoints = [];
+
 		for( var i = 0; i < mesh.vertices.length; i++ ) {
 			vertex = mesh.vertices[i];
 
-			if( ignore.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
+			if( holes.length > 1 ) {
+				break;
+			}
+
+			if( this.visitedBorderPoints.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
 				// New hole, add first vertex
 				holes.push( [model.geometry.vertices[vertex.index]] );
 
+				if( this.debugFlag ) {
+					GLOBAL.SCENE.add( Scene.createPoint( holes[1][0], 0.05, 0x66FF00, true ) );
+				}
+
 				// Find connected border points
-				geometry = this.getNeighbouringBorderPoints( model, ignore, mesh, vertex );
+				geometry = this.getNeighbouringBorderPoints( model, mesh, vertex );
 
 				for( var j = 0; j < geometry.vertices.length; j++ ) {
 					v = geometry.vertices[j];
@@ -53,11 +66,10 @@ var HoleFilling = {
 						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
-				break; // TODO: REMOVE
+
+				this.debugFlag = true;
 			}
 		}
-
-		GLOBAL.HALFEDGE = mesh;
 
 		return {
 			holes: holes,
@@ -68,14 +80,37 @@ var HoleFilling = {
 
 
 	/**
+	 * Find vertices that have no connection to any other vertex.
+	 * @param  {THREE.Mesh}        model Model to find unconnected points in.
+	 * @return {Array<THREE.Mesh>}       3D sphere models of the unconnected vertices.
+	 */
+	findUnconnectedPoints: function( model ) {
+		var gs = GLOBAL.SCENE;
+		var mesh = new HalfEdgeMesh( model.geometry ),
+		    points = [];
+		var p, v;
+
+		for( var i = 0; i < mesh.vertices.length; i++ ) {
+			if( mesh.vertices[i].edges.length == 0 ) {
+				v = model.geometry.vertices[mesh.vertices[i].index];
+				p = Scene.createPoint( v, 0.03, 0xFF0000, true ); // TODO: CONFIG
+				points.push( p );
+				gs.add( p );
+			}
+		}
+
+		return points;
+	},
+
+
+	/**
 	 * Get all the connected border points starting from one of the border points.
 	 * Returns one hole in the mesh, if there is at least one.
 	 * @param  {THREE.Mesh}     model  The model to search holes in.
-	 * @param  {Array<int>}     ignore Vertices that have already been searched and can be ignored now.
 	 * @param  {Vertex}         start  Starting vertex.
 	 * @return {THREE.Geometry}        Geometry of a hole.
 	 */
-	getNeighbouringBorderPoints: function( model, ignore, mesh, start ) {
+	getNeighbouringBorderPoints: function( model, mesh, start ) {
 		var geometry = new THREE.Geometry(),
 		    bpStart = start;
 		var bp = bpStart;
@@ -89,13 +124,13 @@ var HoleFilling = {
 
 				// Special case
 				if( this.isMultiBorderPoint( bp ) ) {
-					restOfHole = this.exploreEdgesOfBorderPoint( bp, start, ignore );
+					restOfHole = this.exploreEdgesOfBorderPoint( bp, start );
 					geometry.vertices = geometry.vertices.concat( restOfHole );
 					break;
 				}
 
 				// "Normal" procedure
-				ignore.push( bp.index );
+				this.visitedBorderPoints.push( bp.index );
 
 				if( bp.firstEdge == null ) {
 					break;
@@ -116,17 +151,18 @@ var HoleFilling = {
 	 * Handle the special case where a border point belongs to more than one hole border.
 	 * @param  {Vertex}               bp     Multiple border point that triggered this routine.
 	 * @param  {Vertex}               start  Starting point of the hole.
-	 * @param  {Array<int>}           ignore Border points to ignroe in the main loop.
 	 * @return {Array<THREE.Vector3>}        The border points to add the hole so far in order to complete it.
 	 */
-	exploreEdgesOfBorderPoint: function( bp, start, ignore ) {
+	exploreEdgesOfBorderPoint: function( bp, start ) {
 		var routes = [];
 		var completed, edge, nextBp, route, routeComplete;
 
 		var gs = GLOBAL.SCENE,
 		    gv = GLOBAL.MODEL.geometry.vertices;
 
-		//gs.add( Scene.createPoint( gv[bp.index], 0.03, 0x99CCFF, true ) );
+		if( this.debugFlag ) {
+			gs.add( Scene.createPoint( gv[bp.index], 0.03, 0x99CCFF, true ) );
+		}
 
 		// Explore edges
 		for( var i = 0; i < bp.edges.length; i++ ) {
@@ -227,7 +263,7 @@ var HoleFilling = {
 
 		// Change HalfEdge Vertices into THREE.Vector3
 		for( var i = 0; i < routeComplete.length; i++ ) {
-			ignore.push( routeComplete[i].index );
+			this.visitedBorderPoints.push( routeComplete[i].index );
 			routeComplete[i] = GLOBAL.MODEL.geometry.vertices[routeComplete[i].index];
 		}
 
@@ -385,7 +421,6 @@ var AdvancingFront = {
 		}
 
 		this.showFilling( front, filling );
-		UI.checkHoleFinished( this.HOLE_INDEX );
 
 		return filling;
 	},

@@ -1,5 +1,7 @@
 ## ToDo
 
+* `Critical` Refactor HoleFilling.exploreEdgesOfBorderPoint()
+
 * `Bug` Collision test with whole model blocks almost every new point
 * `Bug` Seperate holes, which are connected in a vertex, aren't recognized properly
 

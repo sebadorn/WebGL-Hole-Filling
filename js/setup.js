@@ -6,7 +6,6 @@ var GLOBAL = {
 	CONTAINER: null,
 	CONTROLS: null,
 	FILLINGS: {},
-	HALFEDGE: null,
 	HOLES: [],
 	LIGHTS: {
 		AMBIENT: [],

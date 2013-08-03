@@ -17,7 +17,7 @@ var CONFIG = {
 	// Camera. Always looking at (0,0,0)
 	CAMERA: {
 		ANGLE: 45,
-		FOCUS_HOLE: {
+		FOCUS: {
 			DISTANCE: 8.0,
 			STEPS: 0,
 			TIMEOUTS: 30

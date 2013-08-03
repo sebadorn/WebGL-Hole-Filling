@@ -435,7 +435,8 @@ label.newradio:last-of-type {
 /* Special */
 /* ------- */
 
-.foundHole {
+.foundHole,
+.foundPoint {
 	border-left-style: solid !important;
 	border-left-width: 4px !important;
 	display: block;
@@ -443,7 +444,8 @@ label.newradio:last-of-type {
 	padding-right: 4px !important;
 }
 
-.foundHole.filled {
+.foundHole.filled,
+.foundPoint.removed {
 	opacity: 0.5;
 }
 

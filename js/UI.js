@@ -39,6 +39,25 @@ var UI = {
 
 
 	/**
+	 * Signal in the point selection that a vertex has already been removed.
+	 * @param {int} index Index of the point.
+	 */
+	checkPointRemoved: function( index ) {
+		var pointsSelect = document.getElementById( "details" ).querySelector( ".foundPoints" );
+		var pointBtn;
+
+		for( var i = pointsSelect.childNodes.length - 1; i >= 0; i-- ) {
+			pointBtn = pointsSelect.childNodes[i];
+
+			if( pointBtn.getAttribute( "data-index" ) == index ) {
+				pointBtn.className += " removed";
+				break;
+			}
+		}
+	},
+
+
+	/**
 	 * Remove all child nodes of a node.
 	 * @param  {DOMElement} node
 	 * @return {DOMElement} The given node after removing the child nodes.
@@ -169,7 +188,7 @@ var UI = {
 		this.registerLightingOptions();
 		this.registerModeOptions();
 		this.registerShadingOptions();
-		this.registerHoleFillingOptions();
+		this.registerEditOptions();
 		this.registerCameraReset();
 		this.registerExport();
 	},
@@ -185,20 +204,22 @@ var UI = {
 	},
 
 
+	/**
+	 * Listen to events of the edit options.
+	 */
+	registerEditOptions: function() {
+		var buttonFindEdges = document.getElementById( "edit_findedges" ),
+		    buttonFindUnconnected = document.getElementById( "edit_findunconnected" );
+
+		buttonFindEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
+		buttonFindUnconnected.addEventListener( "click", Scene.showUnconnectedPoints.bind( Scene ), false );
+	},
+
+
 	registerExport: function() {
 		var buttonShowExport = document.getElementById( "export_options" );
 
 		buttonShowExport.addEventListener( "click", this.showDetailExport.bind( this ), false );
-	},
-
-
-	/**
-	 * Listen to events of the hole filling options.
-	 */
-	registerHoleFillingOptions: function() {
-		var buttonShowEdges = document.getElementById( "hf_findedges" );
-
-		buttonShowEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
 	},
 
 
@@ -338,6 +359,37 @@ var UI = {
 
 
 	/**
+	 * Select a point. Focus on it and show additional details.
+	 */
+	selectPoint: function( e ) {
+		var d = document;
+		var children = e.target.parentNode.childNodes,
+		    details = d.getElementById( "details" ),
+		    detailRemovePoint = details.querySelector( ".detail-removepoint" ),
+		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
+		var area, btnRemove, number;
+
+		for( var i = 0, len = children.length; i < len; i++ ) {
+			children[i].className = children[i].className.replace( " active", "" );
+		}
+		e.target.className += " active";
+
+		Scene.focusPoint( index );
+
+		// Detail: Remove point
+		number = detailRemovePoint.querySelector( ".caption .number" );
+		number.textContent = index + 1;
+
+		btnRemove = this.createButton( "Remove vertex", Scene.removeVertex.bind( Scene ) );
+		btnRemove.setAttribute( "data-removepoint", index );
+
+		area = detailRemovePoint.querySelector( "fieldset" );
+		this.cleanOfChildNodes( area );
+		area.appendChild( btnRemove );
+	},
+
+
+	/**
 	 * Show further options for the export.
 	 */
 	showDetailExport: function() {
@@ -440,6 +492,65 @@ var UI = {
 
 		sectionHoleInfo.appendChild( info );
 		sectionHoleInfo.appendChild( infoLabel );
+
+
+		// Progress
+		progress = d.createElement( "progress" );
+		progress.max = 100;
+		progress.value = 0;
+		progress.textContent = "0%";
+
+		sectionProgress.appendChild( progress );
+
+
+		this.hideAllDetails();
+		detail.removeAttribute( "hidden" );
+	},
+
+
+	/**
+	 * List the found unconnected points.
+	 * @param {Array<THREE.Vector3>} foundPoints The found unconnected points.
+	 */
+	showDetailUnconnected: function( foundPoints ) {
+		var d = document,
+		    detail = d.getElementById( "details" ).querySelector( ".details-unconnected" ),
+		    sectionFoundPoints = detail.querySelector( ".detail-foundpoints fieldset" ),
+		    sectionRemovePoints = detail.querySelector( ".detail-removepoint fieldset" ),
+		    sectionProgress = detail.querySelector( ".detail-removeprogress fieldset" );
+		var selection = d.createElement( "div" );
+		var info, infoLabel, progress;
+
+		this.cleanOfChildNodes( sectionFoundPoints );
+		this.cleanOfChildNodes( sectionRemovePoints );
+		this.cleanOfChildNodes( sectionProgress );
+
+
+		// Found holes
+		selection.className = "selectContainer foundPoints";
+
+		if( foundPoints.length > 0 ) {
+			var btnFocusPoint;
+
+			for( var i = 0; i < foundPoints.length; i++ ) {
+				btnFocusPoint = this.createButton(
+					"Point " + ( i + 1 ), this.selectPoint.bind( this )
+				);
+				btnFocusPoint.className = "foundPoint";
+				btnFocusPoint.style.borderLeftColor = "#" + foundPoints[i].material.color.getHexString();
+				btnFocusPoint.setAttribute( "data-index", i );
+
+				selection.appendChild( btnFocusPoint );
+			}
+			sectionFoundPoints.appendChild( selection );
+		}
+		else {
+			var msg = d.createElement( "p" );
+			msg.className = "message";
+			msg.textContent = "No unconnected vertices found."
+
+			sectionFoundPoints.appendChild( msg );
+		}
 
 
 		// Progress

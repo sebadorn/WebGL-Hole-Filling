@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta charset="utf-8" />
-	<title>WebGL Hole Filling</title>
+	<title>WebGL 3D Print Preparations</title>
 	<link rel="stylesheet" href="screen.css" />
 
 	<script src="js/config.js"></script>
@@ -104,10 +104,14 @@
 	<li class="tool tool-edit">
 		<span class="icon icon-edit"></span>
 		<fieldset>
-			<legend>Hole Filling</legend>
+			<legend>Edit model</legend>
 
 			<section>
-				<input class="button" type="button" id="hf_findedges" value="Find holes" />
+				<input class="button" type="button" id="edit_findedges" value="Find holes" />
+			</section>
+
+			<section>
+				<input class="button" type="button" id="edit_findunconnected" value="Find single vertices" />
 			</section>
 		</div>
 	</li>
@@ -180,6 +184,30 @@
 
 		<!-- progress -->
 		<li class="detail detail-fillprogress">
+			<div class="caption">Progress</div>
+			<fieldset></fieldset>
+		</li>
+
+	</ul>
+
+
+	<!-- details for unconnected point removal -->
+	<ul class="details-collection details-unconnected" hidden>
+
+		<!-- found points -->
+		<li class="detail detail-foundpoints">
+			<div class="caption">Found points</div>
+			<fieldset></fieldset>
+		</li>
+
+		<!-- remove points -->
+		<li class="detail detail-removepoint">
+			<div class="caption">Remove point<span class="number">-</span></div>
+			<fieldset></fieldset>
+		</li>
+
+		<!-- progress -->
+		<li class="detail detail-removeprogress">
 			<div class="caption">Progress</div>
 			<fieldset></fieldset>
 		</li>
