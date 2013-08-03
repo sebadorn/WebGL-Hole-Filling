@@ -33,6 +33,11 @@ var HoleFilling = {
 				break;
 			}
 
+			// Ignore vertices without any connections/edges
+			if( vertex.edges.length == 0 ) {
+				continue;
+			}
+
 			if( this.visitedBorderPoints.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
 				// New hole, add first vertex
 				holes.push( [model.geometry.vertices[vertex.index]] );
@@ -76,30 +81,6 @@ var HoleFilling = {
 			lines: lines,
 			points: points
 		};
-	},
-
-
-	/**
-	 * Find vertices that have no connection to any other vertex.
-	 * @param  {THREE.Mesh}        model Model to find unconnected points in.
-	 * @return {Array<THREE.Mesh>}       3D sphere models of the unconnected vertices.
-	 */
-	findUnconnectedPoints: function( model ) {
-		var gs = GLOBAL.SCENE;
-		var mesh = new HalfEdgeMesh( model.geometry ),
-		    points = [];
-		var p, v;
-
-		for( var i = 0; i < mesh.vertices.length; i++ ) {
-			if( mesh.vertices[i].edges.length == 0 ) {
-				v = model.geometry.vertices[mesh.vertices[i].index];
-				p = Scene.createPoint( v, 0.03, 0xFF0000, true ); // TODO: CONFIG
-				points.push( p );
-				gs.add( p );
-			}
-		}
-
-		return points;
 	},
 
 

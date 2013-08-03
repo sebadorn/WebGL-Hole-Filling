@@ -270,44 +270,11 @@ var Scene = {
 		var bbox = Utils.getBoundingBox( g.HOLES[index] );
 
 		bbox.center.add( GLOBAL.MODEL.position );
-		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS_HOLE.DISTANCE );
+		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS.DISTANCE );
 
 		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ),
 		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ),
 		    stepZ = ( bbox.center.z - GLOBAL.CAMERA.position.z );
-
-		if( cfgCam.FOCUS.STEPS > 0 ) {
-			stepX /= cfgCam.FOCUS.STEPS;
-		    stepY /= cfgCam.FOCUS.STEPS;
-		    stepZ /= cfgCam.FOCUS.STEPS;
-		}
-
-		this.moveCamToPosition( stepX, stepY, stepZ, 0 );
-	},
-
-
-	/**
-	 * Focus on the found unconnected vertex.
-	 * @param {int} index Index of the found unconnected vertex.
-	 */
-	focusPoint: function( index ) {
-		var cfgCam = CONFIG.CAMERA,
-		    g = GLOBAL;
-
-		if( isNaN( index ) ) {
-			console.error( "Not a valid vertex index." );
-			return;
-		}
-		if( g.UNCONNECTED_POINTS.length <= index ) {
-			console.error( "No unconnected vertex exists for this index." );
-			return;
-		}
-
-		var v = g.UNCONNECTED_POINTS[index].position;
-
-		var stepX = ( v.x - GLOBAL.CAMERA.position.x ),
-		    stepY = ( v.y - GLOBAL.CAMERA.position.y ),
-		    stepZ = ( v.z - GLOBAL.CAMERA.position.z );
 
 		if( cfgCam.FOCUS.STEPS > 0 ) {
 			stepX /= cfgCam.FOCUS.STEPS;
@@ -414,48 +381,6 @@ var Scene = {
 
 
 	/**
-	 * Remove the unconnected vertex.
-	 */
-	removeVertex: function( e ) {
-		var g = GLOBAL;
-		var index = parseInt( e.target.getAttribute( "data-removepoint" ), 10 );
-
-		if( isNaN( index ) ) {
-			console.error( "Not a valid vertex index." );
-			return;
-		}
-		if( g.UNCONNECTED_POINTS.length <= index ) {
-			console.error( "No vertex exists for this index." );
-			return;
-		}
-
-		var v = g.UNCONNECTED_POINTS[index].position;
-		var ix = g.MODEL.geometry.vertices.indexOf( v );
-
-		for( var i = 0; i < g.MODEL.geometry.vertices.length; i++ ) {
-			if( g.MODEL.geometry.vertices[i].equals( v ) ) {
-				ix = i;
-				break;
-			}
-		}
-
-		if( ix < 0 ) {
-			console.error( "Could not find vertex in model." );
-		}
-		else {
-			g.MODEL.geometry.vertices.splice( ix, 1 );
-			// TODO: Test, if part of any face.
-			g.SCENE.remove( g.UNCONNECTED_POINTS[index] );
-			render();
-		}
-
-		g.MODEL.geometry.computeBoundingBox();
-
-		UI.checkPointRemoved( index );
-	},
-
-
-	/**
 	 * Reset the camera settings.
 	 */
 	resetCamera: function() {
@@ -490,20 +415,6 @@ var Scene = {
 
 		g.HOLES = border.holes;
 		UI.showDetailHoles( border.lines );
-	},
-
-
-	/**
-	 * Show the unconnected vertices of the model.
-	 */
-	showUnconnectedPoints: function() {
-		var g = GLOBAL;
-
-		g.UNCONNECTED_POINTS = HoleFilling.findUnconnectedPoints( g.MODEL );
-
-		UI.showDetailUnconnected( g.UNCONNECTED_POINTS );
-
-		render();
 	},
 
 
