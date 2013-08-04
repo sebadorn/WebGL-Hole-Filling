@@ -37,6 +37,23 @@ function render() {
 
 
 /**
+ * Adjust camera and renderer to new window size.
+ */
+function resize() {
+	var g = GLOBAL;
+
+	if( g.CAMERA ) {
+		g.CAMERA.aspect = window.innerWidth / window.innerHeight;
+		g.CAMERA.updateProjectionMatrix();
+	}
+	if( g.RENDERER ) {
+		g.RENDERER.setSize( window.innerWidth, window.innerHeight );
+		render();
+	}
+}
+
+
+/**
  * Error handler for requestFileSystem.
  * @param {FileError} errorFS FileError object.
  */

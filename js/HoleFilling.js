@@ -12,16 +12,83 @@ var HoleFilling = {
 
 
 	/**
+	 * Change each HalfEdge Vertex into THREE.Vector3.
+	 * @param  {Array<Vertex>}        routeComplete Route with HE vertices.
+	 * @return {Array<THREE.Vector3>}               Route with THREE vectors.
+	 */
+	changeVertexToVector: function( routeComplete ) {
+		var r = [];
+
+		for( var i = 0; i < routeComplete.length; i++ ) {
+			this.visitedBorderPoints.push( routeComplete[i].index );
+			r[i] = GLOBAL.MODEL.geometry.vertices[routeComplete[i].index];
+		}
+
+		return r;
+	},
+
+
+	/**
+	 * Handle the special case where a border point belongs to more than one hole border.
+	 * @param  {Vertex}               bp     Multiple border point that triggered this routine.
+	 * @param  {Vertex}               start  Starting point of the hole.
+	 * @return {Array<THREE.Vector3>}        The border points to add the hole so far in order to complete it.
+	 */
+	exploreEdgesOfBorderPoint: function( bp, start ) {
+		var routes = [];
+		var edge, nextBp, result, route, routeComplete;
+
+		var gs = GLOBAL.SCENE,
+		    gv = GLOBAL.MODEL.geometry.vertices;
+
+		if( this.debugFlag ) {
+			gs.add( Scene.createPoint( gv[bp.index], 0.03, 0x99CCFF, true ) );
+		}
+
+		// Explore edges
+		for( var i = 0; i < bp.edges.length; i++ ) {
+			edge = bp.edges[i];
+
+			if( !edge.isBorderEdge() || edge == bp.prev ) {
+				continue;
+			}
+
+			// Follow the border points of this edge
+			result = this.followBorder( edge.vertex, start, bp );
+			route = result.route;
+
+			// Save result of following this edge
+			if( result.completed ) {
+				if( routeComplete != null ) {
+					throw new Error( "More than one complete route, should not be possible!" );
+				}
+				routeComplete = route;
+			}
+			else {
+				routes.push( route.slice( 0 ) );
+			}
+		}
+
+		routes = this.removeDuplicateRoutes( routes );
+		routeComplete = this.mergeWithOtherRoutes( routeComplete, routes );
+		routeComplete = this.changeVertexToVector( routeComplete );
+
+		return routeComplete;
+	},
+
+
+	/**
 	 * Find the border edges of a hole inside a half-edge structure.
 	 * @param  {THREE.Mesh} model  The model to find holes in.
 	 * @return {Object}            Arrays of lines and points, depending on configuration.
 	 */
 	findBorderEdges: function( model ) {
+		var mesh = new HalfEdgeMesh( model.geometry );
 		var colors = CONFIG.HF.BORDER.COLOR,
 		    holes = [],
+		    ignoredUnconnected = 0,
 		    lines = [],
 		    points = [];
-		var mesh = new HalfEdgeMesh( model.geometry );
 		var geometry, line, material, v, vertex;
 
 		this.visitedBorderPoints = [];
@@ -29,25 +96,30 @@ var HoleFilling = {
 		for( var i = 0; i < mesh.vertices.length; i++ ) {
 			vertex = mesh.vertices[i];
 
-			if( holes.length > 1 ) {
-				break;
+			if( holes.length == 0 ) {
+				this.debugFlag = true;
 			}
 
 			// Ignore vertices without any connections/edges
 			if( vertex.edges.length == 0 ) {
+				ignoredUnconnected++;
 				continue;
 			}
 
 			if( this.visitedBorderPoints.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
-				// New hole, add first vertex
-				holes.push( [model.geometry.vertices[vertex.index]] );
-
-				if( this.debugFlag ) {
-					GLOBAL.SCENE.add( Scene.createPoint( holes[1][0], 0.05, 0x66FF00, true ) );
+				// Find connected border points
+				try {
+					geometry = this.getNeighbouringBorderPoints( model, mesh, vertex );
+				}
+				catch( err ) {
+					console.error( err.name + ": " + err.message );
+					console.warn( "Skipping hole." );
+					this.visitedBorderPoints.push( vertex.index );
+					break;
 				}
 
-				// Find connected border points
-				geometry = this.getNeighbouringBorderPoints( model, mesh, vertex );
+				// New hole, add first vertex
+				holes.push( [model.geometry.vertices[vertex.index]] );
 
 				for( var j = 0; j < geometry.vertices.length; j++ ) {
 					v = geometry.vertices[j];
@@ -71,15 +143,54 @@ var HoleFilling = {
 						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
-
-				this.debugFlag = true;
 			}
+		}
+
+		if( ignoredUnconnected > 0 ) {
+			console.log( "Ignored " + ignoredUnconnected + " vertices, because they were not part of any edge." );
 		}
 
 		return {
 			holes: holes,
 			lines: lines,
 			points: points
+		};
+	},
+
+
+	/**
+	 * Follow the border points of this edge
+	 * @param  {Vertex} nextBp Starting border point.
+	 * @param  {Vertex} start  Starting point of hole.
+	 * @param  {Vertex} bp     Multi border point we started from.
+	 * @return {Object}        Found route and flag if it completes the hole.
+	 */
+	followBorder: function( nextBp, start, bp ) {
+		var completed = false,
+		    route = [];
+
+		while( true ) {
+			if( nextBp.isBorderPoint() ) {
+				route.push( nextBp );
+
+				// We found the route that completes the hole
+				if( nextBp == start ) {
+					completed = true;
+					break;
+				}
+				// We are back at the (multi) border point
+				// and therefore didn't complete the hole
+				if( nextBp == bp ) {
+					completed = false;
+					break;
+				}
+				nextBp = nextBp.firstEdge.vertex;
+			}
+		}
+
+		return {
+			route: route,
+			completed: completed
 		};
 	},
 
@@ -104,7 +215,7 @@ var HoleFilling = {
 				geometry.vertices.push( v );
 
 				// Special case
-				if( this.isMultiBorderPoint( bp ) ) {
+				if( bp.isMultiBorderPoint() ) {
 					restOfHole = this.exploreEdgesOfBorderPoint( bp, start );
 					geometry.vertices = geometry.vertices.concat( restOfHole );
 					break;
@@ -129,95 +240,22 @@ var HoleFilling = {
 
 
 	/**
-	 * Handle the special case where a border point belongs to more than one hole border.
-	 * @param  {Vertex}               bp     Multiple border point that triggered this routine.
-	 * @param  {Vertex}               start  Starting point of the hole.
-	 * @return {Array<THREE.Vector3>}        The border points to add the hole so far in order to complete it.
+	 * Ignore "inner holes" and merge complete route with "outer holes".
+	 * @param  {Array<Vertex>}        rc     Route that draws the hole so far.
+	 * @param  {Array<Array<Vertex>>} routes Other found routes.
+	 * @return {Array<Vertex>}               Complete route merged with found "inner holes".
 	 */
-	exploreEdgesOfBorderPoint: function( bp, start ) {
-		var routes = [];
-		var completed, edge, nextBp, route, routeComplete;
-
-		var gs = GLOBAL.SCENE,
-		    gv = GLOBAL.MODEL.geometry.vertices;
-
-		if( this.debugFlag ) {
-			gs.add( Scene.createPoint( gv[bp.index], 0.03, 0x99CCFF, true ) );
-		}
-
-		// Explore edges
-		for( var i = 0; i < bp.edges.length; i++ ) {
-			edge = bp.edges[i];
-			route = [];
-
-			if( !edge.isBorderEdge() || edge == bp.prev ) {
-				continue;
-			}
-
-			nextBp = edge.vertex;
-
-			// Follow the border points of this edge
-			while( true ) {
-				if( nextBp.isBorderPoint() ) {
-					route.push( nextBp );
-
-					// We found the route that completes the hole
-					if( nextBp == start ) {
-						completed = true;
-						break;
-					}
-					// We are back at the (multi) border point
-					// and therefore didn't complete the hole
-					if( nextBp == bp ) {
-						completed = false;
-						break;
-					}
-					var prev = nextBp;
-					nextBp = nextBp.firstEdge.vertex;
-				}
-			}
-
-			// Save result of following this edge
-			if( completed ) {
-				if( routeComplete != null ) {
-					throw new Error( "More than one complete route, should not be possible!" );
-				}
-				routeComplete = route;
-			}
-			else {
-				routes.push( route.slice( 0 ) );
-			}
-		}
-
-
-		// Remove duplicate routes (same hole, but in the other direction)
-		var remove = [];
-
-		for( var i = 0; i < routes.length; i++ ) {
-			for( var j = 0; j < routes.length; j++ ) {
-				if( routes[i][1].index == routes[j][routes[j].length - 2].index ) {
-					remove.push( j );
-					break;
-				}
-			}
-		}
-
-		remove.sort();
-		for( var i = remove.length; i > 0; i-- ) {
-			routes.splice( i, 1 );
-		}
-		console.log( "Removed " + remove.length + " routes." );
-
-
-		// Ignore "inner holes" and merge complete route with "outer holes"
+	mergeWithOtherRoutes: function( rc, routes ) {
 		var angleAverage, ixPrev, vp, v, vn;
-		var modelVertices = GLOBAL.MODEL.geometry.vertices;
+		var modelVertices = GLOBAL.MODEL.geometry.vertices,
+		    routeComplete = rc.slice( 0 );
 
 		for( var i = 0; i < routes.length; i++ ) {
 			angleAverage = 0.0;
 
 			for( var j = 0; j < routes[i].length; j++ ) {
 				ixPrev = routes[i][j].index - 1;
+
 				vp = modelVertices[ixPrev < 0 ? 0 : ixPrev];
 				v = modelVertices[routes[i][j].index];
 				vn = modelVertices[(routes[i][j].index + 1 ) % modelVertices.length];
@@ -229,7 +267,7 @@ var HoleFilling = {
 
 			// "outer hole" -> add to complete route
 			if( angleAverage >= 180.0 ) {
-				console.log( "outer hole", angleAverage );
+				console.log( "outer hole", angleAverage ); // TODO: REMOVE
 
 				for( var j = routes[i].length - 1; j >= 0; j-- ) {
 					routeComplete.splice( 0, 0, routes[i][j] );
@@ -237,37 +275,31 @@ var HoleFilling = {
 			}
 			// "inner hole" -> ignore
 			else {
-				console.log( "inner hole", angleAverage );
+				console.log( "inner hole", angleAverage ); // TODO: REMOVE
 			}
 		}
-
-
-		// Change HalfEdge Vertices into THREE.Vector3
-		for( var i = 0; i < routeComplete.length; i++ ) {
-			this.visitedBorderPoints.push( routeComplete[i].index );
-			routeComplete[i] = GLOBAL.MODEL.geometry.vertices[routeComplete[i].index];
-		}
-
 
 		return routeComplete;
 	},
 
 
 	/**
-	 * Check if a vertex belongs to the borders of multiple holes.
-	 * @param  {Vertex}  bp Vertex to check.
-	 * @return {boolean}    True, if vertex is part of multiple borders, false otherwise.
+	 * Remove duplicate routes (same hole, but in the other direction).
+	 * @param  {Array<Array<Vertex>>} rs All found routes except the complete one.
+	 * @return {Array<Array<Vertex>>}    Routes without duplicates.
 	 */
-	isMultiBorderPoint: function( bp ) {
-		var count = 0;
+	removeDuplicateRoutes: function( rs ) {
+		var routes = [];
 
-		for( var i = 0; i < bp.edges.length; i++ ) {
-			if( bp.edges[i].isBorderEdge() ) {
-				count++;
+		for( var i = 0; i < rs.length; i++ ) {
+			if( routes.indexOf( rs[i] ) < 0 ) {
+				routes.push( rs[i] );
 			}
 		}
 
-		return ( count >= 2 );
+		console.log( "Removed " + ( rs.length - routes.length ) + " routes." ); // TODO: REMOVE
+
+		return routes;
 	}
 
 };
@@ -280,7 +312,6 @@ var HoleFilling = {
  */
 var AdvancingFront = {
 
-	DEBUG_TMP: null, // for debugging
 	HOLE_INDEX: -1,
 	LAST_ITERATION: false, // for debugging
 
@@ -310,6 +341,7 @@ var AdvancingFront = {
 
 		front.vertices = hole.slice( 0 );
 		filling.vertices = hole.slice( 0 );
+
 		front.mergeVertices();
 		filling.mergeVertices();
 

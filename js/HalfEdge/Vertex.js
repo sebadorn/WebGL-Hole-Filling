@@ -80,6 +80,23 @@ Vertex.prototype.isBorderPoint = function() {
 
 
 /**
+ * Check if a vertex belongs to the borders of multiple holes.
+ * @return {boolean} True, if vertex is part of multiple borders, false otherwise.
+ */
+Vertex.prototype.isMultiBorderPoint = function() {
+	var count = 0;
+
+	for( var i = 0; i < this.edges.length; i++ ) {
+		if( this.edges[i].isBorderEdge() ) {
+			count++;
+		}
+	}
+
+	return ( count >= 2 );
+};
+
+
+/**
  * Get the neighbour vertices of the vertex.
  * @return {Array<int>} List of all neighbour vertices.
  */

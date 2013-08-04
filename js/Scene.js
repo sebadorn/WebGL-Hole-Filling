@@ -7,6 +7,7 @@
  */
 var Scene = {
 
+	HOLE_LINES: [],
 	LIGHT_STATUS: {
 		AMBIENT: true,
 		DIRECTIONAL: true
@@ -247,6 +248,7 @@ var Scene = {
 		g.MODEL.geometry.computeBoundingBox();
 
 		UI.checkHoleFinished( index );
+		UI.updateProgress( 100 );
 	},
 
 
@@ -399,12 +401,21 @@ var Scene = {
 			return;
 		}
 
+		// Remove old hole outlines
+		if( this.HOLE_LINES.length > 0 ) {
+			for( var i = 0; i < this.HOLE_LINES.length; i++ ) {
+				g.SCENE.remove( this.HOLE_LINES[i] );
+			}
+		}
+		this.HOLE_LINES = [];
+
 		var border = HoleFilling.findBorderEdges( g.MODEL );
 
 		if( CONFIG.HF.BORDER.SHOW_LINES ) {
 			for( var i = 0; i < border.lines.length; i++ ) {
 				g.SCENE.add( border.lines[i] );
 			}
+			this.HOLE_LINES = border.lines;
 		}
 		// @see HoleFilling.findBorderEdges() for
 		// use of CONFIG.HF.BORDER.SHOW_POINTS

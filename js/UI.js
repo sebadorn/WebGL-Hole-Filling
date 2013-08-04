@@ -7,6 +7,10 @@
  */
 var UI = {
 
+	domDetails: null,
+	visibleProgress: null,
+
+
 	/**
 	 * Change the export filename according to the chosen file format.
 	 */
@@ -24,7 +28,7 @@ var UI = {
 	 * @param {int} index Index of the hole.
 	 */
 	checkHoleFinished: function( index ) {
-		var holesSelect = document.getElementById( "details" ).querySelector( ".foundHoles" );
+		var holesSelect = this.domDetails.querySelector( ".foundHoles" );
 		var holeBtn;
 
 		for( var i = holesSelect.childNodes.length - 1; i >= 0; i-- ) {
@@ -75,6 +79,21 @@ var UI = {
 		}
 
 		return btn;
+	},
+
+
+	/**
+	 * Create a progress bar element.
+	 * @return {HTMLObject} Progress element.
+	 */
+	createProgress: function() {
+		var progress = document.createElement( "progress" );
+
+		progress.max = 100;
+		progress.value = 0;
+		progress.textContent = "0%";
+
+		return progress;
 	},
 
 
@@ -141,7 +160,7 @@ var UI = {
 	 * Hide all details.
 	 */
 	hideAllDetails: function() {
-		var details = document.getElementById( "details" ).querySelectorAll( ".details-collection" );
+		var details = this.domDetails.querySelectorAll( ".details-collection" );
 
 		for( var i = details.length - 1; i >= 0; i-- ) {
 			details[i].setAttribute( "hidden", "hidden" );
@@ -153,6 +172,8 @@ var UI = {
 	 * Init everything related to UI.
 	 */
 	init: function() {
+		this.domDetails = document.getElementById( "details" );
+
 		this.syncInterfaceWithConfig();
 		this.registerEvents();
 	},
@@ -162,8 +183,8 @@ var UI = {
 	 * Add all the needed event listeners.
 	 */
 	registerEvents: function() {
-		this.resize();
-		window.addEventListener( "resize", this.resize, false );
+		resize();
+		window.addEventListener( "resize", resize, false );
 
 		this.registerImport();
 		this.registerLightingOptions();
@@ -267,13 +288,25 @@ var UI = {
 
 
 	/**
+	 * Reset detail section.
+	 * @param {DOMElement} detail Detail section to reset/clean.
+	 */
+	resetDetail: function( detail ) {
+		var areas = detail.querySelectorAll( ".detail fieldset" );
+
+		for( var i = 0; i < areas.length; i++ ) {
+			this.cleanOfChildNodes( areas[i] );
+		}
+	},
+
+
+	/**
 	 * Reset the interface.
 	 */
 	resetInterface: function() {
-		var d = document;
-		var details = d.body.querySelectorAll( ".details-collection" ),
-		    detailFieldsets = d.body.querySelectorAll( ".detail fieldset" ),
-		    detailFillHoleNumber = d.body.querySelector( ".detail-fillhole .number" );
+		var details = this.domDetails.querySelectorAll( ".details-collection" ),
+		    detailFieldsets = this.domDetails.querySelectorAll( ".detail fieldset" ),
+		    detailFillHoleNumber = this.domDetails.querySelector( ".detail-fillhole .number" );
 
 		for( var i = 0; i < detailFieldsets.length; i++ ) {
 			this.cleanOfChildNodes( detailFieldsets[i] );
@@ -284,23 +317,7 @@ var UI = {
 		}
 
 		detailFillHoleNumber.textContent = "-";
-	},
-
-
-	/**
-	 * Adjust camera and renderer to new window size.
-	 */
-	resize: function() {
-		var g = GLOBAL;
-
-		if( g.CAMERA ) {
-			g.CAMERA.aspect = window.innerWidth / window.innerHeight;
-			g.CAMERA.updateProjectionMatrix();
-		}
-		if( g.RENDERER ) {
-			g.RENDERER.setSize( window.innerWidth, window.innerHeight );
-			render();
-		}
+		this.visibleProgress = null;
 	},
 
 
@@ -308,11 +325,9 @@ var UI = {
 	 * Select a hole. Focus on it and show additional details.
 	 */
 	selectHole: function( e ) {
-		var d = document;
 		var children = e.target.parentNode.childNodes,
-		    details = d.getElementById( "details" ),
-		    detailFillHole = details.querySelector( ".detail-fillhole" ),
-		    detailHoleInfo = details.querySelector( ".detail-holeinfo" ),
+		    detailFillHole = this.domDetails.querySelector( ".detail-fillhole" ),
+		    detailHoleInfo = this.domDetails.querySelector( ".detail-holeinfo" ),
 		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
 		var area, btnFill, infoVertices, number;
 
@@ -344,16 +359,15 @@ var UI = {
 	 * Show further options for the export.
 	 */
 	showDetailExport: function() {
-		var detail = document.getElementById( "details" ).querySelector( ".details-export" ),
-		    formats = CONFIG.EXPORT.FORMATS,
-		    sectionFormat = detail.querySelector( ".detail-exportformat fieldset" ),
+		var detail = this.domDetails.querySelector( ".details-export" ),
+		    formats = CONFIG.EXPORT.FORMATS;
+		var sectionFormat = detail.querySelector( ".detail-exportformat fieldset" ),
 		    sectionName = detail.querySelector( ".detail-exportname fieldset" ),
-		    sectionExport = detail.querySelector( ".detail-export fieldset" );
-		var defaultName, format, radioPair;
+		    sectionExport = detail.querySelector( ".detail-export fieldset" ),
+		    sectionProgress = detail.querySelector( ".detail-exportprogress fieldset" );
+		var defaultName, format, progress, radioPair;
 
-		this.cleanOfChildNodes( sectionFormat );
-		this.cleanOfChildNodes( sectionName );
-		this.cleanOfChildNodes( sectionExport );
+		this.resetDetail( detail );
 
 		// Export formats
 		for( var i = 0; i < formats.length; i++ ) {
@@ -382,6 +396,10 @@ var UI = {
 			this.createButton( "Export", this.startExport.bind( detail ) )
 		);
 
+		// Progress
+		this.visibleProgress = this.createProgress();
+		sectionProgress.appendChild( this.visibleProgress );
+
 		this.hideAllDetails();
 		detail.removeAttribute( "hidden" );
 	},
@@ -393,16 +411,14 @@ var UI = {
 	 */
 	showDetailHoles: function( foundHoles ) {
 		var d = document,
-		    detail = d.getElementById( "details" ).querySelector( ".details-holefilling" ),
-		    sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
+		    detail = this.domDetails.querySelector( ".details-holefilling" );
+		var sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
 		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
-		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" );
-		var selection = d.createElement( "div" );
+		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" ),
+		    selection = d.createElement( "div" );
 		var info, infoLabel, progress;
 
-		this.cleanOfChildNodes( sectionFoundHoles );
-		this.cleanOfChildNodes( sectionHoleInfo );
-		this.cleanOfChildNodes( sectionProgress );
+		this.resetDetail( detail );
 
 
 		// Found holes
@@ -446,12 +462,8 @@ var UI = {
 
 
 		// Progress
-		progress = d.createElement( "progress" );
-		progress.max = 100;
-		progress.value = 0;
-		progress.textContent = "0%";
-
-		sectionProgress.appendChild( progress );
+		this.visibleProgress = this.createProgress();
+		sectionProgress.appendChild( this.visibleProgress );
 
 
 		this.hideAllDetails();
@@ -473,6 +485,8 @@ var UI = {
 		format = format.value.toLowerCase();
 		exportData = Scene.exportModel( format );
 		content = new Blob( [exportData], { type: "text/plain" } );
+
+		UI.updateProgress( 100 );
 
 		download = d.createElement( "a" );
 		download.download = name.value;
@@ -507,6 +521,16 @@ var UI = {
 		else if( cfg.SHADING == "flat" ) {
 			d.getElementById( "shading_flat" ).setAttribute( "checked", "checked" );
 		}
+	},
+
+
+	/**
+	 * Update the visible progress bar.
+	 * @param {int} value New progress value. Think of it in percent.
+	 */
+	updateProgress: function( value ) {
+		this.visibleProgress.value = value;
+		this.visibleProgress.textContent = value + "%";
 	}
 
 };
