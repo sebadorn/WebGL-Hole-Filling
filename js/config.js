@@ -80,7 +80,7 @@ var CONFIG = {
 	LIGHTS: {
 		// Ambient lights
 		AMBIENT: [
-			{ color: 0x101010 }
+			{ color: 0x101016 }
 		],
 		// Directional lights, don't move with the camera
 		DIRECTIONAL: [
