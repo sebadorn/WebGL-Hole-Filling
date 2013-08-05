@@ -10,6 +10,7 @@ var Scene = {
 	HOLE_LINES: [],
 	LIGHT_STATUS: {
 		AMBIENT: true,
+		CAMERA: true,
 		DIRECTIONAL: true
 	},
 	MODE: CONFIG.MODE,
@@ -284,7 +285,7 @@ var Scene = {
 		    stepZ /= cfgCam.FOCUS.STEPS;
 		}
 
-		this.moveCamToPosition( stepX, stepY, stepZ, 0 );
+		this.moveCameraToPosition( stepX, stepY, stepZ, 0 );
 	},
 
 
@@ -330,13 +331,27 @@ var Scene = {
 
 
 	/**
+	 * Move the camera lights to the camera position.
+	 * @param {Event} e Change event fired by THREE.TrackballControls
+	 */
+	moveCameraLights: function( e ) {
+		var lights = GLOBAL.LIGHTS.CAMERA,
+		    pos = e.target.object.position.clone();
+
+		for( var i = 0; i < lights.length; i++ ) {
+			lights[i].position = pos;
+		}
+	},
+
+
+	/**
 	 * Move the camera (more-or-less) fluently to a position.
 	 * @param {float} stepX Step length in X direction.
 	 * @param {float} stepY Step length in Y direction.
 	 * @param {float} stepZ Step length in Z direction.
 	 * @param {int}   count Counter to know when to stop.
 	 */
-	moveCamToPosition: function( stepX, stepY, stepZ, count ) {
+	moveCameraToPosition: function( stepX, stepY, stepZ, count ) {
 		GLOBAL.CAMERA.position.x += stepX;
 		GLOBAL.CAMERA.position.y += stepY;
 		GLOBAL.CAMERA.position.z += stepZ;
@@ -349,7 +364,7 @@ var Scene = {
 		}
 		else {
 			setTimeout(
-				function() { Scene.moveCamToPosition( stepX, stepY, stepZ, count ); },
+				function() { Scene.moveCameraToPosition( stepX, stepY, stepZ, count ); },
 				CONFIG.CAMERA.FOCUS.TIMEOUTS
 			);
 		}
@@ -443,6 +458,12 @@ var Scene = {
 				lights = g.LIGHTS.AMBIENT;
 				lightStatus = this.LIGHT_STATUS.AMBIENT;
 				this.LIGHT_STATUS.AMBIENT = !lightStatus;
+				break;
+
+			case "light_camera":
+				lights = g.LIGHTS.CAMERA;
+				lightStatus = this.LIGHT_STATUS.CAMERA;
+				this.LIGHT_STATUS.CAMERA = !lightStatus;
 				break;
 
 			case "light_directional":

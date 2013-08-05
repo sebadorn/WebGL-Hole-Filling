@@ -8,6 +8,5 @@
 * `Feature` Progress bar for export and filling
 * `Feature` Show in-between steps of filling
 * `Feature` Add filling algorithm: Volume based octree
-* `Feature` Option to move direct light with camera or make it stationary
 
 * `Final` Search all "TODO: REMOVE" and "for debugging" lines

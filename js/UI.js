@@ -57,6 +57,294 @@ var UI = {
 
 
 	/**
+	 * Dragover event of import area.
+	 */
+	dragoverOfImport: function( e ) {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "copy";
+	},
+
+
+	/**
+	 * Hide all details.
+	 */
+	hideAllDetails: function() {
+		var details = this.domDetails.querySelectorAll( ".details-collection" );
+
+		for( var i = details.length - 1; i >= 0; i-- ) {
+			details[i].setAttribute( "hidden", "hidden" );
+		}
+	},
+
+
+	/**
+	 * Init everything related to UI.
+	 */
+	init: function() {
+		this.domDetails = document.getElementById( "details" );
+
+		this.syncInterfaceWithConfig();
+		this.REGISTER.registerEvents();
+	},
+
+
+	/**
+	 * Reset detail section.
+	 * @param {DOMElement} detail Detail section to reset/clean.
+	 */
+	resetDetail: function( detail ) {
+		var areas = detail.querySelectorAll( ".detail fieldset" );
+
+		for( var i = 0; i < areas.length; i++ ) {
+			this.cleanOfChildNodes( areas[i] );
+		}
+	},
+
+
+	/**
+	 * Reset the interface.
+	 */
+	resetInterface: function() {
+		var details = this.domDetails.querySelectorAll( ".details-collection" ),
+		    detailFieldsets = this.domDetails.querySelectorAll( ".detail fieldset" ),
+		    detailFillHoleNumber = this.domDetails.querySelector( ".detail-fillhole .number" );
+
+		for( var i = 0; i < detailFieldsets.length; i++ ) {
+			this.cleanOfChildNodes( detailFieldsets[i] );
+		}
+
+		for( var i = 0; i < details.length; i++ ) {
+			details[i].setAttribute( "hidden", "hidden" );
+		}
+
+		detailFillHoleNumber.textContent = "-";
+		this.visibleProgress = null;
+	},
+
+
+	/**
+	 * Select a hole. Focus on it and show additional details.
+	 */
+	selectHole: function( e ) {
+		var children = e.target.parentNode.childNodes,
+		    detailFillHole = this.domDetails.querySelector( ".detail-fillhole" ),
+		    detailHoleInfo = this.domDetails.querySelector( ".detail-holeinfo" ),
+		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
+		var area, btnFill, infoVertices, number;
+
+		for( var i = 0, len = children.length; i < len; i++ ) {
+			children[i].className = children[i].className.replace( " active", "" );
+		}
+		e.target.className += " active";
+
+		Scene.focusHole( index );
+
+		// Detail: Fill Hole
+		number = detailFillHole.querySelector( ".caption .number" );
+		number.textContent = index + 1;
+
+		btnFill = this.BUILDER.createButton( "Advancing Front", Scene.fillHole.bind( Scene ) );
+		btnFill.setAttribute( "data-fillhole", index );
+
+		area = detailFillHole.querySelector( "fieldset" );
+		this.cleanOfChildNodes( area );
+		area.appendChild( btnFill );
+
+		// Detail: Hole Info
+		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
+		infoVertices.textContent = GLOBAL.HOLES[index].length;
+	},
+
+
+	/**
+	 * Show further options for the export.
+	 */
+	showDetailExport: function() {
+		var detail = this.domDetails.querySelector( ".details-export" ),
+		    formats = CONFIG.EXPORT.FORMATS;
+		var sectionFormat = detail.querySelector( ".detail-exportformat fieldset" ),
+		    sectionName = detail.querySelector( ".detail-exportname fieldset" ),
+		    sectionExport = detail.querySelector( ".detail-export fieldset" ),
+		    sectionProgress = detail.querySelector( ".detail-exportprogress fieldset" );
+		var defaultName, format, progress, radioPair;
+
+		this.resetDetail( detail );
+
+		// Export formats
+		for( var i = 0; i < formats.length; i++ ) {
+			format = formats[i];
+
+			radioPair = this.BUILDER.createRadioPair( "export", "export_" + format, format, format );
+			radioPair.radio.addEventListener( "change", this.changeExportName, false );
+
+			if( format == CONFIG.EXPORT.DEFAULT_FORMAT ) {
+				radioPair.radio.setAttribute( "checked", "checked" );
+			}
+
+			sectionFormat.appendChild( radioPair.radio );
+			sectionFormat.appendChild( radioPair.button );
+		}
+
+		// Insert name for model
+		defaultName = GLOBAL.MODEL.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
+
+		sectionName.appendChild(
+			this.BUILDER.createTextField( defaultName, "export_name" )
+		);
+
+		// Button to start export
+		sectionExport.appendChild(
+			this.BUILDER.createButton( "Export", this.startExport.bind( detail ) )
+		);
+
+		// Progress
+		this.visibleProgress = this.BUILDER.createProgress();
+		sectionProgress.appendChild( this.visibleProgress );
+
+		this.hideAllDetails();
+		detail.removeAttribute( "hidden" );
+	},
+
+
+	/**
+	 * List the found holes.
+	 * @param {Array<THREE.Line>} foundHoles The found holes.
+	 */
+	showDetailHoles: function( foundHoles ) {
+		var d = document,
+		    detail = this.domDetails.querySelector( ".details-holefilling" );
+		var sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
+		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
+		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" ),
+		    selection = d.createElement( "div" );
+		var info, infoLabel, progress;
+
+		this.resetDetail( detail );
+
+
+		// Found holes
+		selection.className = "selectContainer foundHoles";
+
+		if( foundHoles.length > 0 ) {
+			var btnFocusHole;
+
+			for( var i = 0; i < foundHoles.length; i++ ) {
+				btnFocusHole = this.BUILDER.createButton(
+					"Hole " + ( i + 1 ), this.selectHole.bind( this )
+				);
+				btnFocusHole.className = "foundHole";
+				btnFocusHole.style.borderLeftColor = "#" + foundHoles[i].material.color.getHexString();
+				btnFocusHole.setAttribute( "data-index", i );
+
+				selection.appendChild( btnFocusHole );
+			}
+			sectionFoundHoles.appendChild( selection );
+		}
+		else {
+			var msg = d.createElement( "p" );
+			msg.className = "message";
+			msg.textContent = "No holes found."
+
+			sectionFoundHoles.appendChild( msg );
+		}
+
+
+		// Hole information
+		info = d.createElement( "span" );
+		info.className = "info";
+		info.id = "holeinfo-vertices";
+		info.textContent = "-";
+
+		infoLabel = d.createElement( "label" );
+		infoLabel.textContent = "front vertices";
+
+		sectionHoleInfo.appendChild( info );
+		sectionHoleInfo.appendChild( infoLabel );
+
+
+		// Progress
+		this.visibleProgress = this.BUILDER.createProgress();
+		sectionProgress.appendChild( this.visibleProgress );
+
+
+		this.hideAllDetails();
+		detail.removeAttribute( "hidden" );
+	},
+
+
+	/**
+	 * Trigger the export.
+	 * this == export detail
+	 * Source: http://thiscouldbebetter.wordpress.com/2012/12/18/loading-editing-and-saving-a-text-file-in-html5-using-javascrip/
+	 */
+	startExport: function( e ) {
+		var d = document;
+		var format = this.querySelector( ".detail-exportformat input.newradio:checked" ),
+		    name = this.querySelector( "#export_name" );
+		var content, download, exportData;
+
+		format = format.value.toLowerCase();
+		exportData = Scene.exportModel( format );
+		content = new Blob( [exportData], { type: "text/plain" } );
+
+		UI.updateProgress( 100 );
+
+		download = d.createElement( "a" );
+		download.download = name.value;
+		download.href = window.URL.createObjectURL( content );
+		download.addEventListener( "click", Utils.selfRemoveFromDOM, false );
+		download.setAttribute( "hidden", "hidden" );
+
+		d.body.appendChild( download );
+		download.click();
+	},
+
+
+	/**
+	 * Set the user interface settings according to the settings in the config file (config.js).
+	 */
+	syncInterfaceWithConfig: function() {
+		var cfg = CONFIG,
+		    d = document;
+
+		// Rendering: Mode
+		if( cfg.MODE == "solid" ) {
+			d.getElementById( "render_solid" ).setAttribute( "checked", "checked" );
+		}
+		else if( cfg.MODE == "wireframe" ) {
+			d.getElementById( "render_wireframe" ).setAttribute( "checked", "checked" );
+		}
+
+		// Rendering: Shading
+		if( cfg.SHADING == "phong" ) {
+			d.getElementById( "shading_phong" ).setAttribute( "checked", "checked" );
+		}
+		else if( cfg.SHADING == "flat" ) {
+			d.getElementById( "shading_flat" ).setAttribute( "checked", "checked" );
+		}
+	},
+
+
+	/**
+	 * Update the visible progress bar.
+	 * @param {int} value New progress value. Think of it in percent.
+	 */
+	updateProgress: function( value ) {
+		this.visibleProgress.value = value;
+		this.visibleProgress.textContent = value + "%";
+	}
+
+};
+
+
+
+/**
+ * Sub-class of UI for building HTMLObjects.
+ * @type {Object}
+ */
+UI.BUILDER = {
+
+	/**
 	 * Create a button.
 	 * @param  {String}     value     Value of the input.
 	 * @param  {Function}   clickCall Function to call if input is clicked. (optional)
@@ -144,40 +432,17 @@ var UI = {
 		}
 
 		return text;
-	},
+	}
+
+};
 
 
-	/**
-	 * Dragover event of import area.
-	 */
-	dragoverOfImport: function( e ) {
-		e.preventDefault();
-		e.dataTransfer.dropEffect = "copy";
-	},
 
-
-	/**
-	 * Hide all details.
-	 */
-	hideAllDetails: function() {
-		var details = this.domDetails.querySelectorAll( ".details-collection" );
-
-		for( var i = details.length - 1; i >= 0; i-- ) {
-			details[i].setAttribute( "hidden", "hidden" );
-		}
-	},
-
-
-	/**
-	 * Init everything related to UI.
-	 */
-	init: function() {
-		this.domDetails = document.getElementById( "details" );
-
-		this.syncInterfaceWithConfig();
-		this.registerEvents();
-	},
-
+/**
+ * Sub-class of UI for registering listeners.
+ * @type {Object}
+ */
+UI.REGISTER = {
 
 	/**
 	 * Add all the needed event listeners.
@@ -222,7 +487,7 @@ var UI = {
 	registerExport: function() {
 		var buttonShowExport = document.getElementById( "export_options" );
 
-		buttonShowExport.addEventListener( "click", this.showDetailExport.bind( this ), false );
+		buttonShowExport.addEventListener( "click", UI.showDetailExport.bind( UI ), false );
 	},
 
 
@@ -234,7 +499,7 @@ var UI = {
 		    dropzone = document.body;
 
 		inputUpload.addEventListener( "change", Loader.loadFile.bind( Loader ), false );
-		dropzone.addEventListener( "dragover", this.dragoverOfImport, false );
+		dropzone.addEventListener( "dragover", UI.dragoverOfImport, false );
 		dropzone.addEventListener( "drop", Loader.loadFileFromDrop.bind( Loader ), false );
 	},
 
@@ -245,7 +510,7 @@ var UI = {
 	registerLightingOptions: function() {
 		var d = document,
 		    lightOptions = ["on", "off"],
-		    lightTypes = ["ambient", "directional"];
+		    lightTypes = ["ambient", "camera", "directional"];
 		var radio;
 
 		for( var i = 0; i < lightTypes.length; i++ ) {
@@ -284,253 +549,6 @@ var UI = {
 			radio = d.getElementById( "shading_" + shadingOptions[i] );
 			radio.addEventListener( "change", Scene.changeShading.bind( Scene ), false );
 		}
-	},
-
-
-	/**
-	 * Reset detail section.
-	 * @param {DOMElement} detail Detail section to reset/clean.
-	 */
-	resetDetail: function( detail ) {
-		var areas = detail.querySelectorAll( ".detail fieldset" );
-
-		for( var i = 0; i < areas.length; i++ ) {
-			this.cleanOfChildNodes( areas[i] );
-		}
-	},
-
-
-	/**
-	 * Reset the interface.
-	 */
-	resetInterface: function() {
-		var details = this.domDetails.querySelectorAll( ".details-collection" ),
-		    detailFieldsets = this.domDetails.querySelectorAll( ".detail fieldset" ),
-		    detailFillHoleNumber = this.domDetails.querySelector( ".detail-fillhole .number" );
-
-		for( var i = 0; i < detailFieldsets.length; i++ ) {
-			this.cleanOfChildNodes( detailFieldsets[i] );
-		}
-
-		for( var i = 0; i < details.length; i++ ) {
-			details[i].setAttribute( "hidden", "hidden" );
-		}
-
-		detailFillHoleNumber.textContent = "-";
-		this.visibleProgress = null;
-	},
-
-
-	/**
-	 * Select a hole. Focus on it and show additional details.
-	 */
-	selectHole: function( e ) {
-		var children = e.target.parentNode.childNodes,
-		    detailFillHole = this.domDetails.querySelector( ".detail-fillhole" ),
-		    detailHoleInfo = this.domDetails.querySelector( ".detail-holeinfo" ),
-		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
-		var area, btnFill, infoVertices, number;
-
-		for( var i = 0, len = children.length; i < len; i++ ) {
-			children[i].className = children[i].className.replace( " active", "" );
-		}
-		e.target.className += " active";
-
-		Scene.focusHole( index );
-
-		// Detail: Fill Hole
-		number = detailFillHole.querySelector( ".caption .number" );
-		number.textContent = index + 1;
-
-		btnFill = this.createButton( "Advancing Front", Scene.fillHole.bind( Scene ) );
-		btnFill.setAttribute( "data-fillhole", index );
-
-		area = detailFillHole.querySelector( "fieldset" );
-		this.cleanOfChildNodes( area );
-		area.appendChild( btnFill );
-
-		// Detail: Hole Info
-		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
-		infoVertices.textContent = GLOBAL.HOLES[index].length;
-	},
-
-
-	/**
-	 * Show further options for the export.
-	 */
-	showDetailExport: function() {
-		var detail = this.domDetails.querySelector( ".details-export" ),
-		    formats = CONFIG.EXPORT.FORMATS;
-		var sectionFormat = detail.querySelector( ".detail-exportformat fieldset" ),
-		    sectionName = detail.querySelector( ".detail-exportname fieldset" ),
-		    sectionExport = detail.querySelector( ".detail-export fieldset" ),
-		    sectionProgress = detail.querySelector( ".detail-exportprogress fieldset" );
-		var defaultName, format, progress, radioPair;
-
-		this.resetDetail( detail );
-
-		// Export formats
-		for( var i = 0; i < formats.length; i++ ) {
-			format = formats[i];
-
-			radioPair = this.createRadioPair( "export", "export_" + format, format, format );
-			radioPair.radio.addEventListener( "change", this.changeExportName, false );
-
-			if( format == CONFIG.EXPORT.DEFAULT_FORMAT ) {
-				radioPair.radio.setAttribute( "checked", "checked" );
-			}
-
-			sectionFormat.appendChild( radioPair.radio );
-			sectionFormat.appendChild( radioPair.button );
-		}
-
-		// Insert name for model
-		defaultName = GLOBAL.MODEL.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
-
-		sectionName.appendChild(
-			this.createTextField( defaultName, "export_name" )
-		);
-
-		// Button to start export
-		sectionExport.appendChild(
-			this.createButton( "Export", this.startExport.bind( detail ) )
-		);
-
-		// Progress
-		this.visibleProgress = this.createProgress();
-		sectionProgress.appendChild( this.visibleProgress );
-
-		this.hideAllDetails();
-		detail.removeAttribute( "hidden" );
-	},
-
-
-	/**
-	 * List the found holes.
-	 * @param {Array<THREE.Line>} foundHoles The found holes.
-	 */
-	showDetailHoles: function( foundHoles ) {
-		var d = document,
-		    detail = this.domDetails.querySelector( ".details-holefilling" );
-		var sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
-		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
-		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" ),
-		    selection = d.createElement( "div" );
-		var info, infoLabel, progress;
-
-		this.resetDetail( detail );
-
-
-		// Found holes
-		selection.className = "selectContainer foundHoles";
-
-		if( foundHoles.length > 0 ) {
-			var btnFocusHole;
-
-			for( var i = 0; i < foundHoles.length; i++ ) {
-				btnFocusHole = this.createButton(
-					"Hole " + ( i + 1 ), this.selectHole.bind( this )
-				);
-				btnFocusHole.className = "foundHole";
-				btnFocusHole.style.borderLeftColor = "#" + foundHoles[i].material.color.getHexString();
-				btnFocusHole.setAttribute( "data-index", i );
-
-				selection.appendChild( btnFocusHole );
-			}
-			sectionFoundHoles.appendChild( selection );
-		}
-		else {
-			var msg = d.createElement( "p" );
-			msg.className = "message";
-			msg.textContent = "No holes found."
-
-			sectionFoundHoles.appendChild( msg );
-		}
-
-
-		// Hole information
-		info = d.createElement( "span" );
-		info.className = "info";
-		info.id = "holeinfo-vertices";
-		info.textContent = "-";
-
-		infoLabel = d.createElement( "label" );
-		infoLabel.textContent = "front vertices";
-
-		sectionHoleInfo.appendChild( info );
-		sectionHoleInfo.appendChild( infoLabel );
-
-
-		// Progress
-		this.visibleProgress = this.createProgress();
-		sectionProgress.appendChild( this.visibleProgress );
-
-
-		this.hideAllDetails();
-		detail.removeAttribute( "hidden" );
-	},
-
-
-	/**
-	 * Trigger the export.
-	 * this == export detail
-	 * Source: http://thiscouldbebetter.wordpress.com/2012/12/18/loading-editing-and-saving-a-text-file-in-html5-using-javascrip/
-	 */
-	startExport: function( e ) {
-		var d = document;
-		var format = this.querySelector( ".detail-exportformat input.newradio:checked" ),
-		    name = this.querySelector( "#export_name" );
-		var content, download, exportData;
-
-		format = format.value.toLowerCase();
-		exportData = Scene.exportModel( format );
-		content = new Blob( [exportData], { type: "text/plain" } );
-
-		UI.updateProgress( 100 );
-
-		download = d.createElement( "a" );
-		download.download = name.value;
-		download.href = window.URL.createObjectURL( content );
-		download.addEventListener( "click", Utils.selfRemoveFromDOM, false );
-		download.setAttribute( "hidden", "hidden" );
-
-		d.body.appendChild( download );
-		download.click();
-	},
-
-
-	/**
-	 * Set the user interface settings according to the settings in the config file (config.js).
-	 */
-	syncInterfaceWithConfig: function() {
-		var cfg = CONFIG,
-		    d = document;
-
-		// Rendering: Mode
-		if( cfg.MODE == "solid" ) {
-			d.getElementById( "render_solid" ).setAttribute( "checked", "checked" );
-		}
-		else if( cfg.MODE == "wireframe" ) {
-			d.getElementById( "render_wireframe" ).setAttribute( "checked", "checked" );
-		}
-
-		// Rendering: Shading
-		if( cfg.SHADING == "phong" ) {
-			d.getElementById( "shading_phong" ).setAttribute( "checked", "checked" );
-		}
-		else if( cfg.SHADING == "flat" ) {
-			d.getElementById( "shading_flat" ).setAttribute( "checked", "checked" );
-		}
-	},
-
-
-	/**
-	 * Update the visible progress bar.
-	 * @param {int} value New progress value. Think of it in percent.
-	 */
-	updateProgress: function( value ) {
-		this.visibleProgress.value = value;
-		this.visibleProgress.textContent = value + "%";
 	}
 
 };

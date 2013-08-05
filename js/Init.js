@@ -16,14 +16,14 @@ var Init = {
 		UI.init();
 
 		this.camera();
-		this.controls();
 		this.scene();
 		this.renderer();
+		this.controls();
 
 		animate();
 		render();
 
-		if( typeof test != "undefined" ) { test(); } // TODO: remove
+		if( typeof test != "undefined" ) { test(); } // TODO: REMOVE
 	},
 
 
@@ -63,6 +63,7 @@ var Init = {
 		g.CONTROLS.staticMoving = true;
 		g.CONTROLS.dynamicDampingFactor = 0.3;
 
+		g.CONTROLS.addEventListener( "change", Scene.moveCameraLights, false );
 		g.CONTROLS.addEventListener( "change", render, false );
 	},
 
@@ -73,12 +74,13 @@ var Init = {
 	lights: function() {
 		var g = GLOBAL,
 		    l = CONFIG.LIGHTS;
-		var ambient, directional;
-		var lDir;
+		var camPos = CONFIG.CAMERA.POSITION;
+		var ambient, directional, lDir;
 
 		// Lighting: Ambient
 		for( var i = 0; i < l.AMBIENT.length; i++ ) {
 			ambient = new THREE.AmbientLight( l.AMBIENT[i].color );
+
 			g.LIGHTS.AMBIENT.push( ambient );
 			g.SCENE.add( ambient );
 		}
@@ -87,10 +89,19 @@ var Init = {
 		for( var i = 0; i < l.DIRECTIONAL.length; i++ ) {
 			lDir = l.DIRECTIONAL[i];
 			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
-			directional.position.set(
-				lDir.position[0], lDir.position[1], lDir.position[2]
-			);
+			directional.position.set( lDir.position[0], lDir.position[1], lDir.position[2] );
+
 			g.LIGHTS.DIRECTIONAL.push( directional );
+			g.SCENE.add( directional );
+		}
+
+		// Lighting: Directional, moves with camera
+		for( var i = 0; i < l.CAMERA.length; i++ ) {
+			lDir = l.CAMERA[i];
+			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
+			directional.position.set( camPos.X, camPos.Y, camPos.Z );
+
+			g.LIGHTS.CAMERA.push( directional );
 			g.SCENE.add( directional );
 		}
 	},

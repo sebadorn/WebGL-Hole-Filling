@@ -9,7 +9,8 @@ var GLOBAL = {
 	HOLES: [],
 	LIGHTS: {
 		AMBIENT: [],
-		DIRECTIONAL: []
+		DIRECTIONAL: [],
+		CAMERA: []
 	},
 	MODEL: null,
 	RENDERER: null,

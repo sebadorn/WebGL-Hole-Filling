@@ -78,19 +78,23 @@ var CONFIG = {
 
 	// Lights of the scene
 	LIGHTS: {
+		// Ambient lights
 		AMBIENT: [
 			{ color: 0x101010 }
 		],
+		// Directional lights, don't move with the camera
 		DIRECTIONAL: [
+			// {
+			// 	color: 0xFFFFFF,
+			// 	intensity: 0.3,
+			// 	position: [1, 0, 1]
+			// }
+		],
+		// Directional lights, move with the camera
+		CAMERA: [
 			{
-				color: 0xF4F4F4,
-				intensity: 1.0,
-				position: [-1, 0, -1]
-			},
-			{
-				color: 0xF4F4F4,
-				intensity: 0.2,
-				position: [1, 0, 1]
+				color: 0xFFFFFF,
+				intensity: 0.8
 			}
 		]
 	},
