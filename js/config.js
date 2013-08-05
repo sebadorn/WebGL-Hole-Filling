@@ -99,9 +99,10 @@ var CONFIG = {
 		]
 	},
 
-	// Model rendering
+	// Mode: "solid" or "wireframe"
 	MODE: "solid",
 
+	// Shading: "flat" or "phong"
 	SHADING: "flat"
 
 };

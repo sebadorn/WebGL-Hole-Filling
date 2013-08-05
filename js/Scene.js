@@ -299,8 +299,8 @@ var Scene = {
 		    mesh = new THREE.Mesh( geometry );
 
 		material.shading = this.getCurrentShading();
-		material.wireframe = ( this.MODE == "wireframe" );
 		material.side = THREE.DoubleSide;
+		material.wireframe = ( this.MODE == "wireframe" );
 
 		mesh.setMaterial( material );
 
