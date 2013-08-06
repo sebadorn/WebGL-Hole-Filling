@@ -148,12 +148,38 @@ var Scene = {
 
 
 	/**
+	 * Create an optical representation of a cross vector.
+	 * Creates a point and a line.
+	 * @param  {THREE.Vector3} vp            Previous vector.
+	 * @param  {THREE.Vector3} v             Center vector of the angle.
+	 * @param  {THREE.Vector3} vn            Next vector.
+	 * @param  {float}         size          Size of the point.
+	 * @param  {hexadecimal}   color         Color for the objects.
+	 * @param  {boolean}       moveWithModel Adjust position with the currently loaded model.
+	 * @return {Object}                      Point and line for the cross vector.
+	 */
+	createCrossVector: function( vp, v, vn, size, color, moveWithModel ) {
+		var cross = new THREE.Vector3();
+		var line, point;
+
+		cross = cross.crossVectors( vp.clone().sub( v ), vn.clone().sub( v ) ).add( v );
+		point = this.createPoint( cross, size, color, moveWithModel );
+		line = this.createLine( v, cross, 1, color, moveWithModel );
+
+		return {
+			point: point,
+			line: line
+		};
+	},
+
+
+	/**
 	 * Create a line from a starting to an end point.
 	 * @param  {THREE.Vector3} from          Start point.
 	 * @param  {THREE.Vector3} to            End point.
 	 * @param  {float}         width         Line width of the line.
 	 * @param  {hexadecimal}   color         Color of the line.
-	 * * @param  {boolean}     moveWithModel If true, move the line to the position of the model.
+	 * @param  {boolean}       moveWithModel If true, move the line to the position of the model.
 	 * @return {THREE.Line}                  A THREE.Line object.
 	 */
 	createLine: function( from, to, width, color, moveWithModel ) {

@@ -8,6 +8,67 @@
 var Utils = {
 
 	/**
+	 * Calculate the angle between two vertices.
+	 * Angle is in degree.
+	 * @param  {THREE.Vector3} vp   The previous vertex.
+	 * @param  {THREE.Vector3} v    The current vertex.
+	 * @param  {THREE.Vector3} vn   The next vertex.
+	 * @param  {THREE.Vector3} move Move by this vector. (optional)
+	 * @return {float}              Angle between the vertices in degree and flag if it has been adjusted to point into the hole.
+	 */
+	calculateAngle: function( vp, v, vn, move ) {
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v ),
+		    vClone = v.clone();
+		var angle, c;
+
+		if( typeof move == "undefined" ) {
+			move = new THREE.Vector3();
+		}
+
+		vClone.add( move );
+
+		// Get angle and change radians to degree
+		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
+
+		// Get the axis described by the cross product of the vectors building the angle
+		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
+		c.add( v ).add( move );
+
+		// Use "the other side of the angle" if it doesn't point inside the hole
+		if( c.length() < vClone.length() ) {
+			angle = 360.0 - angle;
+		}
+
+		return angle;
+	},
+
+
+	/**
+	 * Calculate the average of all angles in a given list of vertices.
+	 * @param  {Array<THREE.Vector3>} gv       List of vertices.
+	 * @param  {THREE.Vector3}        modelPos Position of model the vertices are a part of.
+	 * @return {float}                         The angle average.
+	 */
+	calculateAngleAverage: function( gv, modelPos ) {
+		var angleAverage = 0.0;
+		var v, vn, vp;
+
+		for( var i = 0; i < gv.length; i++ ) {
+			vp = gv[( i == 0 ) ? ( gv.length - 1 ) : ( i - 1 )];
+			v = gv[i];
+			vn = gv[( i + 1 ) % gv.length];
+
+			angleAverage += Utils.calculateAngle( vp, v, vn, modelPos );
+		}
+
+		angleAverage /= gv.length;
+
+		return angleAverage;
+	},
+
+
+	/**
 	 * Calculate standard variance and average of the X, Y and Z
 	 * coordinates of the given vectors.
 	 * @param  {Array<THREE.Vector3>} vectors The vectors to use.
@@ -167,41 +228,6 @@ var Utils = {
 
 
 	/**
-	 * Compute the angle between two vertices.
-	 * Angle is in degree.
-	 * @param  {THREE.Vector3} vp   The previous vertex.
-	 * @param  {THREE.Vector3} v    The current vertex.
-	 * @param  {THREE.Vector3} vn   The next vertex.
-	 * @param  {THREE.Vector3} move Move by this vector. (optional)
-	 * @return {float}              Angle between the vertices in degree and flag if it has been adjusted to point into the hole.
-	 */
-	computeAngle: function( vp, v, vn, move ) {
-		var vpClone = vp.clone().sub( v ),
-		    vnClone = vn.clone().sub( v ),
-		    vClone = v.clone().add( move );
-		var angle, c;
-
-		if( typeof move == "undefined" ) {
-			move = new THREE.Vector3();
-		}
-
-		// Get angle and change radians to degree
-		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
-
-		// Get the axis described by the cross product of the vectors building the angle
-		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
-		c.add( v ).add( move );
-
-		// Use "the other side of the angle" if it doesn't point inside the hole
-		if( c.length() < vClone.length() ) {
-			angle = 360.0 - angle;
-		}
-
-		return angle;
-	},
-
-
-	/**
 	 * Convert a 3D vector to a 2D vector by looking at the previously
 	 * computed variance of relevant points.
 	 * @param  {Object}        variance Variance to consider.
@@ -280,7 +306,6 @@ var Utils = {
 			b = a.substr( 1 ) + b;
 			a = a[0];
 		}
-
 
 		return ( sign + a + "." + b + "e" + expSign + exp );
 	},
@@ -371,6 +396,36 @@ var Utils = {
 	 */
 	selfRemoveFromDOM: function( e ) {
 		e.target.parentNode.removeChild( e.target );
+	},
+
+
+	/**
+	 * Decrease the face index of vertices that have a higher index than a given one.
+	 * Afterwards check the face and if faulty, remove it.
+	 * @param  {Array<THREE.Face3>} faces    Faces to change.
+	 * @param  {int}                i        Current index of face to check.
+	 * @param  {int}                cmpIndex Threshold index to compare to.
+	 * @return {Array<THREE.Face3>}          Changed faces.
+	 */
+	decreaseHigherFaceIndexes: function( faces, i, cmpIndex ) {
+		var face = faces[i];
+
+		if( face.a > cmpIndex ) {
+			face.a--;
+		}
+		if( face.b > cmpIndex ) {
+			face.b--;
+		}
+		if( face.c > cmpIndex ) {
+			face.c--;
+		}
+
+		// Triangle disappeared through merge
+		if( face.a == face.b || face.a == face.c || face.b == face.c ) {
+			faces.splice( i, 1 );
+		}
+
+		return faces;
 	}
 
 };

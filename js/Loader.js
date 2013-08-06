@@ -82,6 +82,10 @@ var Loader = {
 		content = loader.parse( e.target.result );
 		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
 
+		if( CONFIG.CHECK_AND_FIX_FACES ) {
+			geometry = HoleFilling.checkAndFixFaces( geometry );
+		}
+
 		g.MODEL = Scene.geometryToMesh( geometry );
 		g.MODEL = Scene.centerModel( g.MODEL );
 		g.MODEL.name = filename.replace( "." + extension, "" );

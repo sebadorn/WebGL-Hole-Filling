@@ -31,6 +31,17 @@ var CONFIG = {
 		ZNEAR: 0.01
 	},
 
+	// Check the model right after import for problems.
+	// Remove vertices that are either not part of any face, or
+	// are (wrongly) connected to themself.
+	// Removing vertices also means that the faces have to be updated.
+	// Normally, this option shouldn't have to be enabled, but some
+	// models may be faulty. Hints, if you are dealing with such a
+	// faulty model:
+	// - After filling some holes, searching again will show new holes.
+	// - A filled and then exported model will show new holes after import.
+	CHECK_AND_FIX_FACES: true,
+
 	// Trackball controls
 	CONTROLS: {
 		PAN_SPEED: 0.8,
@@ -56,8 +67,8 @@ var CONFIG = {
 	HF: {
 		// Border of the hole(s)
 		BORDER: {
-			COLOR: [0xFF0000, 0xFF57DE, 0xFFC620, 0x74FF3A],
-			LINE_WIDTH: 2,
+			COLOR: [0xFF0000, 0xE227BD, 0xFFA420, 0x38F221],
+			LINE_WIDTH: 3,
 			SHOW_LINES: true,
 			SHOW_POINTS: false
 		},
