@@ -79,7 +79,7 @@ var CONFIG = {
 			// "all" will test to whole mesh for collisions with a newly created point,
 			// while "filling" only tests the hole filling.
 			// "all" is really slow.
-			COLLISION_TEST: "filling",
+			COLLISION_TEST: "all",
 			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,

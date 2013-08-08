@@ -631,6 +631,9 @@ var AdvancingFront = {
 			b = filling.vertices[face.b];
 			c = filling.vertices[face.c];
 
+			if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+				continue;
+			}
 			if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
 				continue;
 			}
@@ -639,27 +642,8 @@ var AdvancingFront = {
 					continue;
 				}
 			}
-			else if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
-				continue;
-			}
 
 			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-				// GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
-				// GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
-				// GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
-
-				// GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
-				// GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
-				// GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
-
-				// GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
-				// if( fromB ) {
-				// 	GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
-				// 	GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
-				// }
-				// GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-				// GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
-
 				return false;
 			}
 		}
@@ -672,6 +656,9 @@ var AdvancingFront = {
 				b = modelGeo.vertices[face.b];
 				c = modelGeo.vertices[face.c];
 
+				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+					continue;
+				}
 				if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
 					continue;
 				}
@@ -681,23 +668,7 @@ var AdvancingFront = {
 					}
 				}
 
-				if( Utils.checkIntersectionOfTriangles3D( a, b, c, fromA, fromB, v ) ) {
-					// GLOBAL.SCENE.add( Scene.createPoint( a, 0.04, 0xFFEE00, true ) );
-					// GLOBAL.SCENE.add( Scene.createPoint( b, 0.04, 0xFFEE00, true ) );
-					// GLOBAL.SCENE.add( Scene.createPoint( c, 0.04, 0xFFEE00, true ) );
-
-					// GLOBAL.SCENE.add( Scene.createLine( a, b, 1, 0xFFEE00, true ) );
-					// GLOBAL.SCENE.add( Scene.createLine( b, c, 1, 0xFFEE00, true ) );
-					// GLOBAL.SCENE.add( Scene.createLine( c, a, 1, 0xFFEE00, true ) );
-
-					// GLOBAL.SCENE.add( Scene.createPoint( fromA, 0.04, 0xFF0000, true ) );
-					// if( fromB ) {
-					// 	GLOBAL.SCENE.add( Scene.createPoint( fromB, 0.04, 0xFF0000, true ) );
-					// 	GLOBAL.SCENE.add( Scene.createLine( fromB, v, 1, 0xFF0000, true ) );
-					// }
-					// GLOBAL.SCENE.add( Scene.createPoint( v, 0.04, 0xFF0000, true ) );
-					// GLOBAL.SCENE.add( Scene.createLine( fromA, v, 1, 0xFF0000, true ) );
-
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
 					return false;
 				}
 			}

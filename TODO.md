@@ -1,7 +1,6 @@
 ## ToDo
 
 * `Bug` Hole finding doesn't work with STL files at all!
-* `Bug` Collision test with whole model blocks almost every new point
 
 * `Improve` Parallelization through Workers
 

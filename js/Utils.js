@@ -193,7 +193,7 @@ var Utils = {
 		var u = b.clone().sub( a ),
 		    v = c.clone().sub( a );
 		var d = Math.pow( u.dot( v ), 2 ) - u.dot( u ) * v.dot( v ),
-		    planeOfTriangle = new Plane( a, u, v ),
+		    planeOfTriangle = new Plane( a, b, c ),
 		    test = [fromA];
 		var r, s, t, w;
 
@@ -218,7 +218,7 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				GLOBAL.SCENE.add( Scene.createPoint( r, 0.04, 0x44AAFF, true ) );
+				GLOBAL.SCENE.add( Scene.createPoint( r, 0.1, 0x0088FF, true ) ); // TODO: REMOVE
 				return true;
 			}
 		}
