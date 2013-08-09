@@ -193,7 +193,14 @@ var AdvancingFront = {
 
 
 		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-			return false;
+			// Second chance: Reduce length
+			vNew.sub( v );
+			vNew.setLength( avLen / 2 );
+			vNew.add( v );
+
+			if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
+				return false;
+			}
 		}
 
 
@@ -255,13 +262,22 @@ var AdvancingFront = {
 			vnClone.clone().sub( halfWay ),
 			cross2.clone().sub( v ).sub( halfWay )
 		);
-		var vNew = plane.getPoint( 0, vnClone.length() );
+		var vOnPlane = plane.getPoint( 0, vnClone.length() );
+		var vNew = vOnPlane.clone();
 
 		vNew.add( v ).add( halfWay );
 		vNew = this.keepNearPlane( v, vn, vNew );
 
 		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-			return false;
+			// Second chance: Reduce length
+			vNew = vOnPlane.clone();
+			vNew.setLength( vNew.length() / 2 );
+			vNew.add( v ).add( halfWay );
+			vNew = this.keepNearPlane( v, vn, vNew );
+
+			if( !this.isInHole( front,filling, vNew, vp, vn ) ) {
+				return false;
+			}
 		}
 
 

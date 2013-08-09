@@ -218,7 +218,12 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				GLOBAL.SCENE.add( Scene.createPoint( r, 0.1, 0x0088FF, true ) ); // TODO: REMOVE
+				GLOBAL.SCENE.add( Scene.createPoint( p, 0.04, 0xFFAA00, true ) );
+				GLOBAL.SCENE.add( Scene.createLine( fromA, p, 1, 0xFFAA00, true ) );
+				if( fromB ) {
+					GLOBAL.SCENE.add( Scene.createLine( fromB, p, 1, 0xFFAA00, true ) );
+				}
+				GLOBAL.SCENE.add( Scene.createPoint( r, 0.04, 0xFF0000, true ) ); // TODO: REMOVE
 				return true;
 			}
 		}

@@ -54,7 +54,7 @@ var CONFIG = {
 		SHOW_FRONT: false,
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 1000
+		AFM_STOP_AFTER_ITER: 1500
 	},
 
 	// Export of model
@@ -79,7 +79,7 @@ var CONFIG = {
 			// "all" will test to whole mesh for collisions with a newly created point,
 			// while "filling" only tests the hole filling.
 			// "all" is really slow.
-			COLLISION_TEST: "all",
+			COLLISION_TEST: "filling",
 			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,

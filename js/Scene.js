@@ -328,7 +328,7 @@ var Scene = {
 		material.side = THREE.DoubleSide;
 		material.wireframe = ( this.MODE == "wireframe" );
 
-		mesh.setMaterial( material );
+		mesh.material = material;
 
 		mesh.geometry.computeFaceNormals();
 		mesh.geometry.computeVertexNormals();
