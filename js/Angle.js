@@ -4,13 +4,20 @@
 /**
  * Class to store information about an angle in the front.
  * @param {Array<THREE.Vector3>} vertices The vertices that form the angle.
+ * @param {THREE.Vector3}        position Center position of the angle. (optional)
  */
-function Angle( vertices ) {
+function Angle( vertices, position ) {
 	this.degree = null;
 	this.vertices = vertices;
 	this.next = null;
 	this.previous = null;
-	this.position = GLOBAL.MODEL.position;
+
+	if( typeof position == "undefined" ) {
+		this.position = GLOBAL.MODEL.position;
+	}
+	else {
+		this.position = position;
+	}
 
 	this.calculateAngle();
 }

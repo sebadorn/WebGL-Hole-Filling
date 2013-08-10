@@ -233,6 +233,36 @@ var Utils = {
 
 
 	/**
+	 * Decrease the face index of vertices that have a higher index than a given one.
+	 * Afterwards check the face and if faulty, remove it.
+	 * @param  {Array<THREE.Face3>} faces    Faces to change.
+	 * @param  {int}                i        Current index of face to check.
+	 * @param  {int}                cmpIndex Threshold index to compare to.
+	 * @return {Array<THREE.Face3>}          Changed faces.
+	 */
+	decreaseHigherFaceIndexes: function( faces, i, cmpIndex ) {
+		var face = faces[i];
+
+		if( face.a > cmpIndex ) {
+			face.a--;
+		}
+		if( face.b > cmpIndex ) {
+			face.b--;
+		}
+		if( face.c > cmpIndex ) {
+			face.c--;
+		}
+
+		// Triangle disappeared through merge
+		if( face.a == face.b || face.a == face.c || face.b == face.c ) {
+			faces.splice( i, 1 );
+		}
+
+		return faces;
+	},
+
+
+	/**
 	 * Convert a 3D vector to a 2D vector by looking at the previously
 	 * computed variance of relevant points.
 	 * @param  {Object}        variance Variance to consider.
@@ -397,40 +427,43 @@ var Utils = {
 
 
 	/**
-	 * Remove child from its parent.
+	 * Keep a vector close to the plane of its creating vectors.
+	 * Calculates the standard variance of the X, Y, and Z coordinates
+	 * and adjusts the coordinate of the new vector to the smallest one.
+	 * @param  {THREE.Vector3} v    One of the creating vectors.
+	 * @param  {THREE.Vector3} vn   One of the creating vectors.
+	 * @param  {THREE.Vector3} vNew The newly created vector.
+	 * @return {THREE.Vector3}      Adjusted vector.
 	 */
-	selfRemoveFromDOM: function( e ) {
-		e.target.parentNode.removeChild( e.target );
+	keepNearPlane: function( v, vn, vNew ) {
+		var variance = Utils.calculateVariances( [v, vn] );
+
+		if( variance.x < variance.y ) {
+			if( variance.x < variance.z ) {
+				vNew.x = variance.average.x;
+			}
+			else {
+				vNew.z = variance.average.z;
+			}
+		}
+		else {
+			if( variance.y < variance.z ) {
+				vNew.y = variance.average.y;
+			}
+			else {
+				vNew.z = variance.average.z;
+			}
+		}
+
+		return vNew;
 	},
 
 
 	/**
-	 * Decrease the face index of vertices that have a higher index than a given one.
-	 * Afterwards check the face and if faulty, remove it.
-	 * @param  {Array<THREE.Face3>} faces    Faces to change.
-	 * @param  {int}                i        Current index of face to check.
-	 * @param  {int}                cmpIndex Threshold index to compare to.
-	 * @return {Array<THREE.Face3>}          Changed faces.
+	 * Remove child from its parent.
 	 */
-	decreaseHigherFaceIndexes: function( faces, i, cmpIndex ) {
-		var face = faces[i];
-
-		if( face.a > cmpIndex ) {
-			face.a--;
-		}
-		if( face.b > cmpIndex ) {
-			face.b--;
-		}
-		if( face.c > cmpIndex ) {
-			face.c--;
-		}
-
-		// Triangle disappeared through merge
-		if( face.a == face.b || face.a == face.c || face.b == face.c ) {
-			faces.splice( i, 1 );
-		}
-
-		return faces;
+	selfRemoveFromDOM: function( e ) {
+		e.target.parentNode.removeChild( e.target );
 	}
 
 };

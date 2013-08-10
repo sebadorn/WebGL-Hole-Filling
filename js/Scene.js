@@ -265,7 +265,7 @@ var Scene = {
 			return;
 		}
 
-		var filling = AdvancingFront.afmStart( g.MODEL, g.HOLES[index] );
+		var filling = AdvancingFront.afmStart( g.MODEL.geometry, g.HOLES[index] );
 
 		// Merge original model with the new filling
 		THREE.GeometryUtils.merge( g.MODEL.geometry, filling );

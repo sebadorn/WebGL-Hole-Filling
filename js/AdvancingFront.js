@@ -7,32 +7,24 @@
  */
 var AdvancingFront = {
 
-	HOLE_INDEX: -1,
-	LAST_ITERATION: false, // for debugging
+	holeIndex: -1,
+	modelGeo: null,
 
-	HEAP_RULE_1: null,
-	HEAP_RULE_2: null,
-	HEAP_RULE_3: null,
-	HEAP_RULE_R: null,
+	heapRule1: null,
+	heapRule2: null,
+	heapRule3: null,
+	heapRuleR: null,
 
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
-	 * @param  {THREE.Mesh}        model The model to fill the holes in.
-	 * @param  {Array<THREE.Line>} hole  The hole described by lines.
-	 * @return {THREE.Geometry}          The generated filling.
+	 * @param  {THREE.Geometry}    modelGeo The model to fill the holes in.
+	 * @param  {Array<THREE.Line>} hole     The hole described by lines.
+	 * @return {THREE.Geometry}             The generated filling.
 	 */
-	afmStart: function( model, hole ) {
+	afmStart: function( modelGeo, hole ) {
 		var filling = new THREE.Geometry(),
 		    front = new THREE.Geometry();
-
-		this.HOLE_INDEX = GLOBAL.HOLES.indexOf( hole );
-		this.LAST_ITERATION = false;
-
-		this.HEAP_RULE_1 = new Heap( "1" );
-		this.HEAP_RULE_2 = new Heap( "2" );
-		this.HEAP_RULE_3 = new Heap( "3" );
-		this.HEAP_RULE_R = new Heap( "R" );
 
 		front.vertices = hole.slice( 0 );
 		filling.vertices = hole.slice( 0 );
@@ -40,33 +32,15 @@ var AdvancingFront = {
 		front.mergeVertices();
 		filling.mergeVertices();
 
-		var ca = this.computeAngles( front.vertices ),
-		    count = 0,
+		this.holeIndex = GLOBAL.HOLES.indexOf( hole );
+		this.modelGeo = modelGeo;
+		this.initHeaps( front );
+
+		var count = 0,
 		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
-		var angle, vNew;
+		var vNew;
 
-		// Initialize heaps
-		for( var i = 0; i < ca.angles.length; i++ ) {
-			angle = ca.angles[i];
-
-			if( angle.degree <= 75.0 ) {
-				this.HEAP_RULE_1.insert( angle );
-			}
-			else if( angle.degree <= 135.0 ) {
-				this.HEAP_RULE_2.insert( angle );
-			}
-			else if( angle.degree < 180.0 ) {
-				this.HEAP_RULE_3.insert( angle );
-			}
-			else {
-				this.HEAP_RULE_R.insert( angle );
-			}
-		}
-
-		this.HEAP_RULE_1.sort();
-		this.HEAP_RULE_2.sort();
-		this.HEAP_RULE_3.sort();
-
+		Stopwatch.start( "AF" );
 
 		while( true ) {
 			count++;
@@ -74,9 +48,6 @@ var AdvancingFront = {
 			// for debugging
 			if( stopIter !== false && count > stopIter ) {
 				break;
-			}
-			if( stopIter !== false && count == stopIter ) {
-				this.LAST_ITERATION = true;
 			}
 
 			// Close last hole
@@ -95,15 +66,15 @@ var AdvancingFront = {
 			}
 
 			// Rule 1
-			if( this.HEAP_RULE_1.length() > 0 ) {
+			if( this.heapRule1.length() > 0 ) {
 				vNew = this.applyRule1( front, filling );
 			}
 			// Rule 2
-			else if( this.HEAP_RULE_2.length() > 0 ) {
+			else if( this.heapRule2.length() > 0 ) {
 				vNew = this.applyRule2( front, filling );
 			}
 			// Rule 3
-			else if( this.HEAP_RULE_3.length() > 0 ) {
+			else if( this.heapRule3.length() > 0 ) {
 				vNew = this.applyRule3( front, filling );
 			}
 			else {
@@ -120,12 +91,13 @@ var AdvancingFront = {
 
 		console.log(
 			"Finished after " + ( count - 1 ) + " iterations.\n",
+			"- Time: " + Stopwatch.stop( "AF" ) + "ms\n",
 			"- New vertices: " + filling.vertices.length + "\n",
 			"- New faces: " + filling.faces.length
 		);
 
-		if( this.HEAP_RULE_R.length() > 0 ) {
-			console.warn( "Ignored " + this.HEAP_RULE_R.length() + " angles, because they were >= 180°." );
+		if( this.heapRuleR.length() > 0 ) {
+			console.warn( "Ignored " + this.heapRuleR.length() + " angles, because they were >= 180°." );
 		}
 
 		this.showFilling( front, filling );
@@ -266,14 +238,14 @@ var AdvancingFront = {
 		var vNew = vOnPlane.clone();
 
 		vNew.add( v ).add( halfWay );
-		vNew = this.keepNearPlane( v, vn, vNew );
+		vNew = Utils.keepNearPlane( v, vn, vNew );
 
 		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
 			// Second chance: Reduce length
 			vNew = vOnPlane.clone();
 			vNew.setLength( vNew.length() / 2 );
 			vNew.add( v ).add( halfWay );
-			vNew = this.keepNearPlane( v, vn, vNew );
+			vNew = Utils.keepNearPlane( v, vn, vNew );
 
 			if( !this.isInHole( front,filling, vNew, vp, vn ) ) {
 				return false;
@@ -306,7 +278,7 @@ var AdvancingFront = {
 	 * @return {boolean}                Rule 1 doesn't create a new vertex, so it will always return false.
 	 */
 	applyRule1: function( front, filling ) {
-		var angle = this.HEAP_RULE_1.removeFirst();
+		var angle = this.heapRule1.removeFirst();
 
 		var vNew = this.afRule1(
 			front, filling,
@@ -334,7 +306,7 @@ var AdvancingFront = {
 		}
 		// It failed, so insert the Angle back in.
 		else {
-			this.HEAP_RULE_1.insert( angle );
+			this.heapRule1.insert( angle );
 		}
 
 		return false;
@@ -348,7 +320,7 @@ var AdvancingFront = {
 	 * @return {THREE.Vector3}          New vertex.
 	 */
 	applyRule2: function( front, filling ) {
-		var angle = this.HEAP_RULE_2.removeFirst();
+		var angle = this.heapRule2.removeFirst();
 
 		var vNew = this.afRule2(
 			front, filling,
@@ -380,7 +352,7 @@ var AdvancingFront = {
 			this.heapInsert( angle.next );
 		}
 		else {
-			this.HEAP_RULE_2.insert( angle );
+			this.heapRule2.insert( angle );
 		}
 
 		return vNew;
@@ -394,7 +366,7 @@ var AdvancingFront = {
 	 * @return {THREE.Vector3}          New vertex.
 	 */
 	applyRule3: function( front, filling ) {
-		var angle = this.HEAP_RULE_3.removeFirst();
+		var angle = this.heapRule3.removeFirst();
 
 		var vNew = this.afRule3(
 			front, filling,
@@ -430,7 +402,7 @@ var AdvancingFront = {
 			this.heapInsert( angle );
 		}
 		else {
-			this.HEAP_RULE_3.insert( angle );
+			this.heapRule3.insert( angle );
 		}
 
 		return vNew;
@@ -527,16 +499,16 @@ var AdvancingFront = {
 	 */
 	heapInsert: function( angle ) {
 		if( angle.degree <= 75.0 ) {
-			this.HEAP_RULE_1.insert( angle );
+			this.heapRule1.insert( angle );
 		}
 		else if( angle.degree <= 135.0 ) {
-			this.HEAP_RULE_2.insert( angle );
+			this.heapRule2.insert( angle );
 		}
 		else if( angle.degree < 180.0 ) {
-			this.HEAP_RULE_3.insert( angle );
+			this.heapRule3.insert( angle );
 		}
 		else {
-			this.HEAP_RULE_R.insert( angle );
+			this.heapRuleR.insert( angle );
 		}
 	},
 
@@ -548,18 +520,18 @@ var AdvancingFront = {
 	heapRemove: function( angle ) {
 		// Rule 1
 		if( angle.degree <= 75.0 ) {
-			this.HEAP_RULE_1.remove( angle );
+			this.heapRule1.remove( angle );
 		}
 		// Rule 2
 		else if( angle.degree <= 135.0 ) {
-			this.HEAP_RULE_2.remove( angle );
+			this.heapRule2.remove( angle );
 		}
 		// Rule 3
 		else if( angle.degree < 180.0 ) {
-			this.HEAP_RULE_3.remove( angle );
+			this.heapRule3.remove( angle );
 		}
 		else {
-			this.HEAP_RULE_R.remove( angle );
+			this.heapRuleR.remove( angle );
 		}
 	},
 
@@ -572,10 +544,10 @@ var AdvancingFront = {
 	 */
 	heapMergeVertex: function( vOld, vNew ) {
 		var search = [
-			this.HEAP_RULE_1,
-			this.HEAP_RULE_2,
-			this.HEAP_RULE_3,
-			this.HEAP_RULE_R
+			this.heapRule1,
+			this.heapRule2,
+			this.heapRule3,
+			this.heapRuleR
 		];
 		var angle, angles, heap;
 
@@ -629,6 +601,43 @@ var AdvancingFront = {
 
 
 	/**
+	 * Initialize heaps.
+	 * @param {THREE.Geometry} front The current front (outline of the hole).
+	 */
+	initHeaps: function( front ) {
+		var ca = this.computeAngles( front.vertices );
+		var angle;
+
+		this.heapRule1 = new Heap( "1" );
+		this.heapRule2 = new Heap( "2" );
+		this.heapRule3 = new Heap( "3" );
+		this.heapRuleR = new Heap( "R" );
+
+		// Initialize heaps
+		for( var i = 0, len = ca.angles.length; i < len; i++ ) {
+			angle = ca.angles[i];
+
+			if( angle.degree <= 75.0 ) {
+				this.heapRule1.insert( angle );
+			}
+			else if( angle.degree <= 135.0 ) {
+				this.heapRule2.insert( angle );
+			}
+			else if( angle.degree < 180.0 ) {
+				this.heapRule3.insert( angle );
+			}
+			else {
+				this.heapRuleR.insert( angle );
+			}
+		}
+
+		this.heapRule1.sort();
+		this.heapRule2.sort();
+		this.heapRule3.sort();
+	},
+
+
+	/**
 	 * Check, if a vector is inside the hole or has left the boundary.
 	 * @param  {Array}         front The current front of the hole.
 	 * @param  {THREE.Vector3} v     The vector to check.
@@ -637,10 +646,9 @@ var AdvancingFront = {
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
 	isInHole: function( front, filling, v, fromA, fromB ) {
-		var modelGeo = GLOBAL.MODEL.geometry;
 		var a, b, c, face;
 
-		for( var i = 0; i < filling.faces.length; i++ ) {
+		for( var i = 0, len = filling.faces.length; i < len; i++ ) {
 			face = filling.faces[i];
 
 			a = filling.vertices[face.a];
@@ -665,12 +673,12 @@ var AdvancingFront = {
 		}
 
 		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
-			for( var i = 0; i < modelGeo.faces.length; i++ ) {
-				face = modelGeo.faces[i];
+			for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
+				face = this.modelGeo.faces[i];
 
-				a = modelGeo.vertices[face.a];
-				b = modelGeo.vertices[face.b];
-				c = modelGeo.vertices[face.c];
+				a = this.modelGeo.vertices[face.a];
+				b = this.modelGeo.vertices[face.b];
+				c = this.modelGeo.vertices[face.c];
 
 				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
 					continue;
@@ -691,39 +699,6 @@ var AdvancingFront = {
 		}
 
 		return true;
-	},
-
-
-	/**
-	 * Keep a vector close to the plane of its creating vectors.
-	 * Calculates the standard variance of the X, Y, and Z coordinates
-	 * and adjusts the coordinate of the new vector to the smallest one.
-	 * @param  {THREE.Vector3} v    One of the creating vectors.
-	 * @param  {THREE.Vector3} vn   One of the creating vectors.
-	 * @param  {THREE.Vector3} vNew The newly created vector.
-	 * @return {THREE.Vector3}      Adjusted vector.
-	 */
-	keepNearPlane: function( v, vn, vNew ) {
-		var variance = Utils.calculateVariances( [v, vn] );
-
-		if( variance.x < variance.y ) {
-			if( variance.x < variance.z ) {
-				vNew.x = variance.average.x;
-			}
-			else {
-				vNew.z = variance.average.z;
-			}
-		}
-		else {
-			if( variance.y < variance.z ) {
-				vNew.y = variance.average.y;
-			}
-			else {
-				vNew.z = variance.average.z;
-			}
-		}
-
-		return vNew;
 	},
 
 
@@ -822,8 +797,8 @@ var AdvancingFront = {
 		var g = GLOBAL,
 		    model = g.MODEL;
 
-		if( !g.FILLINGS.hasOwnProperty( this.HOLE_INDEX ) ) {
-			g.FILLINGS[this.HOLE_INDEX] = {
+		if( !g.FILLINGS.hasOwnProperty( this.holeIndex ) ) {
+			g.FILLINGS[this.holeIndex] = {
 				solid: false,
 				wireframe: false
 			};
@@ -831,8 +806,8 @@ var AdvancingFront = {
 
 		// Filling as solid form
 		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
-			if( g.FILLINGS[this.HOLE_INDEX].solid ) {
-				g.SCENE.remove( g.FILLINGS[this.HOLE_INDEX].solid );
+			if( g.FILLINGS[this.holeIndex].solid ) {
+				g.SCENE.remove( g.FILLINGS[this.holeIndex].solid );
 			}
 
 			var materialSolid = new THREE.MeshPhongMaterial( {
@@ -851,7 +826,7 @@ var AdvancingFront = {
 			meshSolid.geometry.computeVertexNormals();
 			meshSolid.geometry.computeBoundingBox();
 
-			g.FILLINGS[this.HOLE_INDEX].solid = meshSolid;
+			g.FILLINGS[this.holeIndex].solid = meshSolid;
 			GLOBAL.SCENE.add( meshSolid );
 		}
 
@@ -874,7 +849,7 @@ var AdvancingFront = {
 			meshWire.geometry.computeVertexNormals();
 			meshWire.geometry.computeBoundingBox();
 
-			g.FILLINGS[this.HOLE_INDEX].wireframe = meshWire;
+			g.FILLINGS[this.holeIndex].wireframe = meshWire;
 			GLOBAL.SCENE.add( meshWire );
 		}
 
