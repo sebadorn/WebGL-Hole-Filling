@@ -269,12 +269,7 @@ var SceneManager = {
 			return;
 		}
 
-		var filling = AdvancingFront.afmStart( this.model.geometry, g.HOLES[index] );
-
-		this.mergeWithFilling( filling );
-
-		UI.checkHoleFinished( index );
-		UI.updateProgress( 100 );
+		AdvancingFront.afmStart( this.model.geometry, g.HOLES[index], this.mergeWithFilling.bind( this ) );
 	},
 
 
@@ -377,7 +372,7 @@ var SceneManager = {
 	 * Merge the model with the new filling.
 	 * @param {THREE.Geometry} filling The filling to merge into the model.
 	 */
-	mergeWithFilling: function( filling ) {
+	mergeWithFilling: function( filling, holeIndex ) {
 		var gm = this.model;
 
 		THREE.GeometryUtils.merge( gm.geometry, filling );
@@ -386,6 +381,9 @@ var SceneManager = {
 		gm.geometry.computeFaceNormals();
 		gm.geometry.computeVertexNormals();
 		gm.geometry.computeBoundingBox();
+
+		UI.checkHoleFinished( holeIndex );
+		UI.updateProgress( 100 );
 	},
 
 
@@ -470,8 +468,6 @@ var SceneManager = {
 	 * Show the border edges of the model.
 	 */
 	showEdges: function() {
-		var g = GLOBAL;
-
 		if( this.model == null ) {
 			console.error( "No model loaded." );
 			return;
@@ -480,7 +476,7 @@ var SceneManager = {
 		// Remove old hole outlines
 		if( this.holeLines.length > 0 ) {
 			for( var i = 0, len = this.holeLines.length; i < len; i++ ) {
-				g.scene.remove( this.holeLines[i] );
+				this.scene.remove( this.holeLines[i] );
 			}
 		}
 		this.holeLines = [];
@@ -505,7 +501,7 @@ var SceneManager = {
 		}
 		render();
 
-		g.HOLES = border.holes;
+		GLOBAL.HOLES = border.holes;
 		UI.showDetailHoles( border.lines );
 	},
 

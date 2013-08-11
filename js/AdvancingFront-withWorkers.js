@@ -9,11 +9,20 @@ var AdvancingFront = {
 
 	holeIndex: -1,
 	modelGeo: null,
+	resultCallback: null,
+	ruleCallback: null,
+	ruleCallbackData: null,
+
+	front: null,
+	filling: null,
+	hole: null,
 
 	heapRule1: null,
 	heapRule2: null,
 	heapRule3: null,
 	heapRuleR: null,
+
+	STOP_AFTER: CONFIG.DEBUG.AFM_STOP_AFTER_ITER,
 
 
 	/**
@@ -22,127 +31,75 @@ var AdvancingFront = {
 	 * @param  {Array<THREE.Line>} hole     The hole described by lines.
 	 * @return {THREE.Geometry}             The generated filling.
 	 */
-	afmStart: function( modelGeo, hole ) {
-		var filling = new THREE.Geometry(),
-		    front = new THREE.Geometry();
+	afmStart: function( modelGeo, hole, callback ) {
+		this.resultCallback = callback;
 
-		front.vertices = hole.slice( 0 );
-		filling.vertices = hole.slice( 0 );
+		this.filling = new THREE.Geometry();
+		this.front = new THREE.Geometry();
+		this.hole = hole;
 
-		front.mergeVertices();
-		filling.mergeVertices();
+		this.front.vertices = this.hole.slice( 0 );
+		this.filling.vertices = this.hole.slice( 0 );
 
-		this.holeIndex = GLOBAL.HOLES.indexOf( hole );
+		this.front.mergeVertices();
+		this.filling.mergeVertices();
+
+		this.holeIndex = GLOBAL.HOLES.indexOf( this.hole );
 		this.modelGeo = modelGeo;
-		this.initHeaps( front );
+		this.initHeaps( this.front );
 
-		var count = 0,
-		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
-		var vNew;
+		this.countLoops = 0;
+
+		WorkerManager.createPool( "collision", 10 );
 
 		Stopwatch.start( "AF" );
-
-		while( true ) {
-			count++;
-
-			// for debugging
-			if( stopIter !== false && count > stopIter ) {
-				break;
-			}
-
-			// Close last hole
-			if( front.vertices.length == 4 ) {
-				filling = this.closeHole4( front, filling );
-				break;
-			}
-			else if( front.vertices.length == 3 ) {
-				filling = this.closeHole3( front, filling );
-				break;
-			}
-			else if( front.vertices.length == 1 ) {
-				// TODO: REMOVE
-				SceneManager.scene.add( SceneManager.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
-				break;
-			}
-
-			// Rule 1
-			if( this.heapRule1.length() > 0 ) {
-				vNew = this.applyRule1( front, filling );
-			}
-			// Rule 2
-			else if( this.heapRule2.length() > 0 ) {
-				vNew = this.applyRule2( front, filling );
-			}
-			// Rule 3
-			else if( this.heapRule3.length() > 0 ) {
-				vNew = this.applyRule3( front, filling );
-			}
-			else {
-				this.showFilling( front, filling );
-				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
-			}
-
-			if( !vNew || front.vertices.length != 3 ) {
-				// Compute the distances between each new created
-				// vertex and see, if they can be merged.
-				this.mergeByDistance( front, filling, vNew, hole );
-			}
-		}
-
-		console.log(
-			"Finished after " + ( count - 1 ) + " iterations.\n",
-			"- Time: " + Stopwatch.stop( "AF" ) + "ms\n",
-			"- New vertices: " + filling.vertices.length + "\n",
-			"- New faces: " + filling.faces.length
-		);
-
-		if( this.heapRuleR.length() > 0 ) {
-			console.warn( "Ignored " + this.heapRuleR.length() + " angles, because they were >= 180°." );
-		}
-
-		this.showFilling( front, filling );
-
-		return filling;
+		this.mainEventLoop();
 	},
 
 
 	/**
 	 * Apply rule 1 of the advancing front mesh algorithm.
 	 * Rule 1: Close gaps of angles <= 75°.
-	 * @param {THREE.Geometry} front   The current border of the hole.
-	 * @param {THREE.Geometry} filling The currently filled part of the original hole.
 	 * @param {THREE.Vector3}  vp      Previous vector.
 	 * @param {THREE.Vector3}  v       Current vector.
 	 * @param {THREE.Vector3}  vn      Next vector.
 	 */
-	afRule1: function( front, filling, vp, v, vn ) {
-		var vIndex = filling.vertices.indexOf( v ),
-		    vnIndex = filling.vertices.indexOf( vn ),
-		    vpIndex = filling.vertices.indexOf( vp );
+	afRule1: function( vp, v, vn ) {
+		this.ruleCallback = this.afRule1Callback;
+		this.ruleCallbackData = {
+			vp: vp,
+			v: v,
+			vn: vn
+		};
+		this.isInHole( vp, vn );
+	},
 
-		if( !this.isInHole( front, filling, vp, vn ) ) {
-			return false;
+
+	afRule1Callback: function( intersects ) {
+		if( !intersects ) {
+			var data = this.ruleCallbackData;
+			var vIndex = this.filling.vertices.indexOf( data.v ),
+			    vnIndex = this.filling.vertices.indexOf( data.vn ),
+			    vpIndex = this.filling.vertices.indexOf( data.vp );
+
+			this.filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
+
+			// The vector v is not a part of the (moving) hole front anymore.
+			this.front.vertices.splice( this.front.vertices.indexOf( data.v ), 1 );
 		}
 
-		filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
-
-		// The vector v is not a part of the (moving) hole front anymore.
-		front.vertices.splice( front.vertices.indexOf( v ), 1 );
-
-		return true;
+		this.applyRule1( !intersects );
 	},
 
 
 	/**
 	 * Apply rule 2 of the advancing front mesh algorithm.
 	 * Rule 2: Create one new vertex if the angle is > 75° and <= 135°.
-	 * @param {THREE.Geometry} front   The current border of the hole.
-	 * @param {THREE.Geometry} filling The currently filled part of the original hole.
-	 * @param {THREE.Vector3}  vp      Previous vector.
-	 * @param {THREE.Vector3}  v       Current vector.
-	 * @param {THREE.Vector3}  vn      Next vector.
+	 * @param {THREE.Vector3} vp Previous vector.
+	 * @param {THREE.Vector3} v  Current vector.
+	 * @param {THREE.Vector3} vn Next vector.
 	 */
-	afRule2: function( front, filling, vp, v, vn ) {
+	afRule2: function( vp, v, vn ) {
 		// To make things easier, we just move the whole thing into the origin
 		// and when we have the new point, we move it back.
 		var vpClone = vp.clone().sub( v ),
@@ -163,51 +120,54 @@ var AdvancingFront = {
 		vNew.setLength( avLen );
 		vNew.add( v );
 
+		this.ruleCallback = this.afRule2Callback;
+		this.ruleCallbackData = {
+			vp: vp,
+			v: v,
+			vn: vn,
+			vNew: vNew
+		};
+		this.isInHole( vNew, vp, vn );
+	},
 
-		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-			// Second chance: Reduce length
-			vNew.sub( v );
-			vNew.setLength( avLen / 2 );
-			vNew.add( v );
 
-			if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-				return false;
-			}
+	afRule2Callback: function( intersects ) {
+		if( !intersects ) {
+			var data = this.ruleCallbackData;
+
+			// New vertex
+			this.filling.vertices.push( data.vNew );
+
+			// New faces for 2 new triangles
+			var len = this.filling.vertices.length;
+			var vpIndex = this.filling.vertices.indexOf( data.vp ),
+			    vIndex = this.filling.vertices.indexOf( data.v ),
+			    vnIndex = this.filling.vertices.indexOf( data.vn );
+
+			this.filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
+			this.filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
+
+			// Update front
+			var ix = this.front.vertices.indexOf( data.v );
+			this.front.vertices[ix] = data.vNew;
+
+			this.applyRule2( data.vNew );
 		}
-
-
-		// New vertex
-		filling.vertices.push( vNew );
-
-		// New faces for 2 new triangles
-		var len = filling.vertices.length;
-		var vpIndex = filling.vertices.indexOf( vp ),
-		    vIndex = filling.vertices.indexOf( v ),
-		    vnIndex = filling.vertices.indexOf( vn );
-
-		filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
-		filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
-
-
-		// Update front
-		var ix = front.vertices.indexOf( v );
-		front.vertices[ix] = vNew;
-
-		return vNew;
+		else {
+			this.applyRule2( false );
+		}
 	},
 
 
 	/**
 	 * Apply rule 3 of the advancing front mesh algorithm.
 	 * Rule 3: Create a new vertex if the angle is > 135°.
-	 * @param {THREE.Geometry} front   The current border of the hole.
-	 * @param {THREE.Geometry} filling The currently filled part of the original hole.
-	 * @param {THREE.Vector3}  vp      Previous vector.
-	 * @param {THREE.Vector3}  v       Current vector.
-	 * @param {THREE.Vector3}  vn      Next vector.
-	 * @param {float}          angle   Angle created by these vectors.
+	 * @param {THREE.Vector3} vp    Previous vector.
+	 * @param {THREE.Vector3} v     Current vector.
+	 * @param {THREE.Vector3} vn    Next vector.
+	 * @param {float}         angle Angle created by these vectors.
 	 */
-	afRule3: function( front, filling, vp, v, vn, angle ) {
+	afRule3: function( vp, v, vn, angle ) {
 		var vpClone = vp.clone().sub( v ),
 		    vnClone = vn.clone().sub( v );
 
@@ -240,50 +200,48 @@ var AdvancingFront = {
 		vNew.add( v ).add( halfWay );
 		vNew = Utils.keepNearPlane( v, vn, vNew );
 
-		if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-			// Second chance: Reduce length
-			vNew = vOnPlane.clone();
-			vNew.setLength( vNew.length() / 2 );
-			vNew.add( v ).add( halfWay );
-			vNew = Utils.keepNearPlane( v, vn, vNew );
+		this.ruleCallback = this.afRule3Callback;
+		this.ruleCallbackData = {
+			vp: vp,
+			v: v,
+			vn: vn,
+			vNew: vNew
+		};
+		this.isInHole( vNew, vp, vn );
+	},
 
-			if( !this.isInHole( front, filling, vNew, vp, vn ) ) {
-				return false;
-			}
+
+	afRule3Callback: function( intersects ) {
+		if( !intersects ) {
+			var data = this.ruleCallbackData;
+
+			// New vertex
+			this.filling.vertices.push( data.vNew );
+
+			// New face for the new triangle
+			var len = this.filling.vertices.length;
+			var vnIndex = this.filling.vertices.indexOf( data.vn ),
+			    vIndex = this.filling.vertices.indexOf( data.v );
+
+			this.filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
+
+			// Update front
+			var ix = this.front.vertices.indexOf( data.v );
+			this.front.vertices.splice( ix + 1, 0, data.vNew );
+
+			this.applyRule3( data.vNew );
 		}
-
-
-		// New vertex
-		filling.vertices.push( vNew );
-
-		// New face for the new triangle
-		var len = filling.vertices.length;
-		var vnIndex = filling.vertices.indexOf( vn ),
-		    vIndex = filling.vertices.indexOf( v );
-
-		filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
-
-		// Update front
-		var ix = front.vertices.indexOf( v );
-		front.vertices.splice( ix + 1, 0, vNew );
-
-		return vNew;
+		else {
+			this.applyRule3( false );
+		}
 	},
 
 
 	/**
 	 * Apply AF rule 1 and organise heaps/angles.
-	 * @param  {THREE.Geometry} front   Current front of hole.
-	 * @param  {THREE.Geometry} filling Current filling of hole.
-	 * @return {boolean}                Rule 1 doesn't create a new vertex, so it will always return false.
 	 */
-	applyRule1: function( front, filling ) {
-		var angle = this.heapRule1.removeFirst();
-
-		var vNew = this.afRule1(
-			front, filling,
-			angle.vertices[0], angle.vertices[1], angle.vertices[2]
-		);
+	applyRule1: function( vNew ) {
+		var angle = this.angle;
 
 		if( vNew ) {
 			this.heapRemove( angle.previous );
@@ -309,23 +267,15 @@ var AdvancingFront = {
 			this.heapRule1.insert( angle );
 		}
 
-		return false;
+		this.mainEventLoopReceiveVertex( false );
 	},
 
 
 	/**
 	 * Apply AF rule 2 and organise heaps/angles.
-	 * @param  {THREE.Geometry} front   Current front of hole.
-	 * @param  {THREE.Geometry} filling Current filling of hole.
-	 * @return {THREE.Vector3}          New vertex.
 	 */
-	applyRule2: function( front, filling ) {
-		var angle = this.heapRule2.removeFirst();
-
-		var vNew = this.afRule2(
-			front, filling,
-			angle.vertices[0], angle.vertices[1], angle.vertices[2]
-		);
+	applyRule2: function( vNew ) {
+		var angle = this.angle;
 
 		if( vNew ) {
 			angle.setVertices( [
@@ -355,24 +305,15 @@ var AdvancingFront = {
 			this.heapRule2.insert( angle );
 		}
 
-		return vNew;
+		this.mainEventLoopReceiveVertex( vNew );
 	},
 
 
 	/**
 	 * Apply AF rule 3 and organise heaps/angles.
-	 * @param  {THREE.Geometry} front   Current front of hole.
-	 * @param  {THREE.Geometry} filling Current filling of hole.
-	 * @return {THREE.Vector3}          New vertex.
 	 */
-	applyRule3: function( front, filling ) {
-		var angle = this.heapRule3.removeFirst();
-
-		var vNew = this.afRule3(
-			front, filling,
-			angle.vertices[0], angle.vertices[1], angle.vertices[2],
-			angle.degree
-		);
+	applyRule3: function( vNew ) {
+		var angle = this.angle;
 
 		if( vNew ) {
 			var newAngle = new Angle( [
@@ -405,46 +346,38 @@ var AdvancingFront = {
 			this.heapRule3.insert( angle );
 		}
 
-		return vNew;
+		this.mainEventLoopReceiveVertex( vNew );
 	},
 
 
 	/**
 	 * Close the last hole of only 3 vertices.
-	 * @param  {THREE.Geometry} front   Current hole front.
-	 * @param  {THREE.Geometry} filling Current hole filling.
-	 * @return {THREE.Geometry}         Completed hole filling.
 	 */
-	closeHole3: function( front, filling ) {
-		filling.faces.push( new THREE.Face3(
-			filling.vertices.indexOf( front.vertices[1] ),
-			filling.vertices.indexOf( front.vertices[0] ),
-			filling.vertices.indexOf( front.vertices[2] )
+	closeHole3: function() {
+		this.filling.faces.push( new THREE.Face3(
+			this.filling.vertices.indexOf( this.front.vertices[1] ),
+			this.filling.vertices.indexOf( this.front.vertices[0] ),
+			this.filling.vertices.indexOf( this.front.vertices[2] )
 		) );
-
-		return filling;
+		this.front.vertices = [];
 	},
 
 
 	/**
 	 * Close the last hole of only 4 vertices.
-	 * @param  {THREE.Geometry} front   Current hole front.
-	 * @param  {THREE.Geometry} filling Current hole filling.
-	 * @return {THREE.Geometry}         Completed hole filling.
 	 */
-	closeHole4: function( front, filling ) {
-		filling.faces.push( new THREE.Face3(
-			filling.vertices.indexOf( front.vertices[3] ),
-			filling.vertices.indexOf( front.vertices[2] ),
-			filling.vertices.indexOf( front.vertices[0] )
+	closeHole4: function() {
+		this.filling.faces.push( new THREE.Face3(
+			this.filling.vertices.indexOf( this.front.vertices[3] ),
+			this.filling.vertices.indexOf( this.front.vertices[2] ),
+			this.filling.vertices.indexOf( this.front.vertices[0] )
 		) );
-		filling.faces.push( new THREE.Face3(
-			filling.vertices.indexOf( front.vertices[1] ),
-			filling.vertices.indexOf( front.vertices[0] ),
-			filling.vertices.indexOf( front.vertices[2] )
+		this.filling.faces.push( new THREE.Face3(
+			this.filling.vertices.indexOf( this.front.vertices[1] ),
+			this.filling.vertices.indexOf( this.front.vertices[0] ),
+			this.filling.vertices.indexOf( this.front.vertices[2] )
 		) );
-
-		return filling;
+		this.front.vertices = [];
 	},
 
 
@@ -639,66 +572,164 @@ var AdvancingFront = {
 
 	/**
 	 * Check, if a vector is inside the hole or has left the boundary.
-	 * @param  {Array}         front The current front of the hole.
 	 * @param  {THREE.Vector3} v     The vector to check.
 	 * @param  {THREE.Vector3} fromA
 	 * @param  {THREE.Vector3} fromB
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
-	isInHole: function( front, filling, v, fromA, fromB ) {
+	isInHole: function( v, fromA, fromB ) {
 		var a, b, c, face;
 
-		for( var i = 0, len = filling.faces.length; i < len; i++ ) {
-			face = filling.faces[i];
+		this.workerResultCounter = 0;
+		this.workerResult = false;
 
-			a = filling.vertices[face.a];
-			b = filling.vertices[face.b];
-			c = filling.vertices[face.c];
+		var len = this.filling.faces.length;
+
+		if( len == 0 ) {
+			this.ruleCallback( false );
+			return;
+		}
+
+		var callback = this.isInHoleCallback.bind( this );
+		var data = {
+			cmd: "check",
+			a: null, b: null, c: null,
+			v: v, fromA: fromA, fromB: fromB
+		};
+
+		for( var i = 0; i < len; i++ ) {
+			face = this.filling.faces[i];
+
+			a = this.filling.vertices[face.a];
+			b = this.filling.vertices[face.b];
+			c = this.filling.vertices[face.c];
 
 			if( a == v || b == v || c == v ) {
+				this.workerResultCounter++;
 				continue;
 			}
 			if( a == fromA || b == fromA || c == fromA ) {
+				this.workerResultCounter++;
 				continue;
 			}
-			if( fromB ) {
+			if( fromB != null ) {
 				if( a == fromB || b == fromB || c == fromB ) {
+					this.workerResultCounter++;
 					continue;
 				}
 			}
 
-			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-				return false;
-			}
+			data.a = a;
+			data.b = b;
+			data.c = c;
+
+			WorkerManager.employWorker( "collision", data, callback );
 		}
 
-		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
-			for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
-				face = this.modelGeo.faces[i];
-
-				a = this.modelGeo.vertices[face.a];
-				b = this.modelGeo.vertices[face.b];
-				c = this.modelGeo.vertices[face.c];
-
-				if( a == v || b == v || c == v ) {
-					continue;
-				}
-				if( a == fromA || b == fromA || c == fromA ) {
-					continue;
-				}
-				if( fromB ) {
-					if( a == fromB || b == fromB || c == fromB ) {
-						continue;
-					}
-				}
-
-				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-					return false;
-				}
-			}
+		if( face == null ) {
+			this.ruleCallback( false );
 		}
 
-		return true;
+		// if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+		// 	for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
+		// 		face = this.modelGeo.faces[i];
+
+		// 		a = this.modelGeo.vertices[face.a];
+		// 		b = this.modelGeo.vertices[face.b];
+		// 		c = this.modelGeo.vertices[face.c];
+
+		// 		if( a == v || b == v || c == v ) {
+		// 			continue;
+		// 		}
+		// 		if( a == fromA || b == fromA || c == fromA ) {
+		// 			continue;
+		// 		}
+		// 		if( fromB != null ) {
+		// 			if( a == fromB || b == fromB || c == fromB ) {
+		// 				continue;
+		// 			}
+		// 		}
+
+		// 		if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+		// 			return false;
+		// 		}
+		// 	}
+		// }
+
+		// return true;
+	},
+
+
+	isInHoleCallback: function( e ) {
+		if( e.data.intersects ) {
+			this.workerResult = true;
+		}
+
+		this.workerResultCounter++;
+
+		if( this.workerResultCounter === this.filling.faces.length ) {
+			this.ruleCallback( this.workerResult );
+		}
+	},
+
+
+	mainEventLoop: function() {
+		this.countLoops++;
+
+		// for debugging
+		if( this.STOP_AFTER !== false && this.countLoops > this.STOP_AFTER ) {
+			this.wrapUp();
+			return;
+		}
+
+		// Close last hole
+		if( this.front.vertices.length == 4 ) {
+			this.closeHole4();
+			this.wrapUp();
+			return;
+		}
+		else if( this.front.vertices.length == 3 ) {
+			this.closeHole3();
+			this.wrapUp();
+			return;
+		}
+		else if( this.front.vertices.length == 1 ) {
+			// TODO: REMOVE
+			SceneManager.scene.add( SceneManager.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
+			this.wrapUp();
+			return;
+		}
+
+		// Rule 1
+		if( this.heapRule1.length() > 0 ) {
+			this.angle = this.heapRule1.removeFirst();
+			this.afRule1( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2] );
+		}
+		// Rule 2
+		else if( this.heapRule2.length() > 0 ) {
+			this.angle = this.heapRule2.removeFirst();
+			this.afRule2( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2] );
+		}
+		// Rule 3
+		else if( this.heapRule3.length() > 0 ) {
+			this.angle = this.heapRule3.removeFirst();
+			this.afRule3( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2], this.angle.degree );
+		}
+		else {
+			this.showFilling();
+			throw new Error( "No rule could be applied." );
+		}
+	},
+
+
+	mainEventLoopReceiveVertex: function( vNew ) {
+		if( !vNew || this.front.vertices.length != 3 ) {
+			// Compute the distances between each new created
+			// vertex and see, if they can be merged.
+			this.mergeByDistance( vNew, this.hole );
+		}
+
+		this.mainEventLoop();
 	},
 
 
@@ -709,9 +740,9 @@ var AdvancingFront = {
 	 * @param {THREE.Vector3}        v       The new vertex, otheres may be merged into.
 	 * @param {Array<THREE.Vector3>} ignore  Vertices to ignore, that won't be merged.
 	 */
-	mergeByDistance: function( front, filling, v, ignore ) {
-		var vIndex = filling.vertices.indexOf( v ),
-		    vIndexFront = front.vertices.indexOf( v );
+	mergeByDistance: function( v, ignore ) {
+		var vIndex = this.filling.vertices.indexOf( v ),
+		    vIndexFront = this.front.vertices.indexOf( v );
 		var t, tIndex;
 
 		// No new vertex has been added, but
@@ -729,15 +760,15 @@ var AdvancingFront = {
 		    vIndexAfter = vIndexFront + 1;
 
 		if( vIndexBefore < 0 ) {
-			vIndexBefore = front.vertices.length - 1;
+			vIndexBefore = this.front.vertices.length - 1;
 		}
-		if( vIndexAfter > front.vertices.length - 1 ) {
+		if( vIndexAfter > this.front.vertices.length - 1 ) {
 			vIndexAfter = 0;
 		}
 
 		var compare = [
-			front.vertices[vIndexBefore],
-			front.vertices[vIndexAfter]
+			this.front.vertices[vIndexBefore],
+			this.front.vertices[vIndexAfter]
 		];
 
 		// Compare the new point to its direct neighbours
@@ -757,12 +788,12 @@ var AdvancingFront = {
 					SceneManager.scene.add( SceneManager.createLine( t, v, 1, 0xFFEE00, true ) );
 				}
 
-				tIndex = filling.vertices.indexOf( t );
-				vIndex = filling.vertices.indexOf( v );
-				filling.vertices.splice( tIndex, 1 );
+				tIndex = this.filling.vertices.indexOf( t );
+				vIndex = this.filling.vertices.indexOf( v );
+				this.filling.vertices.splice( tIndex, 1 );
 
-				this.updateFaces( filling, tIndex, vIndex );
-				this.mergeUpdateFront( front, t, v );
+				this.updateFaces( tIndex, vIndex );
+				this.mergeUpdateFront( t, v );
 				this.heapMergeVertex( t, v );
 			}
 		}
@@ -771,19 +802,18 @@ var AdvancingFront = {
 
 	/**
 	 * Update the front according to the merged points.
-	 * @param {THREE.Geometry} front The current hole front.
 	 * @param {THREE.Vector3}  vOld  The new vertex.
 	 * @param {THREE.Vector3}  vNew  The merged-away vertex.
 	 */
-	mergeUpdateFront: function( front, vOld, vNew ) {
-		var ixFrom = front.vertices.indexOf( vOld ),
-		    ixTo = front.vertices.indexOf( vNew );
+	mergeUpdateFront: function( vOld, vNew ) {
+		var ixFrom = this.front.vertices.indexOf( vOld ),
+		    ixTo = this.front.vertices.indexOf( vNew );
 
 		if( ixFrom < 0 || ixTo < 0 ) {
 			throw new Error( "Vertex not found in front." );
 		}
 
-		front.vertices.splice( ixFrom, 1 );
+		this.front.vertices.splice( ixFrom, 1 );
 	},
 
 
@@ -793,7 +823,7 @@ var AdvancingFront = {
 	 * @param {THREE.Geometry} front   Front of the hole.
 	 * @param {THREE.Geometry} filling Filling of the hole.
 	 */
-	showFilling: function( front, filling ) {
+	showFilling: function() {
 		var g = GLOBAL,
 		    model = SceneManager.model;
 
@@ -816,7 +846,7 @@ var AdvancingFront = {
 				side: THREE.DoubleSide,
 				wireframe: false
 			} );
-			var meshSolid = new THREE.Mesh( filling, materialSolid );
+			var meshSolid = new THREE.Mesh( this.filling, materialSolid );
 
 			meshSolid.position.x += model.position.x;
 			meshSolid.position.y += model.position.y;
@@ -839,7 +869,7 @@ var AdvancingFront = {
 				wireframe: true,
 				wireframeLinewidth: CONFIG.HF.FILLING.LINE_WIDTH
 			} );
-			var meshWire = new THREE.Mesh( filling, materialWire );
+			var meshWire = new THREE.Mesh( this.filling, materialWire );
 
 			meshWire.position.x += model.position.x;
 			meshWire.position.y += model.position.y;
@@ -859,7 +889,7 @@ var AdvancingFront = {
 				color: 0x4991E0,
 				linewidth: 5
 			} );
-			var mesh = new THREE.Line( front, material );
+			var mesh = new THREE.Line( this.front, material );
 
 			mesh.position.x += model.position.x;
 			mesh.position.y += model.position.y;
@@ -874,15 +904,14 @@ var AdvancingFront = {
 
 	/**
 	 * Update the faces of the filling, because the index of a vertex has been changed.
-	 * @param  {THREE.Geometry} filling  The current state of the filling.
-	 * @param  {int}            oldIndex The old vertex index.
-	 * @param  {int}            newIndex The new vertex index.
+	 * @param  {int} oldIndex The old vertex index.
+	 * @param  {int} newIndex The new vertex index.
 	 */
-	updateFaces: function( filling, oldIndex, newIndex ) {
+	updateFaces: function( oldIndex, newIndex ) {
 		var face;
 
-		for( var i = filling.faces.length - 1; i >= 0; i-- ) {
-			face = filling.faces[i];
+		for( var i = this.filling.faces.length - 1; i >= 0; i-- ) {
+			face = this.filling.faces[i];
 
 			// Replace all instances of the merged-away vertex
 			if( face.a == oldIndex ) {
@@ -897,8 +926,27 @@ var AdvancingFront = {
 
 			// By removing a vertex all (greater) face indexes have to be updated.
 			// May also remove faces, if necessary.
-			filling.faces = Utils.decreaseHigherFaceIndexes( filling.faces, i, oldIndex );
+			this.filling.faces = Utils.decreaseHigherFaceIndexes( this.filling.faces, i, oldIndex );
 		}
+	},
+
+
+	wrapUp: function() {
+		console.log(
+			"Finished after " + ( this.countLoops - 1 ) + " iterations.\n",
+			"- Time: " + Stopwatch.stop( "AF" ) + "ms\n",
+			"- New vertices: " + this.filling.vertices.length + "\n",
+			"- New faces: " + this.filling.faces.length
+		);
+
+		if( this.heapRuleR.length() > 0 ) {
+			console.warn( "Ignored " + this.heapRuleR.length() + " angles, because they were >= 180°." );
+		}
+
+		WorkerManager.closePool( "collision" );
+
+		this.showFilling();
+		this.resultCallback( this.filling, this.holeIndex );
 	}
 
 };

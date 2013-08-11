@@ -12,8 +12,9 @@
 	<script src="js/UI.js"></script>
 	<script src="js/Loader.js"></script>
 	<script src="js/SceneManager.js"></script>
+	<script src="js/WorkerManager.js"></script>
 	<script src="js/HoleFilling.js"></script>
-	<script src="js/AdvancingFront.js"></script>
+	<script src="js/AdvancingFront-withWorkers.js"></script>
 	<script src="js/Angle.js"></script>
 	<script src="js/Heap.js"></script>
 	<script src="js/Plane.js"></script>
@@ -220,6 +221,47 @@
 
 </div>
 
+<script id="worker-collision" type="javascript/worker">
+	function handleMessages( e ) {
+		switch( e.data.cmd ) {
+
+			case "url":
+				var url = e.data.url + "js/";
+
+				importScripts(
+					url + "threeJS/three.min.js",
+					url + "Plane.js",
+					url + "Utils.js"
+				);
+				break;
+
+			case "check":
+				var a = new THREE.Vector3( e.data.a.x, e.data.a.y, e.data.a.z ),
+				    b = new THREE.Vector3( e.data.b.x, e.data.b.y, e.data.b.z ),
+				    c = new THREE.Vector3( e.data.c.x, e.data.c.y, e.data.c.z ),
+				    v = new THREE.Vector3( e.data.v.x, e.data.v.y, e.data.v.z ),
+				    fromA = new THREE.Vector3( e.data.fromA.x, e.data.fromA.y, e.data.fromA.z ),
+				    fromB = e.data.fromB;
+
+				if( fromB != null ) {
+					fromB = new THREE.Vector3( e.data.fromB.x, e.data.fromB.y, e.data.fromB.z );
+				}
+
+				self.postMessage( {
+					type: "check",
+					intersects: Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB )
+				} );
+				break;
+
+			case "close":
+				self.close();
+				break;
+
+		}
+	}
+
+	self.addEventListener( "message", handleMessages, false );
+</script>
 
 </body>
 </html>

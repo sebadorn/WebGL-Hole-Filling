@@ -11,7 +11,8 @@ var GLOBAL = {
 		DIRECTIONAL: [],
 		CAMERA: []
 	},
-	RENDERER: null
+	RENDERER: null,
+	URL: null
 };
 
 
@@ -58,6 +59,16 @@ function resize() {
 function errorHandlerFS( errorFS ) {
 	console.error( errorFS );
 }
+
+
+
+var url = document.location.href;
+var index = url.indexOf( "index.html" );
+
+if( index != -1 ) {
+	url = url.substring( 0, index );
+}
+GLOBAL.URL = url;
 
 
 window.requestFileSystem = window.requestFileSystem || window.webkitRequestFileSystem;

@@ -218,12 +218,14 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				SceneManager.scene.add( SceneManager.createPoint( p, 0.04, 0xFFAA00, true ) );
-				SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFFAA00, true ) );
-				if( fromB ) {
-					SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFFAA00, true ) );
-				}
-				SceneManager.scene.add( SceneManager.createPoint( r, 0.04, 0xFF0000, true ) ); // TODO: REMOVE
+				// // TODO: REMOVE
+				// SceneManager.scene.add( SceneManager.createPoint( p, 0.04, 0xFFAA00, true ) );
+				// SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFFAA00, true ) );
+				// if( fromB ) {
+				// 	SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFFAA00, true ) );
+				// }
+				// SceneManager.scene.add( SceneManager.createPoint( r, 0.04, 0xFF0000, true ) );
+
 				return true;
 			}
 		}
