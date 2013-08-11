@@ -37,14 +37,19 @@ var Stopwatch = {
 
 	/**
 	 * Stop a timer.
-	 * @param  {String} identifier Identifier of the entry top stop.
-	 * @return {int}               Total time from start to stop in ms.
+	 * @param  {String}  identifier Identifier of the entry top stop.
+	 * @param  {boolean} print      Print total time to console.
+	 * @return {int}                Total time from start to stop in ms.
 	 */
-	stop: function( identifier ) {
+	stop: function( identifier, print ) {
 		var time = this.times[identifier];
 
 		time.stop = new Date().getTime();
 		time.total = time.stop - time.start;
+
+		if( print ) {
+			console.log( "Stopwatch [" + identifier + "]: " + time.total + "ms." );
+		}
 
 		return time.total;
 	}

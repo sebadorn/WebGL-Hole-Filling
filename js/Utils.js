@@ -218,12 +218,12 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				GLOBAL.SCENE.add( Scene.createPoint( p, 0.04, 0xFFAA00, true ) );
-				GLOBAL.SCENE.add( Scene.createLine( fromA, p, 1, 0xFFAA00, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( p, 0.04, 0xFFAA00, true ) );
+				SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFFAA00, true ) );
 				if( fromB ) {
-					GLOBAL.SCENE.add( Scene.createLine( fromB, p, 1, 0xFFAA00, true ) );
+					SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFFAA00, true ) );
 				}
-				GLOBAL.SCENE.add( Scene.createPoint( r, 0.04, 0xFF0000, true ) ); // TODO: REMOVE
+				SceneManager.scene.add( SceneManager.createPoint( r, 0.04, 0xFF0000, true ) ); // TODO: REMOVE
 				return true;
 			}
 		}
@@ -299,10 +299,10 @@ var Utils = {
 	 * @return {String}      The scientific notation.
 	 */
 	floatToScientific: function( value ) {
-		var splitted = value.toString( 10 ).split( "." ),
-		    a = splitted[0],
-		    b = splitted[1];
-		var exp = 0,
+		var splitted = value.toString( 10 ).split( "." );
+		var a = splitted[0],
+		    b = splitted[1],
+		    exp = 0,
 		    expSign = "+",
 		    sign = "";
 
@@ -321,7 +321,7 @@ var Utils = {
 		if( a == "0" ) {
 			exp--;
 
-			while( b.indexOf( "0" ) == 0 ) {
+			while( b[0] == "0" ) {
 				exp--;
 				b = b.substr( 1 );
 			}
@@ -369,7 +369,7 @@ var Utils = {
 			max: new THREE.Vector3( g.x, g.y, g.z )
 		};
 
-		for( var i = 1; i < geometries.length; i++ ) {
+		for( var i = 1, len = geometries.length; i< len; i++ ) {
 			g = geometries[i];
 
 			bbox.min.x = ( g.x < bbox.min.x ) ? g.x : bbox.min.x;
@@ -405,6 +405,7 @@ var Utils = {
 	    		&& this.isSameSide( p, c, a, b ) ) {
 	    	return true;
 	    }
+
 	    return false;
 	},
 
@@ -419,8 +420,8 @@ var Utils = {
 	 */
 	isSameSide: function( p1, p2, a, b ) {
 		var bClone = b.clone().sub( a );
-	    var cp1 = new THREE.Vector3().crossVectors( bClone, p1.clone().sub( a ) );
-	    var cp2 = new THREE.Vector3().crossVectors( bClone, p2.clone().sub( a ) );
+	    var cp1 = new THREE.Vector3().crossVectors( bClone, p1.clone().sub( a ) ),
+	        cp2 = new THREE.Vector3().crossVectors( bClone, p2.clone().sub( a ) );
 
 	    return ( cp1.dot( cp2 ) >= 0 );
 	},

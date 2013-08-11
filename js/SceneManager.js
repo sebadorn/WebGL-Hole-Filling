@@ -5,16 +5,18 @@
  * Manipulating the scene (models, lights, camera).
  * @type {Object}
  */
-var Scene = {
+var SceneManager = {
 
-	HOLE_LINES: [],
-	LIGHT_STATUS: {
-		AMBIENT: true,
-		CAMERA: true,
-		DIRECTIONAL: true
+	holeLines: [],
+	lightStatus: {
+		ambient: true,
+		camera: true,
+		directional: true
 	},
-	MODE: CONFIG.MODE,
-	SHADING: CONFIG.SHADING,
+	mode: CONFIG.MODE,
+	model: null,
+	scene: null,
+	shading: CONFIG.SHADING,
 
 
 	/**
@@ -25,7 +27,7 @@ var Scene = {
 		var axis = new THREE.AxisHelper( CONFIG.AXIS.SIZE );
 
 		axis.name = "axis";
-		GLOBAL.SCENE.add( axis );
+		this.scene.add( axis );
 	},
 
 
@@ -49,24 +51,23 @@ var Scene = {
 	 * Change the mode the model is rendered: Solid or Wireframe.
 	 */
 	changeMode: function( e ) {
-		var model = GLOBAL.MODEL,
-		    value = e.target.value;
+		var value = e.target.value;
 
-		if( !e.target.checked || model === null ) {
+		if( !e.target.checked || this.model === null ) {
 			return false;
 		}
 
 		switch( value ) {
 
 			case "solid":
-				model.material.wireframe = false;
+				this.model.material.wireframe = false;
 				for( var key in GLOBAL.FILLINGS ) {
 					GLOBAL.FILLINGS[key].solid.material.wireframe = false;
 				}
 				break;
 
 			case "wireframe":
-				model.material.wireframe = true;
+				this.model.material.wireframe = true;
 				for( var key in GLOBAL.FILLINGS ) {
 					GLOBAL.FILLINGS[key].solid.material.wireframe = true;
 				}
@@ -76,7 +77,7 @@ var Scene = {
 				return false;
 		}
 
-		this.MODE = value;
+		this.mode = value;
 		render();
 	},
 
@@ -86,11 +87,10 @@ var Scene = {
 	 */
 	changeShading: function( e ) {
 		var g = GLOBAL,
-		    model = g.MODEL,
 		    value = e.target.value;
 		var shading;
 
-		if( !e.target.checked || model === null ) {
+		if( !e.target.checked || this.model === null ) {
 			return false;
 		}
 
@@ -113,15 +113,15 @@ var Scene = {
 
 		}
 
-		model.material.shading = shading;
-		model.geometry.normalsNeedUpdate = true;
+		this.model.material.shading = shading;
+		this.model.geometry.normalsNeedUpdate = true;
 
 		for( var key in g.FILLINGS ) {
 			g.FILLINGS[key].solid.material.shading = shading;
 			g.FILLINGS[key].solid.geometry.normalsNeedUpdate = true;
 		}
 
-		this.SHADING = value;
+		this.shading = value;
 		render();
 	},
 
@@ -130,11 +130,10 @@ var Scene = {
 	 * Clear the scene (except for the lights and axis).
 	 */
 	clearModels: function() {
-		var scene = GLOBAL.SCENE;
 		var obj;
 
-		for( var i = scene.children.length - 1; i >= 0; i-- ) {
-			obj = scene.children[i];
+		for( var i = this.scene.children.length - 1; i >= 0; i-- ) {
+			obj = this.scene.children[i];
 
 			if( obj instanceof THREE.Light || obj instanceof THREE.Camera ) {
 				continue;
@@ -142,7 +141,8 @@ var Scene = {
 			if( obj.name == "axis" ) {
 				continue;
 			}
-			scene.remove( obj );
+
+			this.scene.remove( obj );
 		}
 	},
 
@@ -183,11 +183,11 @@ var Scene = {
 	 * @return {THREE.Line}                  A THREE.Line object.
 	 */
 	createLine: function( from, to, width, color, moveWithModel ) {
-		var material = new THREE.LineBasicMaterial( { linewidth: width, color: color } ),
-		    geo = new THREE.Geometry();
+		var geo = new THREE.Geometry(),
+		    material = new THREE.LineBasicMaterial( { linewidth: width, color: color } );
 
-		geo.vertices.push( from.clone().add( GLOBAL.MODEL.position ) );
-		geo.vertices.push( to.clone().add( GLOBAL.MODEL.position ) );
+		geo.vertices.push( from.clone().add( this.model.position ) );
+		geo.vertices.push( to.clone().add( this.model.position ) );
 
 		return new THREE.Line( geo, material );
 	},
@@ -202,15 +202,15 @@ var Scene = {
 	 * @return {THREE.Mesh}
 	 */
 	createPoint: function( position, size, color, moveWithModel ) {
-		var material = new THREE.MeshBasicMaterial( { color: color } ),
-		    mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
+		var material = new THREE.MeshBasicMaterial( { color: color } );
+		var mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
 
 		mesh.position.x = position.x;
 		mesh.position.y = position.y;
 		mesh.position.z = position.z;
 
-		if( typeof moveWithModel != "undefined" && moveWithModel ) {
-			var gmp = GLOBAL.MODEL.position;
+		if( moveWithModel ) {
+			var gmp = this.model.position;
 
 			mesh.position.x += gmp.x;
 			mesh.position.y += gmp.y;
@@ -230,6 +230,8 @@ var Scene = {
 	exportModel: function( format, modelName ) {
 		var exportData;
 
+		Stopwatch.start( "export" );
+
 		switch( format ) {
 
 			case "obj":
@@ -245,6 +247,8 @@ var Scene = {
 
 		}
 
+		Stopwatch.stop( "export", true );
+
 		return exportData;
 	},
 
@@ -253,8 +257,8 @@ var Scene = {
 	 * Start the hole filling.
 	 */
 	fillHole: function( e ) {
-		var g = GLOBAL;
-		var index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 );
+		var g = GLOBAL,
+		    index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 );
 
 		if( isNaN( index ) ) {
 			console.error( "Not a valid hole index." );
@@ -265,14 +269,9 @@ var Scene = {
 			return;
 		}
 
-		var filling = AdvancingFront.afmStart( g.MODEL.geometry, g.HOLES[index] );
+		var filling = AdvancingFront.afmStart( this.model.geometry, g.HOLES[index] );
 
-		// Merge original model with the new filling
-		THREE.GeometryUtils.merge( g.MODEL.geometry, filling );
-		g.MODEL.geometry.mergeVertices();
-		g.MODEL.geometry.computeFaceNormals();
-		g.MODEL.geometry.computeVertexNormals();
-		g.MODEL.geometry.computeBoundingBox();
+		this.mergeWithFilling( filling );
 
 		UI.checkHoleFinished( index );
 		UI.updateProgress( 100 );
@@ -298,7 +297,7 @@ var Scene = {
 
 		var bbox = Utils.getBoundingBox( g.HOLES[index] );
 
-		bbox.center.add( GLOBAL.MODEL.position );
+		bbox.center.add( this.model.position );
 		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS.DISTANCE );
 
 		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ),
@@ -326,7 +325,7 @@ var Scene = {
 
 		material.shading = this.getCurrentShading();
 		material.side = THREE.DoubleSide;
-		material.wireframe = ( this.MODE == "wireframe" );
+		material.wireframe = ( this.mode == "wireframe" );
 
 		mesh.material = material;
 
@@ -343,16 +342,50 @@ var Scene = {
 	 * @return {int} THREE.NoShading, THREE.FlatShading or THREE.SmoothShading.
 	 */
 	getCurrentShading: function() {
-		switch( this.SHADING ) {
+		switch( this.shading ) {
+
 			case "none":
 				return THREE.NoShading;
+
 			case "flat":
 				return THREE.FlatShading;
+
 			case "phong":
 				return THREE.SmoothShading;
+
 			default:
 				return false;
+
 		}
+	},
+
+
+	/**
+	 * Initialize the scene.
+	 */
+	init: function() {
+		this.scene = new THREE.Scene();
+
+		// Axis
+		if( CONFIG.AXIS.SHOW ) {
+			this.addAxis();
+		}
+	},
+
+
+	/**
+	 * Merge the model with the new filling.
+	 * @param {THREE.Geometry} filling The filling to merge into the model.
+	 */
+	mergeWithFilling: function( filling ) {
+		var gm = this.model;
+
+		THREE.GeometryUtils.merge( gm.geometry, filling );
+
+		gm.geometry.mergeVertices();
+		gm.geometry.computeFaceNormals();
+		gm.geometry.computeVertexNormals();
+		gm.geometry.computeBoundingBox();
 	},
 
 
@@ -364,7 +397,7 @@ var Scene = {
 		var lights = GLOBAL.LIGHTS.CAMERA,
 		    pos = e.target.object.position.clone();
 
-		for( var i = 0; i < lights.length; i++ ) {
+		for( var i = 0, len = lights.length; i < len; i++ ) {
 			lights[i].position = pos;
 		}
 	},
@@ -390,7 +423,9 @@ var Scene = {
 		}
 		else {
 			setTimeout(
-				function() { Scene.moveCameraToPosition( stepX, stepY, stepZ, count ); },
+				function() {
+					SceneManager.moveCameraToPosition( stepX, stepY, stepZ, count );
+				},
 				CONFIG.CAMERA.FOCUS.TIMEOUTS
 			);
 		}
@@ -419,7 +454,7 @@ var Scene = {
 		cubeMesh = new THREE.Mesh( cubeGeometry, material );
 		cubeMesh.position.set( 0, 0, 0 );
 
-		GLOBAL.SCENE.add( cubeMesh );
+		this.scene.add( cubeMesh );
 	},
 
 
@@ -437,31 +472,36 @@ var Scene = {
 	showEdges: function() {
 		var g = GLOBAL;
 
-		if( g.MODEL == null ) {
+		if( this.model == null ) {
 			console.error( "No model loaded." );
 			return;
 		}
 
 		// Remove old hole outlines
-		if( this.HOLE_LINES.length > 0 ) {
-			for( var i = 0; i < this.HOLE_LINES.length; i++ ) {
-				g.SCENE.remove( this.HOLE_LINES[i] );
+		if( this.holeLines.length > 0 ) {
+			for( var i = 0, len = this.holeLines.length; i < len; i++ ) {
+				g.scene.remove( this.holeLines[i] );
 			}
 		}
-		this.HOLE_LINES = [];
+		this.holeLines = [];
 
-		var border = HoleFilling.findBorderEdges( g.MODEL );
+		Stopwatch.start( "find holes" );
+
+		var border = HoleFilling.findBorderEdges( this.model );
+
+		Stopwatch.stop( "find holes", true );
 
 		if( CONFIG.HF.BORDER.SHOW_LINES ) {
-			for( var i = 0; i < border.lines.length; i++ ) {
-				g.SCENE.add( border.lines[i] );
+			for( var i = 0, len = border.lines.length; i < len; i++ ) {
+				this.scene.add( border.lines[i] );
 			}
-			this.HOLE_LINES = border.lines;
+			this.holeLines = border.lines;
 		}
+
 		// @see HoleFilling.findBorderEdges() for
 		// use of CONFIG.HF.BORDER.SHOW_POINTS
-		for( var j = 0; j < border.points.length; j++ ) {
-			g.SCENE.add( border.points[j] );
+		for( var i = 0, len = border.points.length; i < len; i++ ) {
+			this.scene.add( border.points[i] );
 		}
 		render();
 
@@ -482,20 +522,20 @@ var Scene = {
 
 			case "light_ambient":
 				lights = g.LIGHTS.AMBIENT;
-				lightStatus = this.LIGHT_STATUS.AMBIENT;
-				this.LIGHT_STATUS.AMBIENT = !lightStatus;
+				lightStatus = this.lightStatus.ambient;
+				this.lightStatus.ambient = !lightStatus;
 				break;
 
 			case "light_camera":
 				lights = g.LIGHTS.CAMERA;
-				lightStatus = this.LIGHT_STATUS.CAMERA;
-				this.LIGHT_STATUS.CAMERA = !lightStatus;
+				lightStatus = this.lightStatus.camera;
+				this.lightStatus.camera = !lightStatus;
 				break;
 
 			case "light_directional":
 				lights = g.LIGHTS.DIRECTIONAL;
-				lightStatus = this.LIGHT_STATUS.DIRECTIONAL;
-				this.LIGHT_STATUS.DIRECTIONAL = !lightStatus;
+				lightStatus = this.lightStatus.directional;
+				this.lightStatus.directional = !lightStatus;
 				break;
 
 			default:
@@ -508,12 +548,12 @@ var Scene = {
 
 		if( lightStatus ) {
 			for( var i = 0; i < len; i++ ) {
-				g.SCENE.remove( lights[i] );
+				g.scene.remove( lights[i] );
 			}
 		}
 		else {
 			for( var i = 0; i < len; i++ ) {
-				g.SCENE.add( lights[i] );
+				g.scene.add( lights[i] );
 			}
 		}
 

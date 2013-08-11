@@ -3,7 +3,6 @@
 
 var GLOBAL = {
 	CAMERA: null,
-	CONTAINER: null,
 	CONTROLS: null,
 	FILLINGS: {},
 	HOLES: [],
@@ -12,9 +11,7 @@ var GLOBAL = {
 		DIRECTIONAL: [],
 		CAMERA: []
 	},
-	MODEL: null,
-	RENDERER: null,
-	SCENE: null
+	RENDERER: null
 };
 
 
@@ -33,7 +30,7 @@ function animate() {
 function render() {
 	var g = GLOBAL;
 
-	g.RENDERER.render( g.SCENE, g.CAMERA );
+	g.RENDERER.render( SceneManager.scene, g.CAMERA );
 }
 
 

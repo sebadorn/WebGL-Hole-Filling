@@ -137,13 +137,13 @@ var UI = {
 		}
 		e.target.className += " active";
 
-		Scene.focusHole( index );
+		SceneManager.focusHole( index );
 
 		// Detail: Fill Hole
 		number = detailFillHole.querySelector( ".caption .number" );
 		number.textContent = index + 1;
 
-		btnFill = this.BUILDER.createButton( "Advancing Front", Scene.fillHole.bind( Scene ) );
+		btnFill = this.BUILDER.createButton( "Advancing Front", SceneManager.fillHole.bind( SceneManager ) );
 		btnFill.setAttribute( "data-fillhole", index );
 
 		area = detailFillHole.querySelector( "fieldset" );
@@ -186,7 +186,7 @@ var UI = {
 		}
 
 		// Insert name for model
-		defaultName = GLOBAL.MODEL.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
+		defaultName = SceneManager.model.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
 
 		sectionName.appendChild(
 			this.BUILDER.createTextField( defaultName, "export_name" )
@@ -284,7 +284,7 @@ var UI = {
 		var content, download, exportData;
 
 		format = format.value.toLowerCase();
-		exportData = Scene.exportModel( format );
+		exportData = SceneManager.exportModel( format );
 		content = new Blob( [exportData], { type: "text/plain" } );
 
 		UI.updateProgress( 100 );
@@ -467,7 +467,7 @@ UI.REGISTER = {
 	registerCameraReset: function() {
 		var buttonResetCamera = document.getElementById( "controls_reset" );
 
-		buttonResetCamera.addEventListener( "click", Scene.resetCamera.bind( Scene ), false );
+		buttonResetCamera.addEventListener( "click", SceneManager.resetCamera.bind( SceneManager ), false );
 	},
 
 
@@ -477,7 +477,7 @@ UI.REGISTER = {
 	registerEditOptions: function() {
 		var buttonFindEdges = document.getElementById( "edit_findedges" );
 
-		buttonFindEdges.addEventListener( "click", Scene.showEdges.bind( Scene ), false );
+		buttonFindEdges.addEventListener( "click", SceneManager.showEdges.bind( SceneManager ), false );
 	},
 
 
@@ -516,7 +516,7 @@ UI.REGISTER = {
 		for( var i = 0; i < lightTypes.length; i++ ) {
 			for( var j = 0; j < lightOptions.length; j++ ) {
 				radio = d.getElementById( "light_" + lightTypes[i] + "_" + lightOptions[j] );
-				radio.addEventListener( "change", Scene.toggleLight.bind( Scene ), false );
+				radio.addEventListener( "change", SceneManager.toggleLight.bind( SceneManager ), false );
 			}
 		}
 	},
@@ -532,7 +532,7 @@ UI.REGISTER = {
 
 		for( var i = 0; i < modeOptions.length; i++ ) {
 			radio = d.getElementById( "render_" + modeOptions[i] );
-			radio.addEventListener( "change", Scene.changeMode.bind( Scene ), false );
+			radio.addEventListener( "change", SceneManager.changeMode.bind( SceneManager ), false );
 		}
 	},
 
@@ -547,7 +547,7 @@ UI.REGISTER = {
 
 		for( var i = 0; i < shadingOptions.length; i++ ) {
 			radio = d.getElementById( "shading_" + shadingOptions[i] );
-			radio.addEventListener( "change", Scene.changeShading.bind( Scene ), false );
+			radio.addEventListener( "change", SceneManager.changeShading.bind( SceneManager ), false );
 		}
 	}
 

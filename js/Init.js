@@ -11,19 +11,18 @@ var Init = {
 	 * Intialize everything: Camera, scene, renderer …
 	 */
 	all: function() {
-		GLOBAL.CONTAINER = document.getElementById( "container" );
+		var container = document.getElementById( "container" );
 
 		UI.init();
 
 		this.camera();
-		this.scene();
-		this.renderer();
-		this.controls();
+		SceneManager.init();
+		this.lights();
+		this.renderer( container );
+		this.controls( container );
 
 		animate();
 		render();
-
-		if( typeof test != "undefined" ) { test(); } // TODO: REMOVE
 	},
 
 
@@ -49,11 +48,11 @@ var Init = {
 	/**
 	 * Initialize the controls.
 	 */
-	controls: function() {
+	controls: function( container ) {
 		var g = GLOBAL,
 		    cc = CONFIG.CONTROLS;
 
-		g.CONTROLS = new THREE.TrackballControls( g.CAMERA, g.CONTAINER );
+		g.CONTROLS = new THREE.TrackballControls( g.CAMERA, container );
 
 		g.CONTROLS.rotateSpeed = cc.ROT_SPEED;
 		g.CONTROLS.zoomSpeed = cc.ZOOM_SPEED;
@@ -63,7 +62,7 @@ var Init = {
 		g.CONTROLS.staticMoving = true;
 		g.CONTROLS.dynamicDampingFactor = 0.3;
 
-		g.CONTROLS.addEventListener( "change", Scene.moveCameraLights, false );
+		g.CONTROLS.addEventListener( "change", SceneManager.moveCameraLights, false );
 		g.CONTROLS.addEventListener( "change", render, false );
 	},
 
@@ -73,7 +72,8 @@ var Init = {
 	 */
 	lights: function() {
 		var g = GLOBAL,
-		    l = CONFIG.LIGHTS;
+		    l = CONFIG.LIGHTS,
+		    s = SceneManager.scene;
 		var camPos = CONFIG.CAMERA.POSITION;
 		var ambient, directional, lDir;
 
@@ -82,7 +82,7 @@ var Init = {
 			ambient = new THREE.AmbientLight( l.AMBIENT[i].color );
 
 			g.LIGHTS.AMBIENT.push( ambient );
-			g.SCENE.add( ambient );
+			s.add( ambient );
 		}
 
 		// Lighting: Directional
@@ -92,7 +92,7 @@ var Init = {
 			directional.position.set( lDir.position[0], lDir.position[1], lDir.position[2] );
 
 			g.LIGHTS.DIRECTIONAL.push( directional );
-			g.SCENE.add( directional );
+			s.add( directional );
 		}
 
 		// Lighting: Directional, moves with camera
@@ -102,7 +102,7 @@ var Init = {
 			directional.position.set( camPos.X, camPos.Y, camPos.Z );
 
 			g.LIGHTS.CAMERA.push( directional );
-			g.SCENE.add( directional );
+			s.add( directional );
 		}
 	},
 
@@ -110,30 +110,13 @@ var Init = {
 	/**
 	 * Initialize the renderer.
 	 */
-	renderer: function() {
+	renderer: function( container ) {
 		var g = GLOBAL;
 
 		g.RENDERER = new THREE.WebGLRenderer();
 		g.RENDERER.setSize( window.innerWidth, window.innerHeight );
 
-		g.CONTAINER.appendChild( g.RENDERER.domElement );
-	},
-
-
-	/**
-	 * Initialize the scene.
-	 */
-	scene: function() {
-		var g = GLOBAL;
-
-		g.SCENE = new THREE.Scene();
-
-		// Axis
-		if( CONFIG.AXIS.SHOW ) {
-			Scene.addAxis();
-		}
-
-		this.lights();
+		container.appendChild( g.RENDERER.domElement );
 	}
 
 };

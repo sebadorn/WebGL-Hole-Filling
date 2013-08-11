@@ -12,23 +12,6 @@ var HoleFilling = {
 
 
 	/**
-	 * Change each HalfEdge Vertex into THREE.Vector3.
-	 * @param  {Array<Vertex>}        routeComplete Route with HE vertices.
-	 * @return {Array<THREE.Vector3>}               Route with THREE vectors.
-	 */
-	changeVertexToVector: function( routeComplete ) {
-		var r = [];
-
-		for( var i = 0; i < routeComplete.length; i++ ) {
-			this.visitedBp.push( routeComplete[i].index );
-			r[i] = GLOBAL.MODEL.geometry.vertices[routeComplete[i].index];
-		}
-
-		return r;
-	},
-
-
-	/**
 	 * Remove vertices that are either not part of any face,
 	 * or are (wrongly) connected to themself.
 	 * @param  {THREE.Geometry} geometry The model geomtry to check and fix.
@@ -45,7 +28,7 @@ var HoleFilling = {
 			v = mesh.vertices[i];
 
 			// Problem: Vertex has at least one connection to itself
-			for( var j = 0; j < v.edges.length; j++ ) {
+			for( var j = 0, len = v.edges.length; j < len; j++ ) {
 				if( v.edges[j].vertex.index == v.index ) {
 					remove.push( v.index );
 					break;
@@ -155,7 +138,7 @@ var HoleFilling = {
 
 		this.allVisitedBp = [];
 
-		for( var i = 0; i < mesh.vertices.length; i++ ) {
+		for( var i = 0, lenMV = mesh.vertices.length; i < lenMV; i++ ) {
 			vertex = mesh.vertices[i];
 
 			// Ignore vertices without any connections/edges
@@ -180,7 +163,7 @@ var HoleFilling = {
 				// New hole, add first vertex
 				holes.push( [model.geometry.vertices[vertex.index]] );
 
-				for( var j = 0; j < geometry.vertices.length; j++ ) {
+				for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
 					v = geometry.vertices[j];
 					holes[holes.length - 1].push( v );
 				}
@@ -197,9 +180,9 @@ var HoleFilling = {
 
 				// Points
 				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
-					for( var j = 0; j < geometry.vertices.length; j++ ) {
+					for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
 						v = geometry.vertices[j];
-						points.push( Scene.createPoint( v, 0.02, 0xA1DA42, true ) );
+						points.push( SceneManager.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
 

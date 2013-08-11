@@ -60,8 +60,8 @@ var AdvancingFront = {
 				break;
 			}
 			else if( front.vertices.length == 1 ) {
-				// TODO: REMOVE?
-				GLOBAL.SCENE.add( Scene.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
+				// TODO: REMOVE
+				SceneManager.scene.add( SceneManager.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
 				break;
 			}
 
@@ -752,9 +752,9 @@ var AdvancingFront = {
 			// Merge points if distance below threshold
 			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
 				if( CONFIG.DEBUG.SHOW_MERGING ) {
-					GLOBAL.SCENE.add( Scene.createPoint( t, 0.02, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createPoint( v, 0.012, 0xFFEE00, true ) );
-					GLOBAL.SCENE.add( Scene.createLine( t, v, 1, 0xFFEE00, true ) );
+					SceneManager.scene.add( SceneManager.createPoint( t, 0.02, 0xFFEE00, true ) );
+					SceneManager.scene.add( SceneManager.createPoint( v, 0.012, 0xFFEE00, true ) );
+					SceneManager.scene.add( SceneManager.createLine( t, v, 1, 0xFFEE00, true ) );
 				}
 
 				tIndex = filling.vertices.indexOf( t );
@@ -795,7 +795,7 @@ var AdvancingFront = {
 	 */
 	showFilling: function( front, filling ) {
 		var g = GLOBAL,
-		    model = g.MODEL;
+		    model = SceneManager.model;
 
 		if( !g.FILLINGS.hasOwnProperty( this.holeIndex ) ) {
 			g.FILLINGS[this.holeIndex] = {
@@ -807,12 +807,12 @@ var AdvancingFront = {
 		// Filling as solid form
 		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
 			if( g.FILLINGS[this.holeIndex].solid ) {
-				g.SCENE.remove( g.FILLINGS[this.holeIndex].solid );
+				SceneManager.scene.remove( g.FILLINGS[this.holeIndex].solid );
 			}
 
 			var materialSolid = new THREE.MeshPhongMaterial( {
 				color: CONFIG.HF.FILLING.COLOR,
-				shading: Scene.getCurrentShading(),
+				shading: SceneManager.getCurrentShading(),
 				side: THREE.DoubleSide,
 				wireframe: false
 			} );
@@ -827,7 +827,7 @@ var AdvancingFront = {
 			meshSolid.geometry.computeBoundingBox();
 
 			g.FILLINGS[this.holeIndex].solid = meshSolid;
-			GLOBAL.SCENE.add( meshSolid );
+			SceneManager.scene.add( meshSolid );
 		}
 
 		// Filling as wireframe
@@ -850,7 +850,7 @@ var AdvancingFront = {
 			meshWire.geometry.computeBoundingBox();
 
 			g.FILLINGS[this.holeIndex].wireframe = meshWire;
-			GLOBAL.SCENE.add( meshWire );
+			SceneManager.scene.add( meshWire );
 		}
 
 		// Draw the (moving) front
@@ -865,7 +865,7 @@ var AdvancingFront = {
 			mesh.position.y += model.position.y;
 			mesh.position.z += model.position.z;
 
-			GLOBAL.SCENE.add( mesh );
+			SceneManager.scene.add( mesh );
 		}
 
 		render();

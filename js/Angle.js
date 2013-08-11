@@ -13,7 +13,7 @@ function Angle( vertices, position ) {
 	this.previous = null;
 
 	if( typeof position == "undefined" ) {
-		this.position = GLOBAL.MODEL.position;
+		this.position = SceneManager.model.position;
 	}
 	else {
 		this.position = position;

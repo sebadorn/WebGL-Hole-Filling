@@ -20,6 +20,37 @@ var Loader = {
 
 
 	/**
+	 * Get the loader for the given file type.
+	 * @param  {String}        extension File extension.
+	 * @return {THREE.?Loader}           Loader.
+	 */
+	getLoader: function( extension ) {
+		var loader;
+
+		switch( extension ) {
+
+			case "obj":
+				loader = new THREE.OBJLoader();
+				break;
+
+			case "ply":
+				loader = new THREE.PLYLoader();
+				break;
+
+			case "stl":
+				loader = new THREE.STLLoader();
+				break;
+
+			default:
+				throw new Error( "No loader available for extension " + extension.toUpperCase() + "." );
+
+		}
+
+		return loader;
+	},
+
+
+	/**
 	 * Evaluate and load the model file.
 	 */
 	loadFile: function( e ) {
@@ -64,20 +95,9 @@ var Loader = {
 	 * Read the model data from the file and load it into the scene.
 	 */
 	loadModel: function( e, filename, extension ) {
-		var g = GLOBAL;
-		var content, geometry, loader;
-
-		switch( extension ) {
-			case "obj":
-				loader = new THREE.OBJLoader();
-				break;
-			case "ply":
-				loader = new THREE.PLYLoader();
-				break;
-			case "stl":
-				loader = new THREE.STLLoader();
-				break;
-		}
+		var loader = this.getLoader( extension ),
+		    sm = SceneManager;
+		var content, geometry;
 
 		content = loader.parse( e.target.result );
 		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
@@ -86,18 +106,20 @@ var Loader = {
 			geometry = HoleFilling.checkAndFixFaces( geometry );
 		}
 
-		g.MODEL = Scene.geometryToMesh( geometry );
-		g.MODEL = Scene.centerModel( g.MODEL );
-		g.MODEL.name = filename.replace( "." + extension, "" );
+		sm.model = sm.geometryToMesh( geometry );
+		sm.model = sm.centerModel( sm.model );
+		sm.model.name = filename.replace( "." + extension, "" );
+
+		console.log( "Imported: " + filename );
 
 		UI.resetInterface();
 
-		Scene.clearModels();
-		Scene.resetCamera();
-		Scene.renderBoundingBox( g.MODEL );
+		sm.clearModels();
+		sm.resetCamera();
+		sm.renderBoundingBox( sm.model );
 
-		g.FILLINGS = {};
-		g.SCENE.add( g.MODEL );
+		GLOBAL.FILLINGS = {};
+		sm.scene.add( sm.model );
 
 		render();
 	},
