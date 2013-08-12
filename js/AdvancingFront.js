@@ -22,7 +22,7 @@ var AdvancingFront = {
 	 * @param  {Array<THREE.Line>} hole     The hole described by lines.
 	 * @return {THREE.Geometry}             The generated filling.
 	 */
-	afmStart: function( modelGeo, hole ) {
+	afmStart: function( modelGeo, hole, callback ) {
 		var filling = new THREE.Geometry(),
 		    front = new THREE.Geometry();
 
@@ -39,8 +39,6 @@ var AdvancingFront = {
 		var count = 0,
 		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
 		var vNew;
-
-		Stopwatch.start( "AF" );
 
 		while( true ) {
 			count++;
@@ -91,7 +89,6 @@ var AdvancingFront = {
 
 		console.log(
 			"Finished after " + ( count - 1 ) + " iterations.\n",
-			"- Time: " + Stopwatch.stop( "AF" ) + "ms\n",
 			"- New vertices: " + filling.vertices.length + "\n",
 			"- New faces: " + filling.faces.length
 		);
@@ -102,7 +99,7 @@ var AdvancingFront = {
 
 		this.showFilling( front, filling );
 
-		return filling;
+		callback( filling );
 	},
 
 

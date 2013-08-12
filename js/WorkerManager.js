@@ -1,12 +1,20 @@
 "use strict";
 
 
+/**
+ * Create and use pools of Web Workers for parallization.
+ * @type {Object}
+ */
 var WorkerManager = {
 
 	pool: {},
 	queue: {},
 
 
+	/**
+	 * Close a pool of workers.
+	 * @param {String} identifier Identifier for the pool to close.
+	 */
 	closePool: function( identifier ) {
 		if( !this.pool.hasOwnProperty( identifier ) ) {
 			throw new Error( "WorkerManager: No pool with identifer " + identifer + "." );
@@ -22,6 +30,11 @@ var WorkerManager = {
 	},
 
 
+	/**
+	 * Create a worker pool.
+	 * @param {String} identifier Identifier for the pool.
+	 * @param {int}    number     Number of workers in the pool.
+	 */
 	createPool: function( identifier, number ) {
 		var blob = new Blob(
 			[document.getElementById( "worker-collision" ).textContent],
@@ -43,17 +56,23 @@ var WorkerManager = {
 			worker.postMessage( msgURL );
 			this.pool[identifier].push( worker );
 		}
-
-		return this.pool[identifier];
 	},
 
 
+	/**
+	 * Give a worker of a pool a task. If no worker is available,
+	 * the task will be added to a queue and processed when a
+	 * worker becomes available.
+	 * @param  {String}   identifier Identifier of the pool to use.
+	 * @param  {Object}   data       Data to send to the worker.
+	 * @param  {Function} callback   Callback function to call after completing the task.
+	 */
 	employWorker: function( identifier, data, callback ) {
 		var workers = this.pool[identifier];
 
 		for( var i = 0; i < workers.length; i++ ) {
 			if( workers[i].isFree ) {
-				this.useWorker( identifier, workers[i], data, callback );
+				this._useWorker( identifier, workers[i], data, callback );
 				return;
 			}
 		}
@@ -66,7 +85,14 @@ var WorkerManager = {
 	},
 
 
-	useWorker: function( identifier, worker, data, callback ) {
+	/**
+	 * Employ a worker with a task.
+	 * @param  {String}   identifier Identifier of the pool.
+	 * @param  {Worker}   worker     Worker to employ with the task.
+	 * @param  {Object}   data       Data to send to the worker.
+	 * @param  {Function} callback   Callback function to call after completing the task.
+	 */
+	_useWorker: function( identifier, worker, data, callback ) {
 		worker.isFree = false;
 
 		var workerCallback = function( e ) {
@@ -82,7 +108,6 @@ var WorkerManager = {
 		};
 
 		worker.addEventListener( "message", workerCallback, false );
-
 		worker.postMessage( data );
 	}
 

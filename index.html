@@ -14,7 +14,7 @@
 	<script src="js/SceneManager.js"></script>
 	<script src="js/WorkerManager.js"></script>
 	<script src="js/HoleFilling.js"></script>
-	<script src="js/AdvancingFront-withWorkers.js"></script>
+	<script src="js/AdvancingFront.js"></script>
 	<script src="js/Angle.js"></script>
 	<script src="js/Heap.js"></script>
 	<script src="js/Plane.js"></script>
@@ -221,7 +221,34 @@
 
 </div>
 
+<!-- Worker for use with AdvancingFront-withWorkers.js -->
 <script id="worker-collision" type="javascript/worker">
+	function checkForCollision( data ) {
+		var faces = data.faces;
+		var v = new THREE.Vector3( data.v.x, data.v.y, data.v.z ),
+		    fromA = new THREE.Vector3( data.fromA.x, data.fromA.y, data.fromA.z ),
+		    fromB = data.fromB;
+		var a, b, c, f;
+
+		if( fromB != null ) {
+			fromB = new THREE.Vector3( data.fromB.x, data.fromB.y, data.fromB.z );
+		}
+
+		for( var i = 0; i < faces.length; i++ ) {
+			f = faces[i];
+			a = new THREE.Vector3( f[0].x, f[0].y, f[0].z );
+			b = new THREE.Vector3( f[1].x, f[1].y, f[1].z );
+			c = new THREE.Vector3( f[2].x, f[2].y, f[2].z );
+
+			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+
 	function handleMessages( e ) {
 		switch( e.data.cmd ) {
 
@@ -236,20 +263,9 @@
 				break;
 
 			case "check":
-				var a = new THREE.Vector3( e.data.a.x, e.data.a.y, e.data.a.z ),
-				    b = new THREE.Vector3( e.data.b.x, e.data.b.y, e.data.b.z ),
-				    c = new THREE.Vector3( e.data.c.x, e.data.c.y, e.data.c.z ),
-				    v = new THREE.Vector3( e.data.v.x, e.data.v.y, e.data.v.z ),
-				    fromA = new THREE.Vector3( e.data.fromA.x, e.data.fromA.y, e.data.fromA.z ),
-				    fromB = e.data.fromB;
-
-				if( fromB != null ) {
-					fromB = new THREE.Vector3( e.data.fromB.x, e.data.fromB.y, e.data.fromB.z );
-				}
-
 				self.postMessage( {
 					type: "check",
-					intersects: Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB )
+					intersects: checkForCollision( e.data )
 				} );
 				break;
 

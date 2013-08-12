@@ -269,6 +269,7 @@ var SceneManager = {
 			return;
 		}
 
+		Stopwatch.start( "fill hole (AF)" );
 		AdvancingFront.afmStart( this.model.geometry, g.HOLES[index], this.mergeWithFilling.bind( this ) );
 	},
 
@@ -384,6 +385,8 @@ var SceneManager = {
 
 		UI.checkHoleFinished( holeIndex );
 		UI.updateProgress( 100 );
+
+		Stopwatch.stop( "fill hole (AF)", true );
 	},
 
 

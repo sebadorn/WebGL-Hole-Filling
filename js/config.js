@@ -54,7 +54,7 @@ var CONFIG = {
 		SHOW_FRONT: false,
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 200
+		AFM_STOP_AFTER_ITER: 1000
 	},
 
 	// Export of model
@@ -83,7 +83,10 @@ var CONFIG = {
 			LINE_WIDTH: 3,
 			SHOW_SOLID: true,
 			SHOW_WIREFRAME: false,
-			THRESHOLD_MERGE: 0.16
+			THRESHOLD_MERGE: 0.16,
+			// Number of Web Worker threads
+			// (only relevant if using AdvancingFront-withWorkers.js)
+			WORKER: 3
 		}
 	},
 

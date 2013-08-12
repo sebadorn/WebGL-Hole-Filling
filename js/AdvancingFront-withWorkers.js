@@ -50,9 +50,8 @@ var AdvancingFront = {
 
 		this.countLoops = 0;
 
-		WorkerManager.createPool( "collision", 10 );
+		WorkerManager.createPool( "collision", CONFIG.HF.FILLING.WORKER + 1 );
 
-		Stopwatch.start( "AF" );
 		this.mainEventLoop();
 	},
 
@@ -75,6 +74,10 @@ var AdvancingFront = {
 	},
 
 
+	/**
+	 * Callback for the collision test.
+	 * @param {boolean} intersects True, if new vertex intersects with some other part.
+	 */
 	afRule1Callback: function( intersects ) {
 		if( !intersects ) {
 			var data = this.ruleCallbackData;
@@ -131,6 +134,10 @@ var AdvancingFront = {
 	},
 
 
+	/**
+	 * Callback for the collision test.
+	 * @param {boolean} intersects True, if new vertex intersects with some other part.
+	 */
 	afRule2Callback: function( intersects ) {
 		if( !intersects ) {
 			var data = this.ruleCallbackData;
@@ -211,6 +218,10 @@ var AdvancingFront = {
 	},
 
 
+	/**
+	 * Callback for the collision test.
+	 * @param {boolean} intersects True, if new vertex intersects with some other part.
+	 */
 	afRule3Callback: function( intersects ) {
 		if( !intersects ) {
 			var data = this.ruleCallbackData;
@@ -593,43 +604,57 @@ var AdvancingFront = {
 		var callback = this.isInHoleCallback.bind( this );
 		var data = {
 			cmd: "check",
-			a: null, b: null, c: null,
+			faces: null,
 			v: v, fromA: fromA, fromB: fromB
 		};
 
-		for( var i = 0; i < len; i++ ) {
-			face = this.filling.faces[i];
+		this.facesPerWorker = Math.ceil( len / CONFIG.HF.FILLING.WORKER );
 
-			a = this.filling.vertices[face.a];
-			b = this.filling.vertices[face.b];
-			c = this.filling.vertices[face.c];
+		if( len < CONFIG.HF.FILLING.WORKER ) {
+			this.workerResultCounter = CONFIG.HF.FILLING.WORKER - 1;
+		}
 
-			if( a == v || b == v || c == v ) {
-				this.workerResultCounter++;
-				continue;
-			}
-			if( a == fromA || b == fromA || c == fromA ) {
-				this.workerResultCounter++;
-				continue;
-			}
-			if( fromB != null ) {
-				if( a == fromB || b == fromB || c == fromB ) {
-					this.workerResultCounter++;
+		for( var i = 0; i < len; i += this.facesPerWorker ) {
+			data.faces = [];
+
+			for( var j = 0; j < this.facesPerWorker; j++ ) {
+				if( i + j >= len ) {
+					break;
+				}
+
+				face = this.filling.faces[i + j];
+				a = this.filling.vertices[face.a];
+				b = this.filling.vertices[face.b];
+				c = this.filling.vertices[face.c];
+
+				if( a == v || b == v || c == v ) {
 					continue;
 				}
+				if( a == fromA || b == fromA || c == fromA ) {
+					continue;
+				}
+				if( fromB != null ) {
+					if( a == fromB || b == fromB || c == fromB ) {
+						continue;
+					}
+				}
+
+				data.faces.push( [a, b, c] );
 			}
 
-			data.a = a;
-			data.b = b;
-			data.c = c;
-
-			WorkerManager.employWorker( "collision", data, callback );
+			if( data.faces.length == 0 ) {
+				this.workerResultCounter++;
+			}
+			else {
+				WorkerManager.employWorker( "collision", data, callback );
+			}
 		}
 
 		if( face == null ) {
 			this.ruleCallback( false );
 		}
 
+		// // TODO: collision test with whole model
 		// if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
 		// 	for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
 		// 		face = this.modelGeo.faces[i];
@@ -655,11 +680,12 @@ var AdvancingFront = {
 		// 		}
 		// 	}
 		// }
-
-		// return true;
 	},
 
 
+	/**
+	 * Callback function for the collision workers.
+	 */
 	isInHoleCallback: function( e ) {
 		if( e.data.intersects ) {
 			this.workerResult = true;
@@ -667,12 +693,15 @@ var AdvancingFront = {
 
 		this.workerResultCounter++;
 
-		if( this.workerResultCounter === this.filling.faces.length ) {
+		if( this.workerResultCounter == CONFIG.HF.FILLING.WORKER ) {
 			this.ruleCallback( this.workerResult );
 		}
 	},
 
 
+	/**
+	 * Main loop.
+	 */
 	mainEventLoop: function() {
 		this.countLoops++;
 
@@ -722,6 +751,11 @@ var AdvancingFront = {
 	},
 
 
+	/**
+	 * Receive the new vertex (if there is one), call the merging and
+	 * go back into the main loop.
+	 * @param {THREE.Vector3} vNew New vertex by a rule.
+	 */
 	mainEventLoopReceiveVertex: function( vNew ) {
 		if( !vNew || this.front.vertices.length != 3 ) {
 			// Compute the distances between each new created
@@ -931,10 +965,13 @@ var AdvancingFront = {
 	},
 
 
+	/**
+	 * Advancing front has been completed.
+	 * Print stats and return the filling as result to the callback.
+	 */
 	wrapUp: function() {
 		console.log(
 			"Finished after " + ( this.countLoops - 1 ) + " iterations.\n",
-			"- Time: " + Stopwatch.stop( "AF" ) + "ms\n",
 			"- New vertices: " + this.filling.vertices.length + "\n",
 			"- New faces: " + this.filling.faces.length
 		);
