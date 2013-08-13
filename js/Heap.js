@@ -2,7 +2,7 @@
 
 
 /**
- * Class to store Angles in that fit a certain AF rule.
+ * Class to store values in by an associated numeric key.
  * @param {String} identifier Identifying name. (optional)
  */
 function Heap( identifier ) {
@@ -13,32 +13,67 @@ function Heap( identifier ) {
 
 
 /**
- * Get the Angle object for a given angle degree.
- * If more than one Angle object exist with this exact degree value,
+ * Get the value for a given key.
+ * If more than one value exist with this exact key,
  * only the first one will be returned.
- * @param  {float} degree Angle in degree.
- * @return {Angle}        The (first) Angle with this degree value.
+ * @param  {numeric} key Key of the value.
+ * @return {mixed}       The (first) value for this key.
  */
-Heap.prototype.get = function( degree ) {
-	if( !this.values.hasOwnProperty( degree ) ) {
-		throw new Error( "No entry found for " + degree );
+Heap.prototype.get = function( key ) {
+	if( !this.values.hasOwnProperty( key ) ) {
+		throw new Error( "No entry found for " + key );
 	}
 
-	return this.values[degree][0];
+	return this.values[key][0];
 };
 
 
 /**
- * Insert an angle.
- * @param {Angle} angle The angle to insert.
+ * Insert a value.
+ * @param {numeric} key   The key to the value.
+ * @param {mixed}   value The value to insert.
  */
-Heap.prototype.insert = function( angle ) {
-	this.indexes.push( angle.degree );
+Heap.prototype.insert = function( key, value ) {
+	this.indexes.push( key );
 
-	if( !this.values.hasOwnProperty( angle.degree ) ) {
-		this.values[angle.degree] = [];
+	if( !this.values.hasOwnProperty( key ) ) {
+		this.values[key] = [];
 	}
-	this.values[angle.degree].push( angle );
+	this.values[key].push( value );
+};
+
+
+/**
+ * Remove a value.
+ * If more values exist for a given key,
+ * only the first one in the list will be removed.
+ * @param {mixed} key Key of the value to remove.
+ */
+Heap.prototype.remove = function( key ) {
+	var ix = this.indexes.indexOf( key );
+
+	if( ix >= 0 ) {
+		this.indexes.splice( ix, 1 );
+	}
+
+	this.values[key].splice( 0, 1 );
+
+	if( this.values[key].length == 0 ) {
+		delete this.values[key];
+	}
+};
+
+
+/**
+ * Remove and return the value with the smallest key.
+ * @return {mixed} The removed value.
+ */
+Heap.prototype.removeFirst = function() {
+	var value = this.values[this.indexes[0]][0];
+
+	this.remove( this.indexes[0] );
+
+	return value;
 };
 
 
@@ -46,42 +81,8 @@ Heap.prototype.insert = function( angle ) {
  * Number of indexes.
  * @return {int} The number of indexes.
  */
-Heap.prototype.length = function() {
+Heap.prototype.size = function() {
 	return this.indexes.length;
-};
-
-
-/**
- * Remove an angle.
- * If more Angle objects exist for a given angle degree,
- * only the first one in the list will be removed.
- * @param {Angle} angle Angle to remove.
- */
-Heap.prototype.remove = function( angle ) {
-	var ix = this.indexes.indexOf( angle.degree );
-
-	if( ix >= 0 ) {
-		this.indexes.splice( ix, 1 );
-	}
-
-	this.values[angle.degree].splice( 0, 1 );
-
-	if( this.values[angle.degree].length == 0 ) {
-		delete this.values[angle.degree];
-	}
-};
-
-
-/**
- * Remove and return the Angle with the smallest degree value.
- * @return {Angle} The removed Angle.
- */
-Heap.prototype.removeFirst = function() {
-	var angle = this.values[this.indexes[0]][0];
-
-	this.remove( angle );
-
-	return angle;
 };
 
 
@@ -89,5 +90,5 @@ Heap.prototype.removeFirst = function() {
  * Sort the indexes by value small to big.
  */
 Heap.prototype.sort = function() {
-	this.indexes.sort();
+	this.indexes.sort( numCompareFunc );
 };

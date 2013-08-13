@@ -11,6 +11,7 @@ function Angle( vertices, position ) {
 	this.vertices = vertices;
 	this.next = null;
 	this.previous = null;
+	this.waitForUpdate = false;
 
 	if( typeof position == "undefined" ) {
 		this.position = SceneManager.model.position;

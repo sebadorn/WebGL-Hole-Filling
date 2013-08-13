@@ -5,69 +5,10 @@
  * Class for finding the hole front.
  * @type {Object}
  */
-var HoleFilling = {
+var HoleFinding = {
 
 	allVisitedBp: null,
 	visitedBp: null,
-
-
-	/**
-	 * Remove vertices that are either not part of any face,
-	 * or are (wrongly) connected to themself.
-	 * @param  {THREE.Geometry} geometry The model geomtry to check and fix.
-	 * @return {THREE.Geometry}          The checked and fixed geometry.
-	 */
-	checkAndFixFaces: function( geometry ) {
-		var facesRemoved = 0,
-		    mesh = new HalfEdgeMesh( geometry ),
-		    remove = [];
-		var f, v;
-
-		// Find prolematic vertices
-		for( var i = mesh.vertices.length - 1; i >= 0; i-- ) {
-			v = mesh.vertices[i];
-
-			// Problem: Vertex has at least one connection to itself
-			for( var j = 0, len = v.edges.length; j < len; j++ ) {
-				if( v.edges[j].vertex.index == v.index ) {
-					remove.push( v.index );
-					break;
-				}
-			}
-
-			// Problem: Vertex is just a single, unconnected point,
-			// floating around all alone.
-			if( v.edges.length == 0 ) {
-				remove.push( v.index );
-			}
-		}
-
-		remove.sort();
-
-		// Remove them from the model and affected faces
-		for( var i = remove.length - 1; i >= 0; i-- ) {
-			geometry.vertices.splice( remove[i], 1 );
-
-			for( var j = geometry.faces.length - 1; j >= 0; j-- ) {
-				f = geometry.faces[j];
-
-				// Face was built with vertex
-				if( remove[i] == f.a || remove[i] == f.b || remove[i] == f.c ) {
-					geometry.faces.splice( j, 1 );
-					facesRemoved++;
-					continue;
-				}
-
-				// Vertex index has been removed, so all above it have to be decreased by one.
-				// May also remove faces, if necessary.
-				geometry.faces = Utils.decreaseHigherFaceIndexes( geometry.faces, j, remove[i] );
-			}
-		}
-
-		console.log( "CHECK_AND_FIX_FACES: Removed " + remove.length + " vertices and " + facesRemoved + " faces." );
-
-		return geometry;
-	},
 
 
 	/**

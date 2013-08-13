@@ -7,6 +7,7 @@
  */
 var SceneManager = {
 
+	fillings: {},
 	holeLines: [],
 	lightStatus: {
 		ambient: true,
@@ -61,15 +62,15 @@ var SceneManager = {
 
 			case "solid":
 				this.model.material.wireframe = false;
-				for( var key in GLOBAL.FILLINGS ) {
-					GLOBAL.FILLINGS[key].solid.material.wireframe = false;
+				for( var key in SceneManager ) {
+					this.fillings[key].solid.material.wireframe = false;
 				}
 				break;
 
 			case "wireframe":
 				this.model.material.wireframe = true;
-				for( var key in GLOBAL.FILLINGS ) {
-					GLOBAL.FILLINGS[key].solid.material.wireframe = true;
+				for( var key in this.fillings ) {
+					this.fillings[key].solid.material.wireframe = true;
 				}
 				break;
 
@@ -116,9 +117,9 @@ var SceneManager = {
 		this.model.material.shading = shading;
 		this.model.geometry.normalsNeedUpdate = true;
 
-		for( var key in g.FILLINGS ) {
-			g.FILLINGS[key].solid.material.shading = shading;
-			g.FILLINGS[key].solid.geometry.normalsNeedUpdate = true;
+		for( var key in this.fillings ) {
+			this.fillings[key].solid.material.shading = shading;
+			this.fillings[key].solid.geometry.normalsNeedUpdate = true;
 		}
 
 		this.shading = value;
@@ -127,7 +128,7 @@ var SceneManager = {
 
 
 	/**
-	 * Clear the scene (except for the lights and axis).
+	 * Clear the scene (except for the lights, camera and axis).
 	 */
 	clearModels: function() {
 		var obj;
@@ -144,6 +145,8 @@ var SceneManager = {
 
 			this.scene.remove( obj );
 		}
+
+		this.fillings = {};
 	},
 
 
@@ -491,7 +494,7 @@ var SceneManager = {
 
 		Stopwatch.start( "find holes" );
 
-		var border = HoleFilling.findBorderEdges( this.model );
+		var border = HoleFinding.findBorderEdges( this.model );
 
 		Stopwatch.stop( "find holes", true );
 
@@ -502,7 +505,7 @@ var SceneManager = {
 			this.holeLines = border.lines;
 		}
 
-		// @see HoleFilling.findBorderEdges() for
+		// @see HoleFinding.findBorderEdges() for
 		// use of CONFIG.HF.BORDER.SHOW_POINTS
 		for( var i = 0, len = border.points.length; i < len; i++ ) {
 			this.scene.add( border.points[i] );
@@ -511,6 +514,90 @@ var SceneManager = {
 
 		GLOBAL.HOLES = border.holes;
 		UI.showDetailHoles( border.lines );
+	},
+
+
+	/**
+	 * Render the finished hole filling.
+	 * Create a mesh from the computed data and render it.
+	 * @param {THREE.Geometry} front   Front of the hole.
+	 * @param {THREE.Geometry} filling Filling of the hole.
+	 */
+	showFilling: function( front, filling, holeIndex ) {
+		var g = GLOBAL,
+		    model = SceneManager.model;
+
+		if( !this.fillings.hasOwnProperty( holeIndex ) ) {
+			this.fillings[holeIndex] = {
+				solid: false,
+				wireframe: false
+			};
+		}
+
+		// Filling as solid form
+		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
+			if( this.fillings[holeIndex].solid ) {
+				SceneManager.scene.remove( this.fillings[holeIndex].solid );
+			}
+
+			var materialSolid = new THREE.MeshPhongMaterial( {
+				color: CONFIG.HF.FILLING.COLOR,
+				shading: SceneManager.getCurrentShading(),
+				side: THREE.DoubleSide,
+				wireframe: false
+			} );
+			var meshSolid = new THREE.Mesh( filling, materialSolid );
+
+			meshSolid.position.x += model.position.x;
+			meshSolid.position.y += model.position.y;
+			meshSolid.position.z += model.position.z;
+
+			meshSolid.geometry.computeFaceNormals();
+			meshSolid.geometry.computeVertexNormals();
+			meshSolid.geometry.computeBoundingBox();
+
+			this.fillings[holeIndex].solid = meshSolid;
+			SceneManager.scene.add( meshSolid );
+		}
+
+		// Filling as wireframe
+		if( CONFIG.HF.FILLING.SHOW_WIREFRAME ) {
+			var materialWire = new THREE.MeshBasicMaterial( {
+				color: 0xFFFFFF,
+				side: THREE.DoubleSide,
+				wireframe: true,
+				wireframeLinewidth: CONFIG.HF.FILLING.LINE_WIDTH
+			} );
+			var meshWire = new THREE.Mesh( filling, materialWire );
+
+			meshWire.position.x += model.position.x;
+			meshWire.position.y += model.position.y;
+			meshWire.position.z += model.position.z;
+
+			meshWire.geometry.computeFaceNormals();
+			meshWire.geometry.computeVertexNormals();
+			meshWire.geometry.computeBoundingBox();
+
+			this.fillings[holeIndex].wireframe = meshWire;
+			SceneManager.scene.add( meshWire );
+		}
+
+		// Draw the (moving) front
+		if( CONFIG.DEBUG.SHOW_FRONT ) {
+			var material = new THREE.LineBasicMaterial( {
+				color: 0x4991E0,
+				linewidth: 5
+			} );
+			var mesh = new THREE.Line( front, material );
+
+			mesh.position.x += model.position.x;
+			mesh.position.y += model.position.y;
+			mesh.position.z += model.position.z;
+
+			SceneManager.scene.add( mesh );
+		}
+
+		render();
 	},
 
 

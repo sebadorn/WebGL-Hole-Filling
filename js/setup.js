@@ -4,7 +4,6 @@
 var GLOBAL = {
 	CAMERA: null,
 	CONTROLS: null,
-	FILLINGS: {},
 	HOLES: [],
 	LIGHTS: {
 		AMBIENT: [],
@@ -58,6 +57,17 @@ function resize() {
  */
 function errorHandlerFS( errorFS ) {
 	console.error( errorFS );
+}
+
+
+/**
+ * Compare function for numeric values in arrays.
+ * @param  {float} a Value a.
+ * @param  {float} b Value b.
+ * @return {float}   Wether a is greater (or equal) than b.
+ */
+function numCompareFunc( a, b ) {
+	return ( a - b );
 }
 
 

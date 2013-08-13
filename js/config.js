@@ -51,10 +51,12 @@ var CONFIG = {
 
 	// Debug
 	DEBUG: {
+		// The Stopwatch shows how long certain tasks took in the console
+		ENABLE_STOPWATCH: true,
 		SHOW_FRONT: false,
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 3000
+		AFM_STOP_AFTER_ITER: 2000
 	},
 
 	// Export of model

@@ -8,6 +8,7 @@
 var AdvancingFront = {
 
 	holeIndex: -1,
+	mergeThreshold: null,
 	modelGeo: null,
 	resultCallback: null,
 	ruleCallback: null,
@@ -27,16 +28,18 @@ var AdvancingFront = {
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
-	 * @param  {THREE.Geometry}    modelGeo The model to fill the holes in.
-	 * @param  {Array<THREE.Line>} hole     The hole described by lines.
-	 * @return {THREE.Geometry}             The generated filling.
+	 * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
+	 * @param  {Array<THREE.Line>} hole           The hole described by lines.
+	 * @param  {float}             mergeThreshold Threshold for merging.
+	 * @return {THREE.Geometry}                   The generated filling.
 	 */
-	afmStart: function( modelGeo, hole, callback ) {
+	afmStart: function( modelGeo, hole, mergeThreshold, callback ) {
 		this.resultCallback = callback;
 
 		this.filling = new THREE.Geometry();
 		this.front = new THREE.Geometry();
 		this.hole = hole;
+		this.mergeThreshold = mergeThreshold;
 
 		this.front.vertices = this.hole.slice( 0 );
 		this.filling.vertices = this.hole.slice( 0 );
@@ -745,7 +748,7 @@ var AdvancingFront = {
 			this.afRule3( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2], this.angle.degree );
 		}
 		else {
-			this.showFilling();
+			SceneManager.showFilling( this.front, this.filling );
 			throw new Error( "No rule could be applied." );
 		}
 	},
@@ -815,7 +818,7 @@ var AdvancingFront = {
 			}
 
 			// Merge points if distance below threshold
-			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+			if( v.distanceTo( t ) <= this.mergeThreshold ) {
 				if( CONFIG.DEBUG.SHOW_MERGING ) {
 					SceneManager.scene.add( SceneManager.createPoint( t, 0.02, 0xFFEE00, true ) );
 					SceneManager.scene.add( SceneManager.createPoint( v, 0.012, 0xFFEE00, true ) );
@@ -848,91 +851,6 @@ var AdvancingFront = {
 		}
 
 		this.front.vertices.splice( ixFrom, 1 );
-	},
-
-
-	/**
-	 * Render the finished hole filling.
-	 * Create a mesh from the computed data and render it.
-	 * @param {THREE.Geometry} front   Front of the hole.
-	 * @param {THREE.Geometry} filling Filling of the hole.
-	 */
-	showFilling: function() {
-		var g = GLOBAL,
-		    model = SceneManager.model;
-
-		if( !g.FILLINGS.hasOwnProperty( this.holeIndex ) ) {
-			g.FILLINGS[this.holeIndex] = {
-				solid: false,
-				wireframe: false
-			};
-		}
-
-		// Filling as solid form
-		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
-			if( g.FILLINGS[this.holeIndex].solid ) {
-				SceneManager.scene.remove( g.FILLINGS[this.holeIndex].solid );
-			}
-
-			var materialSolid = new THREE.MeshPhongMaterial( {
-				color: CONFIG.HF.FILLING.COLOR,
-				shading: SceneManager.getCurrentShading(),
-				side: THREE.DoubleSide,
-				wireframe: false
-			} );
-			var meshSolid = new THREE.Mesh( this.filling, materialSolid );
-
-			meshSolid.position.x += model.position.x;
-			meshSolid.position.y += model.position.y;
-			meshSolid.position.z += model.position.z;
-
-			meshSolid.geometry.computeFaceNormals();
-			meshSolid.geometry.computeVertexNormals();
-			meshSolid.geometry.computeBoundingBox();
-
-			g.FILLINGS[this.holeIndex].solid = meshSolid;
-			SceneManager.scene.add( meshSolid );
-		}
-
-		// Filling as wireframe
-		if( CONFIG.HF.FILLING.SHOW_WIREFRAME ) {
-			var materialWire = new THREE.MeshBasicMaterial( {
-				color: 0xFFFFFF,
-				overdraw: true, // Doesn't seem to work
-				side: THREE.DoubleSide,
-				wireframe: true,
-				wireframeLinewidth: CONFIG.HF.FILLING.LINE_WIDTH
-			} );
-			var meshWire = new THREE.Mesh( this.filling, materialWire );
-
-			meshWire.position.x += model.position.x;
-			meshWire.position.y += model.position.y;
-			meshWire.position.z += model.position.z;
-
-			meshWire.geometry.computeFaceNormals();
-			meshWire.geometry.computeVertexNormals();
-			meshWire.geometry.computeBoundingBox();
-
-			g.FILLINGS[this.holeIndex].wireframe = meshWire;
-			SceneManager.scene.add( meshWire );
-		}
-
-		// Draw the (moving) front
-		if( CONFIG.DEBUG.SHOW_FRONT ) {
-			var material = new THREE.LineBasicMaterial( {
-				color: 0x4991E0,
-				linewidth: 5
-			} );
-			var mesh = new THREE.Line( this.front, material );
-
-			mesh.position.x += model.position.x;
-			mesh.position.y += model.position.y;
-			mesh.position.z += model.position.z;
-
-			SceneManager.scene.add( mesh );
-		}
-
-		render();
 	},
 
 
@@ -982,7 +900,7 @@ var AdvancingFront = {
 
 		WorkerManager.closePool( "collision" );
 
-		this.showFilling();
+		SceneManager.showFilling( this.front, this.filling, this.holeIndex );
 		this.resultCallback( this.filling, this.holeIndex );
 	}
 
