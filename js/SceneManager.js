@@ -8,6 +8,7 @@
 var SceneManager = {
 
 	fillings: {},
+	holes: [],
 	holeLines: [],
 	lightStatus: {
 		ambient: true,
@@ -268,7 +269,7 @@ var SceneManager = {
 			console.error( "Not a valid hole index." );
 			return;
 		}
-		if( g.HOLES.length <= index ) {
+		if( this.holes.length <= index ) {
 			console.error( "No hole exists for this index." );
 			return;
 		}
@@ -278,7 +279,7 @@ var SceneManager = {
 		}
 
 		Stopwatch.start( "fill hole (AF)" );
-		AdvancingFront.afmStart( this.model.geometry, g.HOLES[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
+		AdvancingFront.afmStart( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
 	},
 
 
@@ -294,12 +295,12 @@ var SceneManager = {
 			console.error( "Not a valid hole index." );
 			return;
 		}
-		if( g.HOLES.length <= index ) {
+		if( this.holes.length <= index ) {
 			console.error( "No hole exists for this index." );
 			return;
 		}
 
-		var bbox = Utils.getBoundingBox( g.HOLES[index] );
+		var bbox = Utils.getBoundingBox( this.holes[index] );
 
 		bbox.center.add( this.model.position );
 		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS.DISTANCE );
@@ -512,7 +513,7 @@ var SceneManager = {
 		}
 		render();
 
-		GLOBAL.HOLES = border.holes;
+		this.holes = border.holes;
 		UI.showDetailHoles( border.lines );
 	},
 

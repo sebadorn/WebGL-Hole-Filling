@@ -4,7 +4,6 @@
 var GLOBAL = {
 	CAMERA: null,
 	CONTROLS: null,
-	HOLES: [],
 	LIGHTS: {
 		AMBIENT: [],
 		DIRECTIONAL: [],

@@ -51,6 +51,10 @@ var CONFIG = {
 
 	// Debug
 	DEBUG: {
+		// Add bogus parameters to the AdvancingFront-<x>.js file, so it doesn't
+		// get pulled from cache. Important for developing, so changes take place
+		// immediately after reload.
+		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		ENABLE_STOPWATCH: true,
 		SHOW_FRONT: false,
@@ -76,6 +80,11 @@ var CONFIG = {
 		},
 		// The filling to be created
 		FILLING: {
+			// Which Advancing Front implementation to use:
+			// - "iterative": Fast, but UI freezes until finished
+			// - "responsive": ~5-6x slower, but UI stays responsive (progress bar updates)
+			// - "parallel": ~8-9x slower, but UI stays responsive; uses Web Workers.
+			AF_TYPE: "parallel",
 			COLOR: 0x87C3EC,
 			// COLLISION_TEST values: "filling" or "all"
 			// "all" will test to whole mesh for collisions with a newly created point,

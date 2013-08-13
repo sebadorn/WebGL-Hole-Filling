@@ -139,21 +139,29 @@ var UI = {
 
 		SceneManager.focusHole( index );
 
-		// Detail: Fill Hole
-		number = detailFillHole.querySelector( ".caption .number" );
-		number.textContent = index + 1;
+		// Detail: Hole Info
+		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
+		infoVertices.textContent = SceneManager.holes[index].length;
 
 		// Merging threshold
 		merging = document.getElementById( "merge-threshold" );
 		merging.value = CONFIG.HF.FILLING.THRESHOLD_MERGE;
 
+		// Detail: Fill Hole
+		number = detailFillHole.querySelector( ".caption .number" );
+		number.textContent = index + 1;
+
 		// Start button
 		btnFill = detailFillHole.querySelector( ".fillholeStart" );
 		btnFill.setAttribute( "data-fillhole", index );
 
-		// Detail: Hole Info
-		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
-		infoVertices.textContent = GLOBAL.HOLES[index].length;
+		// Progress bar
+		if( e.target.className.indexOf( "filled" ) < 0 ) {
+			UI.updateProgress( 0 );
+		}
+		else {
+			UI.updateProgress( 100 );
+		}
 	},
 
 

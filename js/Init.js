@@ -13,6 +13,8 @@ var Init = {
 	all: function() {
 		var container = document.getElementById( "container" );
 
+		this.loadChosenAdvancingFrontFile();
+
 		UI.init();
 
 		this.camera();
@@ -104,6 +106,22 @@ var Init = {
 			g.LIGHTS.CAMERA.push( directional );
 			s.add( directional );
 		}
+	},
+
+
+	/**
+	 * Load the JavaScript file for the chosen Advancing Front implementation.
+	 */
+	loadChosenAdvancingFrontFile: function() {
+		var script = document.createElement( "script" );
+
+		script.src = "js/AdvancingFront-" + CONFIG.HF.FILLING.AF_TYPE + ".js";
+
+		if( CONFIG.DEBUG.AF_INVALIDATE_CACHE ) {
+			script.src += "?uncache=" + Math.round( Math.random() * 10000 );
+		}
+
+		document.head.appendChild( script );
 	},
 
 

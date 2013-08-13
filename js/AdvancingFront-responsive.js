@@ -12,6 +12,8 @@ var AdvancingFront = {
 	mergeThreshold: null,
 	modelGeo: null,
 
+	STOP_AFTER: CONFIG.DEBUG.AFM_STOP_AFTER_ITER,
+
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
@@ -21,89 +23,27 @@ var AdvancingFront = {
 	 * @return {THREE.Geometry}                   The generated filling.
 	 */
 	afmStart: function( modelGeo, hole, mergeThreshold, callback ) {
-		var filling = new THREE.Geometry(),
-		    front = new THREE.Geometry();
+		this.filling = new THREE.Geometry(),
+		this.front = new THREE.Geometry();
 
-		front.vertices = hole.slice( 0 );
-		filling.vertices = hole.slice( 0 );
+		this.front.vertices = hole.slice( 0 );
+		this.filling.vertices = hole.slice( 0 );
 
-		front.mergeVertices();
-		filling.mergeVertices();
+		this.front.mergeVertices();
+		this.filling.mergeVertices();
 
-		this.holeIndex = GLOBAL.HOLES.indexOf( hole );
+		this.callback = callback;
+		this.hole = hole;
+		this.holeIndex = SceneManager.holes.indexOf( hole );
 		this.mergeThreshold = mergeThreshold;
 		this.modelGeo = modelGeo;
 
-		this.initHeap( front );
+		this.initHeap( this.front );
 
-		var count = 0,
-		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
 		var angle, ruleFunc, vNew;
 
-
-		while( true ) {
-			count++;
-
-			// for debugging
-			if( stopIter !== false && count > stopIter ) {
-				break;
-			}
-
-			// Close last hole
-			if( front.vertices.length == 4 ) {
-				filling = this.closeHole4( front, filling );
-				break;
-			}
-			else if( front.vertices.length == 3 ) {
-				filling = this.closeHole3( front, filling );
-				break;
-			}
-			// Problematic/strange situations
-			else if( front.vertices.length == 2 ) {
-				console.warn( "front.vertices.length == 2" );
-				break;
-			}
-			else if( front.vertices.length == 1 ) {
-				console.warn( "front.vertices.length == 1" );
-				break;
-			}
-
-			// Get next angle and apply rule
-			if( this.heap.size() > 0 ) {
-				angle = this.heap.removeFirst();
-				ruleFunc = this.getRuleFunctionForAngle( angle.degree );
-
-				if( ruleFunc == false ) {
-					SceneManager.showFilling( front, filling );
-					throw new Error( "No rule could be applied. Stopping before entering endless loop." );
-				}
-
-				vNew = ruleFunc( front, filling, angle );
-
-				this.heap.sort();
-			}
-			else {
-				SceneManager.showFilling( front, filling );
-				throw new Error( "Hole has not been filled yet, but heap is empty." );
-			}
-
-			if( !vNew || front.vertices.length != 3 ) {
-				// Compute the distances between each new created
-				// vertex and see, if they can be merged.
-				this.mergeByDistance( front, filling, vNew, hole );
-			}
-		}
-
-		console.log(
-			"Finished after " + ( count - 1 ) + " iterations.\n",
-			"- New vertices: " + filling.vertices.length + "\n",
-			"- New faces: " + filling.faces.length
-		);
-		Stopwatch.average( "collision", true );
-
-		SceneManager.showFilling( front, filling, this.holeIndex );
-
-		callback( filling, this.holeIndex );
+		this.loopCounter = 0;
+		this.mainLoop();
 	},
 
 
@@ -724,6 +664,77 @@ var AdvancingFront = {
 
 
 	/**
+	 * Main loop
+	 */
+	mainLoop: function() {
+		var vNew = false;
+		var angle, ruleFunc;
+
+		this.loopCounter++;
+
+		// for debugging
+		if( this.STOP_AFTER !== false && this.loopCounter > this.STOP_AFTER ) {
+			this.wrapUp();
+			return;
+		}
+
+		// Close last hole
+		if( this.front.vertices.length == 4 ) {
+			this.filling = this.closeHole4( this.front, this.filling );
+			this.wrapUp();
+			return;
+		}
+		else if( this.front.vertices.length == 3 ) {
+			this.filling = this.closeHole3( this.front, this.filling );
+			this.wrapUp();
+			return;
+		}
+		// Problematic/strange situations
+		else if( this.front.vertices.length == 2 ) {
+			console.warn( "front.vertices.length == 2" );
+			this.wrapUp();
+			return;
+		}
+		else if( this.front.vertices.length == 1 ) {
+			console.warn( "front.vertices.length == 1" );
+			this.wrapUp();
+			return;
+		}
+
+		// Get next angle and apply rule
+		if( this.heap.size() > 0 ) {
+			angle = this.heap.removeFirst();
+			ruleFunc = this.getRuleFunctionForAngle( angle.degree );
+
+			if( ruleFunc == false ) {
+				SceneManager.showFilling( this.front, this.filling );
+				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
+			}
+
+			vNew = ruleFunc( this.front, this.filling, angle );
+
+			this.heap.sort();
+		}
+		else {
+			SceneManager.showFilling( this.front, this.filling );
+			throw new Error( "Hole has not been filled yet, but heap is empty." );
+		}
+
+		if( !vNew || this.front.vertices.length != 3 ) {
+			// Compute the distances between each new created
+			// vertex and see, if they can be merged.
+			this.mergeByDistance( this.front, this.filling, vNew, this.hole );
+		}
+
+		// Update progress bar
+		UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
+
+		// Keep on looping
+		setTimeout( function() { this.mainLoop(); }.bind( this ), 0 );
+	},
+
+
+	/**
 	 * Update the front according to the merged points.
 	 * @param {THREE.Geometry} front The current hole front.
 	 * @param {THREE.Vector3}  vOld  The new vertex.
@@ -768,6 +779,23 @@ var AdvancingFront = {
 			// May also remove faces, if necessary.
 			filling.faces = Utils.decreaseHigherFaceIndexes( filling.faces, i, oldIndex );
 		}
+	},
+
+
+	/**
+	 * Wrapping up the action: Console printing and result returning.
+	 */
+	wrapUp: function() {
+		console.log(
+			"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
+			"- New vertices: " + this.filling.vertices.length + "\n",
+			"- New faces: " + this.filling.faces.length
+		);
+		Stopwatch.average( "collision", true );
+
+		SceneManager.showFilling( this.front, this.filling, this.holeIndex );
+
+		this.callback( this.filling, this.holeIndex );
 	}
 
 };

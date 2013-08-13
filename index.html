@@ -14,7 +14,6 @@
 	<script src="js/SceneManager.js"></script>
 	<script src="js/WorkerManager.js"></script>
 	<script src="js/HoleFinding.js"></script>
-	<script src="js/AdvancingFront.js"></script>
 	<script src="js/Angle.js"></script>
 	<script src="js/Heap.js"></script>
 	<script src="js/Plane.js"></script>
@@ -234,7 +233,7 @@
 			fromB = new THREE.Vector3( data.fromB.x, data.fromB.y, data.fromB.z );
 		}
 
-		for( var i = 0; i < faces.length; i++ ) {
+		for( var i = 0, len = faces.length; i < len; i++ ) {
 			f = faces[i];
 			a = new THREE.Vector3( f[0].x, f[0].y, f[0].z );
 			b = new THREE.Vector3( f[1].x, f[1].y, f[1].z );

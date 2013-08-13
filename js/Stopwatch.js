@@ -33,7 +33,7 @@ var Stopwatch = {
 			var prec = Math.pow( 10, this.precision );
 			var avStr = Math.round( average * prec ) / prec;
 
-			console.log( "Stopwatch [" + identifier + "]: " + avStr + "ms on average." );
+			console.log( "Stopwatch [" + identifier + "]: " + avStr + "ms on average in " + time.total.length + " measures." );
 		}
 
 		return average;
