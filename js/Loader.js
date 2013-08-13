@@ -102,6 +102,10 @@ var Loader = {
 		content = loader.parse( e.target.result );
 		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
 
+		if( extension == "stl" ) {
+			geometry.mergeVertices();
+		}
+
 		if( CONFIG.CHECK_AND_FIX_FACES ) {
 			geometry = HoleFilling.checkAndFixFaces( geometry );
 		}

@@ -255,6 +255,10 @@ hr {
 			padding: 10px;
 		}
 
+		.detail input[type="number"] {
+			margin-bottom: 10px;
+		}
+
 		.detail .info {
 			background-color: #101010;
 			border: 0;
@@ -323,6 +327,16 @@ input[type="checkbox"],
 input[type="range"] {
 	margin-right: 4px;
 	vertical-align: middle;
+}
+
+input[type="number"] {
+	background-color: #101010;
+	border: 1px solid #101010;
+	border-radius: 2px;
+	color: #ffffff;
+	padding: 2px 4px;
+	text-align: right;
+	width: 50px;
 }
 
 input[type="radio"].newradio {

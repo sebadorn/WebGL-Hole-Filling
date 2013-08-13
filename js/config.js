@@ -54,7 +54,7 @@ var CONFIG = {
 		SHOW_FRONT: false,
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 1000
+		AFM_STOP_AFTER_ITER: 3000
 	},
 
 	// Export of model

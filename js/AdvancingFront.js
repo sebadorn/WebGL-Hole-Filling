@@ -8,6 +8,7 @@
 var AdvancingFront = {
 
 	holeIndex: -1,
+	mergeThreshold: null,
 	modelGeo: null,
 
 	heapRule1: null,
@@ -18,11 +19,12 @@ var AdvancingFront = {
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
-	 * @param  {THREE.Geometry}    modelGeo The model to fill the holes in.
-	 * @param  {Array<THREE.Line>} hole     The hole described by lines.
-	 * @return {THREE.Geometry}             The generated filling.
+	 * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
+	 * @param  {Array<THREE.Line>} hole           The hole described by lines.
+	 * @param  {float}             mergeThreshold Threshold for merging.
+	 * @return {THREE.Geometry}                   The generated filling.
 	 */
-	afmStart: function( modelGeo, hole, callback ) {
+	afmStart: function( modelGeo, hole, mergeThreshold, callback ) {
 		var filling = new THREE.Geometry(),
 		    front = new THREE.Geometry();
 
@@ -33,6 +35,7 @@ var AdvancingFront = {
 		filling.mergeVertices();
 
 		this.holeIndex = GLOBAL.HOLES.indexOf( hole );
+		this.mergeThreshold = mergeThreshold;
 		this.modelGeo = modelGeo;
 		this.initHeaps( front );
 
@@ -57,9 +60,13 @@ var AdvancingFront = {
 				filling = this.closeHole3( front, filling );
 				break;
 			}
+			// Problematic/strange situations
+			else if( front.vertices.length == 2 ) {
+				console.warn( "front.vertices.length == 2" );
+				break;
+			}
 			else if( front.vertices.length == 1 ) {
-				// TODO: REMOVE
-				SceneManager.scene.add( SceneManager.createPoint( front.vertices[0], 0.04, 0x99CCFF, true ) );
+				console.warn( "front.vertices.length == 1" );
 				break;
 			}
 
@@ -99,7 +106,7 @@ var AdvancingFront = {
 
 		this.showFilling( front, filling );
 
-		callback( filling );
+		callback( filling, this.holeIndex );
 	},
 
 
@@ -603,34 +610,40 @@ var AdvancingFront = {
 	 */
 	initHeaps: function( front ) {
 		var ca = this.computeAngles( front.vertices );
-		var angle;
+		// var angle;
 
-		this.heapRule1 = new Heap( "1" );
-		this.heapRule2 = new Heap( "2" );
-		this.heapRule3 = new Heap( "3" );
-		this.heapRuleR = new Heap( "R" );
+		// this.heapRule1 = new Heap( "1" );
+		// this.heapRule2 = new Heap( "2" );
+		// this.heapRule3 = new Heap( "3" );
+		// this.heapRuleR = new Heap( "R" );
+
+		this.heap = new Heap( "all" );
 
 		// Initialize heaps
 		for( var i = 0, len = ca.angles.length; i < len; i++ ) {
-			angle = ca.angles[i];
+			// angle = ca.angles[i];
 
-			if( angle.degree <= 75.0 ) {
-				this.heapRule1.insert( angle );
-			}
-			else if( angle.degree <= 135.0 ) {
-				this.heapRule2.insert( angle );
-			}
-			else if( angle.degree < 180.0 ) {
-				this.heapRule3.insert( angle );
-			}
-			else {
-				this.heapRuleR.insert( angle );
-			}
+			this.heap.insert( ca.angles[i] );
+
+			// if( angle.degree <= 75.0 ) {
+			// 	this.heapRule1.insert( angle );
+			// }
+			// else if( angle.degree <= 135.0 ) {
+			// 	this.heapRule2.insert( angle );
+			// }
+			// else if( angle.degree < 180.0 ) {
+			// 	this.heapRule3.insert( angle );
+			// }
+			// else {
+			// 	this.heapRuleR.insert( angle );
+			// }
 		}
 
-		this.heapRule1.sort();
-		this.heapRule2.sort();
-		this.heapRule3.sort();
+		this.heap.sort();
+
+		// this.heapRule1.sort();
+		// this.heapRule2.sort();
+		// this.heapRule3.sort();
 	},
 
 
@@ -747,7 +760,7 @@ var AdvancingFront = {
 			}
 
 			// Merge points if distance below threshold
-			if( v.distanceTo( t ) <= CONFIG.HF.FILLING.THRESHOLD_MERGE ) {
+			if( v.distanceTo( t ) <= this.mergeThreshold ) {
 				if( CONFIG.DEBUG.SHOW_MERGING ) {
 					SceneManager.scene.add( SceneManager.createPoint( t, 0.02, 0xFFEE00, true ) );
 					SceneManager.scene.add( SceneManager.createPoint( v, 0.012, 0xFFEE00, true ) );

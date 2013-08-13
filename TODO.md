@@ -1,6 +1,6 @@
 ## ToDo
 
-* `Bug` Hole finding doesn't work with STL files at all!
+* `Improve` 1 sorted Heap for all angles (add flag `waitForUpdate` to Angle)
 
 * `Feature` Progress bar for export and filling
 * `Feature` Show in-between steps of filling

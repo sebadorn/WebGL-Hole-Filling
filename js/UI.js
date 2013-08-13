@@ -130,7 +130,7 @@ var UI = {
 		    detailFillHole = this.domDetails.querySelector( ".detail-fillhole" ),
 		    detailHoleInfo = this.domDetails.querySelector( ".detail-holeinfo" ),
 		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
-		var area, btnFill, infoVertices, number;
+		var area, btnFill, infoVertices, merging, number;
 
 		for( var i = 0, len = children.length; i < len; i++ ) {
 			children[i].className = children[i].className.replace( " active", "" );
@@ -143,12 +143,13 @@ var UI = {
 		number = detailFillHole.querySelector( ".caption .number" );
 		number.textContent = index + 1;
 
-		btnFill = this.BUILDER.createButton( "Advancing Front", SceneManager.fillHole.bind( SceneManager ) );
-		btnFill.setAttribute( "data-fillhole", index );
+		// Merging threshold
+		merging = document.getElementById( "merge-threshold" );
+		merging.value = CONFIG.HF.FILLING.THRESHOLD_MERGE;
 
-		area = detailFillHole.querySelector( "fieldset" );
-		this.cleanOfChildNodes( area );
-		area.appendChild( btnFill );
+		// Start button
+		btnFill = detailFillHole.querySelector( ".fillholeStart" );
+		btnFill.setAttribute( "data-fillhole", index );
 
 		// Detail: Hole Info
 		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
@@ -215,9 +216,10 @@ var UI = {
 		    detail = this.domDetails.querySelector( ".details-holefilling" );
 		var sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
 		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
+		    sectionFillHole = detail.querySelector( ".detail-fillhole fieldset" ),
 		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" ),
 		    selection = d.createElement( "div" );
-		var info, infoLabel, progress;
+		var btnFill, info, infoLabel, merging, progress;
 
 		this.resetDetail( detail );
 
@@ -260,6 +262,21 @@ var UI = {
 
 		sectionHoleInfo.appendChild( info );
 		sectionHoleInfo.appendChild( infoLabel );
+
+
+		// Fill hole options
+		merging = d.createElement( "input" );
+		merging.type = "number";
+		merging.min = "0.01";
+		merging.step = "0.01";
+		merging.value = CONFIG.HF.FILLING.THRESHOLD_MERGE;
+		merging.id = "merge-threshold";
+
+		btnFill = this.BUILDER.createButton( "Advancing Front", SceneManager.fillHole.bind( SceneManager ) );
+		btnFill.className += " fillholeStart";
+
+		sectionFillHole.appendChild( merging );
+		sectionFillHole.appendChild( btnFill );
 
 
 		// Progress

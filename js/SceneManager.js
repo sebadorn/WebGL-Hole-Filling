@@ -235,11 +235,11 @@ var SceneManager = {
 		switch( format ) {
 
 			case "obj":
-				exportData = exportOBJ( GLOBAL.MODEL );
+				exportData = exportOBJ( this.model );
 				break;
 
 			case "stl":
-				exportData = exportSTL( GLOBAL.MODEL, modelName );
+				exportData = exportSTL( this.model, modelName );
 				break;
 
 			default:
@@ -258,7 +258,8 @@ var SceneManager = {
 	 */
 	fillHole: function( e ) {
 		var g = GLOBAL,
-		    index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 );
+		    index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 ),
+		    mergeThreshold = parseFloat( document.getElementById( "merge-threshold" ).value, 10 );
 
 		if( isNaN( index ) ) {
 			console.error( "Not a valid hole index." );
@@ -268,9 +269,13 @@ var SceneManager = {
 			console.error( "No hole exists for this index." );
 			return;
 		}
+		if( isNaN( mergeThreshold ) || mergeThreshold < 0.01 ) {
+			console.error( "Merge threshold not a valid value. Needs to be greater or equal 0.01." );
+			return;
+		}
 
 		Stopwatch.start( "fill hole (AF)" );
-		AdvancingFront.afmStart( this.model.geometry, g.HOLES[index], this.mergeWithFilling.bind( this ) );
+		AdvancingFront.afmStart( this.model.geometry, g.HOLES[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
 	},
 
 
