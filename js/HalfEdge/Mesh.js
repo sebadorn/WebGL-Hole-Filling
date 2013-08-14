@@ -151,21 +151,6 @@ HalfEdgeMesh.prototype.findAdjacency = function( tempList ) {
 };
 
 
-// /**
-//  * Get the vector length.
-//  * @param  {Array} a Vector.
-//  * @param  {Array} b Vector.
-//  * @return {float}        Vector length.
-//  */
-// HalfEdgeMesh.prototype.getVectorLength = function( a, b ) {
-// 	var pow0 = Math.pow( a[0] - b[0], 2.0 ),
-// 	    pow1 = Math.pow( a[1] - b[1], 2.0 ),
-// 	    pow2 = Math.pow( a[2] - b[2], 2.0 );
-
-// 	return Math.sqrt( pow0 + pow1 + pow2 );
-// };
-
-
 /**
  * Set first edges.
  */
@@ -174,43 +159,3 @@ HalfEdgeMesh.prototype.setFirstEdges = function() {
 		this.vertices[i].setUpFirstEdge();
 	}
 };
-
-
-// /**
-//  * Smoothes the mesh using the umbrella operator.
-//  */
-// HalfEdgeMesh.prototype.smooth = function() {
-// 	var vs = data.vertices,
-// 	    vsCopy = [];
-// 	var e, len, nb, nbs, v, vNew;
-
-// 	for( var i = 0; i < vs.length; i++ ) {
-// 		vsCopy[i] = vs[i].slice( 0 );
-// 	}
-
-// 	for( var j = 0; j < this.vertices.length; j++ ) {
-// 		v = this.vertices[i];
-
-// 		if( !v.isBorderPoint() ) {
-// 			nbs = v.getNeighbours();
-// 			e = 0.0;
-// 			vNew = [];
-
-// 			for( var k = 0; k < nbs.length; k++ ) {
-// 				nb = nbs[k];
-// 				len = this.getVectorLength( vsCopy[nb], vsCopy[v.index] );
-
-// 				vNew[0] += ( vsCopy[v.index][0] - vsCopy[nb][0] ) / len;
-// 				vNew[1] += ( vsCopy[v.index][1] - vsCopy[nb][1] ) / len;
-// 				vNew[2] += ( vsCopy[v.index][2] - vsCopy[nb][2] ) / len;
-// 				e += 1.0 / len;
-// 			}
-
-// 			if( e === Infinity ) {
-// 				vs[v.index][0] -= vNew[0] / e;
-// 				vs[v.index][1] -= vNew[1] / e;
-// 				vs[v.index][2] -= vNew[2] / e;
-// 			}
-// 		}
-// 	}
-// };

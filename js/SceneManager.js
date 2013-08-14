@@ -63,7 +63,7 @@ var SceneManager = {
 
 			case "solid":
 				this.model.material.wireframe = false;
-				for( var key in SceneManager ) {
+				for( var key in this.fillings ) {
 					this.fillings[key].solid.material.wireframe = false;
 				}
 				break;
@@ -284,6 +284,48 @@ var SceneManager = {
 
 
 	/**
+	 * Show the border edges of the model.
+	 */
+	findHoles: function() {
+		if( this.model == null ) {
+			console.error( "No model loaded." );
+			return;
+		}
+
+		// Remove old hole outlines
+		if( this.holeLines.length > 0 ) {
+			for( var i = 0, len = this.holeLines.length; i < len; i++ ) {
+				this.scene.remove( this.holeLines[i] );
+			}
+		}
+		this.holeLines = [];
+
+		Stopwatch.start( "find holes" );
+
+		var border = HoleFinding.findBorderEdges( this.model );
+
+		Stopwatch.stop( "find holes", true );
+
+		if( CONFIG.HOLES.SHOW_LINES ) {
+			for( var i = 0, len = border.lines.length; i < len; i++ ) {
+				this.scene.add( border.lines[i] );
+			}
+			this.holeLines = border.lines;
+		}
+
+		// @see HoleFinding.findBorderEdges() for
+		// use of CONFIG.HOLES.SHOW_POINTS
+		for( var i = 0, len = border.points.length; i < len; i++ ) {
+			this.scene.add( border.points[i] );
+		}
+		render();
+
+		this.holes = border.holes;
+		UI.showDetailHoles( border.lines );
+	},
+
+
+	/**
 	 * Focus on the found hole.
 	 * @param {int} index Index of the found hole
 	 */
@@ -477,48 +519,6 @@ var SceneManager = {
 
 
 	/**
-	 * Show the border edges of the model.
-	 */
-	showEdges: function() {
-		if( this.model == null ) {
-			console.error( "No model loaded." );
-			return;
-		}
-
-		// Remove old hole outlines
-		if( this.holeLines.length > 0 ) {
-			for( var i = 0, len = this.holeLines.length; i < len; i++ ) {
-				this.scene.remove( this.holeLines[i] );
-			}
-		}
-		this.holeLines = [];
-
-		Stopwatch.start( "find holes" );
-
-		var border = HoleFinding.findBorderEdges( this.model );
-
-		Stopwatch.stop( "find holes", true );
-
-		if( CONFIG.HF.BORDER.SHOW_LINES ) {
-			for( var i = 0, len = border.lines.length; i < len; i++ ) {
-				this.scene.add( border.lines[i] );
-			}
-			this.holeLines = border.lines;
-		}
-
-		// @see HoleFinding.findBorderEdges() for
-		// use of CONFIG.HF.BORDER.SHOW_POINTS
-		for( var i = 0, len = border.points.length; i < len; i++ ) {
-			this.scene.add( border.points[i] );
-		}
-		render();
-
-		this.holes = border.holes;
-		UI.showDetailHoles( border.lines );
-	},
-
-
-	/**
 	 * Render the finished hole filling.
 	 * Create a mesh from the computed data and render it.
 	 * @param {THREE.Geometry} front   Front of the hole.
@@ -536,13 +536,9 @@ var SceneManager = {
 		}
 
 		// Filling as solid form
-		if( CONFIG.HF.FILLING.SHOW_SOLID ) {
-			if( this.fillings[holeIndex].solid ) {
-				SceneManager.scene.remove( this.fillings[holeIndex].solid );
-			}
-
+		if( CONFIG.FILLING.SHOW_SOLID ) {
 			var materialSolid = new THREE.MeshPhongMaterial( {
-				color: CONFIG.HF.FILLING.COLOR,
+				color: CONFIG.FILLING.COLOR,
 				shading: SceneManager.getCurrentShading(),
 				side: THREE.DoubleSide,
 				wireframe: false
@@ -562,12 +558,12 @@ var SceneManager = {
 		}
 
 		// Filling as wireframe
-		if( CONFIG.HF.FILLING.SHOW_WIREFRAME ) {
+		if( CONFIG.FILLING.SHOW_WIREFRAME ) {
 			var materialWire = new THREE.MeshBasicMaterial( {
 				color: 0xFFFFFF,
 				side: THREE.DoubleSide,
 				wireframe: true,
-				wireframeLinewidth: CONFIG.HF.FILLING.LINE_WIDTH
+				wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
 			} );
 			var meshWire = new THREE.Mesh( filling, materialWire );
 

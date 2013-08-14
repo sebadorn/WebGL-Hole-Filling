@@ -1,6 +1,9 @@
 "use strict";
 
 
+AdvancingFront.mode = "responsive";
+
+
 /**
  * Fill the hole using the advancing front algorithm.
  * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
@@ -386,7 +389,7 @@ AdvancingFront.isInHole = function( front, filling, v, fromA, fromB ) {
 		}
 	}
 
-	if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
 		for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
 			face = this.modelGeo.faces[i];
 
@@ -430,36 +433,42 @@ AdvancingFront.mainLoop = function() {
 
 	// for debugging
 	if( this.STOP_AFTER !== false && this.loopCounter > this.STOP_AFTER ) {
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 
 	// Close last hole
 	if( this.front.vertices.length == 4 ) {
 		this.filling = this.closeHole4( this.front, this.filling );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	else if( this.front.vertices.length == 3 ) {
 		this.filling = this.closeHole3( this.front, this.filling );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	// Problematic/strange situations
 	else if( this.front.vertices.length == 2 ) {
 		console.warn( "front.vertices.length == 2" );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	else if( this.front.vertices.length == 1 ) {
 		console.warn( "front.vertices.length == 1" );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 
 	// Get next angle and apply rule
 	if( this.heap.size() > 0 ) {
 		angle = this.heap.removeFirst();
+
+		while( angle.waitForUpdate ) {
+			this.heap.insert( angle.degree, angle );
+			angle = this.heap.removeFirst();
+		}
+
 		ruleFunc = this.getRuleFunctionForAngle( angle.degree );
 
 		if( ruleFunc == false ) {
@@ -489,21 +498,4 @@ AdvancingFront.mainLoop = function() {
 
 	// Keep on looping
 	setTimeout( function() { this.mainLoop(); }.bind( this ), 0 );
-};
-
-
-/**
- * Wrapping up the action: Console printing and result returning.
- */
-AdvancingFront.wrapUp = function() {
-	console.log(
-		"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
-		"- New vertices: " + this.filling.vertices.length + "\n",
-		"- New faces: " + this.filling.faces.length
-	);
-	Stopwatch.average( "collision", true );
-
-	SceneManager.showFilling( this.front, this.filling, this.holeIndex );
-
-	this.callback( this.filling, this.holeIndex );
 };

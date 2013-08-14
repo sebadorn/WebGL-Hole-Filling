@@ -1,6 +1,7 @@
 "use strict";
 
 
+AdvancingFront.mode = "parallel";
 
 AdvancingFront.front = null;
 AdvancingFront.filling = null;
@@ -37,7 +38,7 @@ AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
 
 	var firstMsg = false;
 
-	if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
 		firstMsg = {
 			cmd: "prepare",
 			modelF: JSON.stringify( this.modelGeo.faces ),
@@ -46,7 +47,7 @@ AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
 	}
 
 	Stopwatch.start( "init workers" );
-	WorkerManager.createPool( "collision", CONFIG.HF.FILLING.WORKER + 1, firstMsg );
+	WorkerManager.createPool( "collision", CONFIG.FILLING.WORKER + 1, firstMsg );
 	Stopwatch.stop( "init workers", true );
 
 	this.mainEventLoop();
@@ -408,7 +409,7 @@ AdvancingFront.isInHole = function( v, fromA, fromB ) {
 
 	this.workerResultCounter = 0;
 	this.workerResult = false;
-	this.neededWorkerResults = CONFIG.HF.FILLING.WORKER;
+	this.neededWorkerResults = CONFIG.FILLING.WORKER;
 
 	if( lenFilling == 0 ) {
 		Stopwatch.stop( "collision" );
@@ -416,9 +417,9 @@ AdvancingFront.isInHole = function( v, fromA, fromB ) {
 		return;
 	}
 
-	facesPerWorker = Math.ceil( lenFilling / CONFIG.HF.FILLING.WORKER );
+	facesPerWorker = Math.ceil( lenFilling / CONFIG.FILLING.WORKER );
 
-	if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
 		lenModel = this.modelGeo.faces.length;
 		this.neededWorkerResults *= 2;
 	}
@@ -453,13 +454,13 @@ AdvancingFront.isInHole = function( v, fromA, fromB ) {
 		}
 	}
 
-	if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
-		if( employedWorkerCounter < CONFIG.HF.FILLING.WORKER ) {
-			this.workerResultCounter += CONFIG.HF.FILLING.WORKER - employedWorkerCounter;
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+		if( employedWorkerCounter < CONFIG.FILLING.WORKER ) {
+			this.workerResultCounter += CONFIG.FILLING.WORKER - employedWorkerCounter;
 		}
 
 		data.type = "model";
-		facesPerWorker = Math.ceil( lenModel / CONFIG.HF.FILLING.WORKER );
+		facesPerWorker = Math.ceil( lenModel / CONFIG.FILLING.WORKER );
 
 		for( var i = 0; i < lenModel; i += facesPerWorker ) {
 			data.faces = [];
@@ -515,36 +516,42 @@ AdvancingFront.mainEventLoop = function() {
 
 	// for debugging
 	if( this.STOP_AFTER !== false && this.loopCounter > this.STOP_AFTER ) {
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 
 	// Close last hole
 	if( this.front.vertices.length == 4 ) {
 		this.filling = this.closeHole4( this.front, this.filling );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	else if( this.front.vertices.length == 3 ) {
 		this.filling = this.closeHole3( this.front, this.filling );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	// Problematic/strange situations
 	else if( this.front.vertices.length == 2 ) {
 		console.warn( "front.vertices.length == 2" );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 	else if( this.front.vertices.length == 1 ) {
 		console.warn( "front.vertices.length == 1" );
-		this.wrapUp();
+		this.wrapUp( this.front, this.filling );
 		return;
 	}
 
 	// Get next angle and apply rule
 	if( this.heap.size() > 0 ) {
 		this.angle = this.heap.removeFirst();
+
+		while( this.angle.waitForUpdate ) {
+			this.heap.insert( this.angle.degree, this.angle );
+			this.angle = this.heap.removeFirst();
+		}
+
 		var ruleFunc = this.getRuleFunctionForAngle( this.angle.degree );
 
 		if( ruleFunc == false ) {
@@ -581,23 +588,4 @@ AdvancingFront.mainEventLoopReceiveVertex = function( vNew ) {
 	}
 
 	this.mainEventLoop();
-};
-
-
-/**
- * Advancing front has been completed.
- * Print stats and return the filling as result to the callback.
- */
-AdvancingFront.wrapUp = function() {
-	console.log(
-		"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
-		"- New vertices: " + this.filling.vertices.length + "\n",
-		"- New faces: " + this.filling.faces.length
-	);
-	Stopwatch.average( "collision", true );
-
-	WorkerManager.closePool( "collision" );
-
-	SceneManager.showFilling( this.front, this.filling, this.holeIndex );
-	this.callback( this.filling, this.holeIndex );
 };

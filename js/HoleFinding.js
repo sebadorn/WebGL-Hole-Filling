@@ -2,7 +2,7 @@
 
 
 /**
- * Class for finding the hole front.
+ * Class for finding the holes.
  * @type {Object}
  */
 var HoleFinding = {
@@ -70,7 +70,7 @@ var HoleFinding = {
 	 */
 	findBorderEdges: function( model ) {
 		var mesh = new HalfEdgeMesh( model.geometry );
-		var colors = CONFIG.HF.BORDER.COLOR,
+		var colors = CONFIG.HOLES.COLOR,
 		    holes = [],
 		    ignoredUnconnected = 0,
 		    lines = [],
@@ -112,7 +112,7 @@ var HoleFinding = {
 				// Lines
 				material = new THREE.LineBasicMaterial( {
 					color: colors[lines.length % colors.length],
-					linewidth: CONFIG.HF.BORDER.LINE_WIDTH
+					linewidth: CONFIG.HOLES.LINE_WIDTH
 				} );
 
 				line = new THREE.Line( geometry, material );
@@ -120,7 +120,7 @@ var HoleFinding = {
 				lines.push( line );
 
 				// Points
-				if( CONFIG.HF.BORDER.SHOW_POINTS ) {
+				if( CONFIG.HOLES.SHOW_POINTS ) {
 					for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
 						v = geometry.vertices[j];
 						points.push( SceneManager.createPoint( v, 0.02, 0xA1DA42, true ) );
@@ -177,7 +177,7 @@ var HoleFinding = {
 
 			// We add the first vertex after finishing the hole
 			if( bp != start ) {
-				geometry.vertices.push( v );
+				geometry.vertices.push( v.clone() );
 			}
 
 			// Handle border points that belong to more than one hole

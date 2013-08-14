@@ -289,6 +289,27 @@ var AdvancingFront = {
 			// May also remove faces, if necessary.
 			filling.faces = Utils.decreaseHigherFaceIndexes( filling.faces, i, oldIndex );
 		}
+	},
+
+
+	/**
+	 * Advancing front has been completed.
+	 * Print stats and return the filling as result to the callback.
+	 */
+	wrapUp: function( front, filling ) {
+		console.log(
+			"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
+			"- New vertices: " + filling.vertices.length + "\n",
+			"- New faces: " + filling.faces.length
+		);
+		Stopwatch.average( "collision", true );
+
+		if( this.mode == "parallel" ) {
+			WorkerManager.closePool( "collision" );
+		}
+
+		SceneManager.showFilling( front, filling, this.holeIndex );
+		this.callback( filling, this.holeIndex );
 	}
 
 };

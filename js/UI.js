@@ -145,7 +145,7 @@ var UI = {
 
 		// Merging threshold
 		merging = document.getElementById( "merge-threshold" );
-		merging.value = CONFIG.HF.FILLING.THRESHOLD_MERGE;
+		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
 
 		// Detail: Fill Hole
 		number = detailFillHole.querySelector( ".caption .number" );
@@ -277,7 +277,7 @@ var UI = {
 		merging.type = "number";
 		merging.min = "0.01";
 		merging.step = "0.01";
-		merging.value = CONFIG.HF.FILLING.THRESHOLD_MERGE;
+		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
 		merging.id = "merge-threshold";
 
 		btnFill = this.BUILDER.createButton( "Advancing Front", SceneManager.fillHole.bind( SceneManager ) );
@@ -502,7 +502,7 @@ UI.REGISTER = {
 	registerEditOptions: function() {
 		var buttonFindEdges = document.getElementById( "edit_findedges" );
 
-		buttonFindEdges.addEventListener( "click", SceneManager.showEdges.bind( SceneManager ), false );
+		buttonFindEdges.addEventListener( "click", SceneManager.findHoles.bind( SceneManager ), false );
 	},
 
 

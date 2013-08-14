@@ -1,6 +1,9 @@
 "use strict";
 
 
+AdvancingFront.mode = "iterative";
+
+
 /**
  * Fill the hole using the advancing front algorithm.
  * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
@@ -12,7 +15,7 @@ AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
 	var filling = new THREE.Geometry(),
 	    front = new THREE.Geometry();
 
-	this.callback = this.callback;
+	this.callback = callback;
 	this.hole = hole;
 	this.holeIndex = SceneManager.holes.indexOf( this.hole );
 	this.loopCounter = 0;
@@ -60,10 +63,17 @@ AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
 		// Get next angle and apply rule
 		if( this.heap.size() > 0 ) {
 			angle = this.heap.removeFirst();
+
+			while( angle.waitForUpdate ) {
+				this.heap.insert( angle.degree, angle );
+				angle = this.heap.removeFirst();
+			}
+
 			ruleFunc = this.getRuleFunctionForAngle( angle.degree );
 
 			if( ruleFunc == false ) {
 				SceneManager.showFilling( front, filling );
+				console.log( this.heap, angle.degree );
 				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
 			}
 
@@ -79,20 +89,11 @@ AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
 		if( !vNew || front.vertices.length != 3 ) {
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
-			this.mergeByDistance( front, filling, vNew, hole );
+			this.mergeByDistance( front, filling, vNew, this.hole );
 		}
 	}
 
-	console.log(
-		"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
-		"- New vertices: " + filling.vertices.length + "\n",
-		"- New faces: " + filling.faces.length
-	);
-	Stopwatch.average( "collision", true );
-
-	SceneManager.showFilling( front, filling, this.holeIndex );
-
-	callback( filling, this.holeIndex );
+	this.wrapUp( front, filling );
 };
 
 
@@ -296,6 +297,7 @@ AdvancingFront.applyRule1 = function( front, filling, angle ) {
 	}
 	// It failed, so insert the Angle back in.
 	else {
+		angle.waitForUpdate = true;
 		this.heap.insert( angle.degree, angle );
 	}
 
@@ -340,7 +342,10 @@ AdvancingFront.applyRule2 = function( front, filling, angle ) {
 		] );
 		this.heap.insert( angle.next.degree, angle.next );
 	}
-	// Otherwise don't update the angles and just put it back in.
+	else {
+		angle.waitForUpdate = true;
+	}
+	// Otherwise don't update the Angles.
 	this.heap.insert( angle.degree, angle );
 
 	return vNew;
@@ -388,7 +393,10 @@ AdvancingFront.applyRule3 = function( front, filling, angle ) {
 		] );
 		angle.next = newAngle;
 	}
-	// Otherwise don't update the angles and just put it back in.
+	else {
+		angle.waitForUpdate = true;
+	}
+	// Otherwise don't update the Angles.
 	this.heap.insert( angle.degree, angle );
 
 	return vNew;
@@ -407,7 +415,7 @@ AdvancingFront.getRuleFunctionForAngle = function( degree ) {
 	else if( degree <= 135.0 ) {
 		return this.applyRule2.bind( this );
 	}
-	else if( degree < 180.0 ) {
+	else if( degree > 135.0 ) {
 		return this.applyRule3.bind( this );
 	}
 
@@ -453,7 +461,7 @@ AdvancingFront.isInHole = function( front, filling, v, fromA, fromB ) {
 		}
 	}
 
-	if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
 		for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
 			face = this.modelGeo.faces[i];
 

@@ -31,6 +31,7 @@ function Angle( vertices, position ) {
  */
 Angle.prototype.calculateAngle = function() {
 	this.degree = Utils.calculateAngle( this.vertices[0], this.vertices[1], this.vertices[2], this.position );
+	this.waitForUpdate = false;
 
 	return this.degree;
 };

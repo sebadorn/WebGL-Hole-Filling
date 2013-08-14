@@ -17,11 +17,13 @@ var WorkerManager = {
 	 */
 	closePool: function( identifier ) {
 		if( !this.pool.hasOwnProperty( identifier ) ) {
-			throw new Error( "WorkerManager: No pool with identifer " + identifer + "." );
+			console.error( "WorkerManager: No pool with identifer " + identifer + "." );
+			return false;
 		}
 
 		if( this.queue[identifier].length > 0 ) {
-			throw new Error( "WorkerManager: Queue for " + identifier + " is not empty!" );
+			console.error( "WorkerManager: Queue for " + identifier + " is not empty!" );
+			return false;
 		}
 
 		for( var i = 0; i < this.pool[identifier].length; i++ ) {

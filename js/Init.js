@@ -115,7 +115,7 @@ var Init = {
 	loadChosenAdvancingFrontFile: function() {
 		var script = document.createElement( "script" );
 
-		script.src = "js/AdvancingFront-" + CONFIG.HF.FILLING.AF_TYPE + ".js";
+		script.src = "js/AdvancingFront-" + CONFIG.FILLING.AF_MODE + ".js";
 
 		if( CONFIG.DEBUG.AF_INVALIDATE_CACHE ) {
 			script.src += "?uncache=" + Math.round( Math.random() * 10000 );
