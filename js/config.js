@@ -57,10 +57,12 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		ENABLE_STOPWATCH: true,
+		// After stopping, show the current front
 		SHOW_FRONT: false,
+		// Show position where vertices have been merged away
 		SHOW_MERGING: false,
 		// <int>: stop after x iterations; <false>: stop when finished
-		AFM_STOP_AFTER_ITER: 2000
+		AF_STOP_AFTER_ITER: 2000
 	},
 
 	// Export of model
@@ -82,8 +84,8 @@ var CONFIG = {
 		FILLING: {
 			// Which Advancing Front implementation to use:
 			// - "iterative": Fast, but UI freezes until finished
-			// - "responsive": ~5-6x slower, but UI stays responsive (progress bar updates)
-			// - "parallel": ~8-9x slower, but UI stays responsive; uses Web Workers.
+			// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
+			// - "parallel": ~5-6x slower, but UI stays responsive; uses Web Workers.
 			AF_TYPE: "parallel",
 			COLOR: 0x87C3EC,
 			// COLLISION_TEST values: "filling" or "all"
@@ -96,8 +98,8 @@ var CONFIG = {
 			SHOW_WIREFRAME: false,
 			THRESHOLD_MERGE: 0.16,
 			// Number of Web Worker threads
-			// (only relevant if using AdvancingFront-withWorkers.js)
-			WORKER: 3
+			// (only relevant if using AdvancingFront-parallel.js)
+			WORKER: 4
 		}
 	},
 

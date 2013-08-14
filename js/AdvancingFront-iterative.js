@@ -12,6 +12,8 @@ var AdvancingFront = {
 	mergeThreshold: null,
 	modelGeo: null,
 
+	STOP_AFTER: CONFIG.DEBUG.AF_STOP_AFTER_ITER,
+
 
 	/**
 	 * Fill the hole using the advancing front algorithm.
@@ -36,8 +38,7 @@ var AdvancingFront = {
 
 		this.initHeap( front );
 
-		var count = 0,
-		    stopIter = CONFIG.DEBUG.AFM_STOP_AFTER_ITER; // for debugging
+		var count = 0;
 		var angle, ruleFunc, vNew;
 
 		// Main loop
@@ -45,7 +46,7 @@ var AdvancingFront = {
 			count++;
 
 			// for debugging
-			if( stopIter !== false && count > stopIter ) {
+			if( this.STOP_AFTER !== false && count > this.STOP_AFTER ) {
 				break;
 			}
 

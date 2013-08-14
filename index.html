@@ -222,25 +222,70 @@
 
 <!-- Worker for use with AdvancingFront-withWorkers.js -->
 <script id="worker-collision" type="javascript/worker">
-	function checkForCollision( data ) {
-		var faces = data.faces;
-		var v = new THREE.Vector3( data.v.x, data.v.y, data.v.z ),
-		    fromA = new THREE.Vector3( data.fromA.x, data.fromA.y, data.fromA.z ),
-		    fromB = data.fromB;
-		var a, b, c, f;
+	var MODEL_F = null,
+	    MODEL_V = null;
 
-		if( fromB != null ) {
-			fromB = new THREE.Vector3( data.fromB.x, data.fromB.y, data.fromB.z );
+	function checkForCollision( data ) {
+		var dt = JSON.parse( data.test );
+		var faces = JSON.parse( data.faces ),
+		    fromA = new THREE.Vector3( dt.fromA.x, dt.fromA.y, dt.fromA.z ),
+		    fromB = dt.fromB,
+		    v = new THREE.Vector3( dt.v.x, dt.v.y, dt.v.z );
+		var a, b, c, f, v0, v1, v2;
+
+		if( fromB ) {
+			fromB = new THREE.Vector3( dt.fromB.x, dt.fromB.y, dt.fromB.z );
 		}
 
-		for( var i = 0, len = faces.length; i < len; i++ ) {
-			f = faces[i];
-			a = new THREE.Vector3( f[0].x, f[0].y, f[0].z );
-			b = new THREE.Vector3( f[1].x, f[1].y, f[1].z );
-			c = new THREE.Vector3( f[2].x, f[2].y, f[2].z );
+		if( data.type == "filling" ) {
+			for( var i = 0, len = faces.length; i < len; i++ ) {
+				f = faces[i];
+				a = new THREE.Vector3( f[0].x, f[0].y, f[0].z );
+				b = new THREE.Vector3( f[1].x, f[1].y, f[1].z );
+				c = new THREE.Vector3( f[2].x, f[2].y, f[2].z );
 
-			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-				return true;
+				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+					continue;
+				}
+				if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
+					continue;
+				}
+				if( fromB ) {
+					if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
+						continue;
+					}
+				}
+
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+					return true;
+				}
+			}
+		}
+		else if( data.type == "model" ) {
+			for( var i = 0, len = faces.length; i < len; i++ ) {
+				f = faces[i];
+				v0 = MODEL_V[f[0]];
+				v1 = MODEL_V[f[1]];
+				v2 = MODEL_V[f[2]];
+				a = new THREE.Vector3( v0.x, v0.y, v0.z );
+				b = new THREE.Vector3( v1.x, v1.y, v1.z );
+				c = new THREE.Vector3( v2.x, v2.y, v2.z );
+
+				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+					continue;
+				}
+				if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
+					continue;
+				}
+				if( fromB ) {
+					if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
+						continue;
+					}
+				}
+
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+					return true;
+				}
 			}
 		}
 
@@ -259,6 +304,11 @@
 					url + "Plane.js",
 					url + "Utils.js"
 				);
+				break;
+
+			case "prepare":
+				MODEL_F = JSON.parse( e.data.modelF );
+				MODEL_V = JSON.parse( e.data.modelV );
 				break;
 
 			case "check":

@@ -7,19 +7,19 @@
  */
 var AdvancingFront = {
 
+	front: null,
+	filling: null,
+	heap: null,
+	hole: null,
 	holeIndex: -1,
+	loopCounter: null,
 	mergeThreshold: null,
 	modelGeo: null,
 	resultCallback: null,
 	ruleCallback: null,
 	ruleCallbackData: null,
 
-	front: null,
-	filling: null,
-	heap: null,
-	hole: null,
-
-	STOP_AFTER: CONFIG.DEBUG.AFM_STOP_AFTER_ITER,
+	STOP_AFTER: CONFIG.DEBUG.AF_STOP_AFTER_ITER,
 
 
 	/**
@@ -44,12 +44,24 @@ var AdvancingFront = {
 		this.filling.mergeVertices();
 
 		this.holeIndex = SceneManager.holes.indexOf( this.hole );
+		this.loopCounter = 0;
 		this.modelGeo = modelGeo;
+
 		this.initHeap( this.front );
 
-		this.countLoops = 0;
+		var firstMsg = false;
 
-		WorkerManager.createPool( "collision", CONFIG.HF.FILLING.WORKER + 1 );
+		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+			firstMsg = {
+				cmd: "prepare",
+				modelF: JSON.stringify( this.modelGeo.faces ),
+				modelV: JSON.stringify( this.modelGeo.vertices )
+			};
+		}
+
+		Stopwatch.start( "init workers" );
+		WorkerManager.createPool( "collision", CONFIG.HF.FILLING.WORKER + 1, firstMsg );
+		Stopwatch.stop( "init workers", true );
 
 		this.mainEventLoop();
 	},
@@ -541,36 +553,50 @@ var AdvancingFront = {
 	 * @return {boolean}             True, if still inside, false otherwise.
 	 */
 	isInHole: function( v, fromA, fromB ) {
-		var a, b, c, face;
+		var callback = this.isInHoleCallback.bind( this ),
+		    data = {
+		    	cmd: "check",
+		    	type: "filling",
+		    	faces: null,
+		    	test: JSON.stringify( {
+		    		v: v,
+		    		fromA: fromA,
+		    		fromB: fromB
+		    	} )
+		    },
+		    employedWorkerCounter = 0,
+		    lenFilling = this.filling.faces.length,
+		    lenModel = 0;
+		var a, b, c, dataMsg, face, facesPerWorker;
+
+		Stopwatch.start( "collision" );
 
 		this.workerResultCounter = 0;
 		this.workerResult = false;
+		this.neededWorkerResults = CONFIG.HF.FILLING.WORKER;
 
-		var len = this.filling.faces.length;
-
-		if( len == 0 ) {
+		if( lenFilling == 0 ) {
+			Stopwatch.stop( "collision" );
 			this.ruleCallback( false );
 			return;
 		}
 
-		var callback = this.isInHoleCallback.bind( this );
-		var data = {
-			cmd: "check",
-			faces: null,
-			v: v, fromA: fromA, fromB: fromB
-		};
+		facesPerWorker = Math.ceil( lenFilling / CONFIG.HF.FILLING.WORKER );
 
-		this.facesPerWorker = Math.ceil( len / CONFIG.HF.FILLING.WORKER );
-
-		if( len < CONFIG.HF.FILLING.WORKER ) {
-			this.workerResultCounter = CONFIG.HF.FILLING.WORKER - 1;
+		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+			lenModel = this.modelGeo.faces.length;
+			this.neededWorkerResults *= 2;
 		}
 
-		for( var i = 0; i < len; i += this.facesPerWorker ) {
+		if( lenFilling + lenModel < this.neededWorkerResults ) {
+			this.workerResultCounter = this.neededWorkerResults - 1;
+		}
+
+		for( var i = 0; i < lenFilling; i += facesPerWorker ) {
 			data.faces = [];
 
-			for( var j = 0; j < this.facesPerWorker; j++ ) {
-				if( i + j >= len ) {
+			for( var j = 0; j < facesPerWorker; j++ ) {
+				if( i + j >= lenFilling ) {
 					break;
 				}
 
@@ -579,18 +605,6 @@ var AdvancingFront = {
 				b = this.filling.vertices[face.b];
 				c = this.filling.vertices[face.c];
 
-				if( a == v || b == v || c == v ) {
-					continue;
-				}
-				if( a == fromA || b == fromA || c == fromA ) {
-					continue;
-				}
-				if( fromB != null ) {
-					if( a == fromB || b == fromB || c == fromB ) {
-						continue;
-					}
-				}
-
 				data.faces.push( [a, b, c] );
 			}
 
@@ -598,40 +612,46 @@ var AdvancingFront = {
 				this.workerResultCounter++;
 			}
 			else {
+				data.faces = JSON.stringify( data.faces );
+				employedWorkerCounter++;
 				WorkerManager.employWorker( "collision", data, callback );
 			}
 		}
 
-		if( face == null ) {
-			this.ruleCallback( false );
+		if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
+			if( employedWorkerCounter < CONFIG.HF.FILLING.WORKER ) {
+				this.workerResultCounter += CONFIG.HF.FILLING.WORKER - employedWorkerCounter;
+			}
+
+			data.type = "model";
+			facesPerWorker = Math.ceil( lenModel / CONFIG.HF.FILLING.WORKER );
+
+			for( var i = 0; i < lenModel; i += facesPerWorker ) {
+				data.faces = [];
+
+				for( var j = 0; j < facesPerWorker; j++ ) {
+					if( i + j >= lenModel ) {
+						break;
+					}
+
+					face = this.modelGeo.faces[i + j];
+					data.faces.push( [face.a, face.b, face.c] );
+				}
+
+				if( data.faces.length == 0 ) {
+					this.workerResultCounter++;
+				}
+				else {
+					data.faces = JSON.stringify( data.faces );
+					WorkerManager.employWorker( "collision", data, callback );
+				}
+			}
 		}
 
-		// // TODO: collision test with whole model
-		// if( CONFIG.HF.FILLING.COLLISION_TEST == "all" ) {
-		// 	for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
-		// 		face = this.modelGeo.faces[i];
-
-		// 		a = this.modelGeo.vertices[face.a];
-		// 		b = this.modelGeo.vertices[face.b];
-		// 		c = this.modelGeo.vertices[face.c];
-
-		// 		if( a == v || b == v || c == v ) {
-		// 			continue;
-		// 		}
-		// 		if( a == fromA || b == fromA || c == fromA ) {
-		// 			continue;
-		// 		}
-		// 		if( fromB != null ) {
-		// 			if( a == fromB || b == fromB || c == fromB ) {
-		// 				continue;
-		// 			}
-		// 		}
-
-		// 		if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
-		// 			return false;
-		// 		}
-		// 	}
-		// }
+		if( face == null ) {
+			Stopwatch.stop( "collision" );
+			this.ruleCallback( false );
+		}
 	},
 
 
@@ -645,10 +665,8 @@ var AdvancingFront = {
 
 		this.workerResultCounter++;
 
-		if( this.workerResultCounter == CONFIG.HF.FILLING.WORKER ) {
-			if( this.workerResult ) {
-				console.log( "intersects!" ); // TODO: REMOVE
-			}
+		if( this.workerResultCounter == this.neededWorkerResults ) {
+			Stopwatch.stop( "collision" );
 			this.ruleCallback( this.workerResult );
 		}
 	},
@@ -658,10 +676,10 @@ var AdvancingFront = {
 	 * Main loop.
 	 */
 	mainEventLoop: function() {
-		this.countLoops++;
+		this.loopCounter++;
 
 		// for debugging
-		if( this.STOP_AFTER !== false && this.countLoops > this.STOP_AFTER ) {
+		if( this.STOP_AFTER !== false && this.loopCounter > this.STOP_AFTER ) {
 			this.wrapUp();
 			return;
 		}
@@ -700,8 +718,6 @@ var AdvancingFront = {
 			}
 
 			ruleFunc( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2], this.angle.degree );
-
-			this.heap.sort();
 		}
 		else {
 			SceneManager.showFilling( this.front, this.filling );
@@ -716,6 +732,8 @@ var AdvancingFront = {
 	 * @param {THREE.Vector3} vNew New vertex by a rule.
 	 */
 	mainEventLoopReceiveVertex: function( vNew ) {
+		this.heap.sort();
+
 		if( !vNew || this.front.vertices.length != 3 ) {
 			// Compute the distances between each new created
 			// vertex and see, if they can be merged.
@@ -723,7 +741,9 @@ var AdvancingFront = {
 		}
 
 		// Update progress bar
-		UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
+		if( this.loopCounter % 4 == 0 ) {
+			UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
+		}
 
 		this.mainEventLoop();
 	},
@@ -846,10 +866,11 @@ var AdvancingFront = {
 	 */
 	wrapUp: function() {
 		console.log(
-			"Finished after " + ( this.countLoops - 1 ) + " iterations.\n",
+			"Finished after " + ( this.loopCounter - 1 ) + " iterations.\n",
 			"- New vertices: " + this.filling.vertices.length + "\n",
 			"- New faces: " + this.filling.faces.length
 		);
+		Stopwatch.average( "collision", true );
 
 		WorkerManager.closePool( "collision" );
 

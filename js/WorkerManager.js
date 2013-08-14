@@ -34,17 +34,18 @@ var WorkerManager = {
 	 * Create a worker pool.
 	 * @param {String} identifier Identifier for the pool.
 	 * @param {int}    number     Number of workers in the pool.
+	 * @param {Object} firstMsg   Initial data to send to each worker. (optional)
 	 */
-	createPool: function( identifier, number ) {
+	createPool: function( identifier, number, firstMsg ) {
 		var blob = new Blob(
-			[document.getElementById( "worker-collision" ).textContent],
+			[document.getElementById( "worker-" + identifier ).textContent],
 			{ type: "application/javascript" }
 		);
-		var workerBlobURL = window.URL.createObjectURL( blob );
-		var msgURL = {
-			cmd: "url",
-			url: GLOBAL.URL
-		};
+		var workerBlobURL = window.URL.createObjectURL( blob ),
+		    msgURL = {
+		    	cmd: "url",
+		    	url: GLOBAL.URL
+		    };
 		var worker;
 
 		this.pool[identifier] = [];
@@ -54,6 +55,9 @@ var WorkerManager = {
 			worker = new Worker( workerBlobURL );
 			worker.isFree = true;
 			worker.postMessage( msgURL );
+			if( firstMsg ) {
+				worker.postMessage( firstMsg );
+			}
 			this.pool[identifier].push( worker );
 		}
 	},

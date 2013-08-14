@@ -7,12 +7,15 @@
  */
 var AdvancingFront = {
 
+	callback: null,
 	heap: null,
+	hole: null,
 	holeIndex: -1,
+	loopCounter: null,
 	mergeThreshold: null,
 	modelGeo: null,
 
-	STOP_AFTER: CONFIG.DEBUG.AFM_STOP_AFTER_ITER,
+	STOP_AFTER: CONFIG.DEBUG.AF_STOP_AFTER_ITER,
 
 
 	/**
@@ -35,14 +38,12 @@ var AdvancingFront = {
 		this.callback = callback;
 		this.hole = hole;
 		this.holeIndex = SceneManager.holes.indexOf( hole );
+		this.loopCounter = 0;
 		this.mergeThreshold = mergeThreshold;
 		this.modelGeo = modelGeo;
 
 		this.initHeap( this.front );
 
-		var angle, ruleFunc, vNew;
-
-		this.loopCounter = 0;
 		this.mainLoop();
 	},
 
@@ -727,7 +728,9 @@ var AdvancingFront = {
 		}
 
 		// Update progress bar
-		UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
+		if( this.loopCounter % 4 == 0 ) {
+			UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
+		}
 
 		// Keep on looping
 		setTimeout( function() { this.mainLoop(); }.bind( this ), 0 );

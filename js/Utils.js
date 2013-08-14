@@ -190,12 +190,15 @@ var Utils = {
 	 * @return {boolean}             True, if triangles intersect, false otherwise.
 	 */
 	checkIntersectionOfTriangles3D: function( a, b, c, p, fromA, fromB ) {
-		var u = b.clone().sub( a ),
+		var planeOfTriangle = new Plane( a, b, c ),
+		    test = [fromA],
+		    u = b.clone().sub( a ),
 		    v = c.clone().sub( a );
-		var d = Math.pow( u.dot( v ), 2 ) - u.dot( u ) * v.dot( v ),
-		    planeOfTriangle = new Plane( a, b, c ),
-		    test = [fromA];
-		var r, s, t, w;
+		var uDotU = u.dot( u ),
+		    uDotV = u.dot( v ),
+		    vDotV = v.dot( v );
+		var d = uDotV * uDotV - uDotU * vDotV;
+		var r, s, t, w, wDotU, wDotV;
 
 		if( fromB ) {
 			test.push( fromB );
@@ -208,12 +211,14 @@ var Utils = {
 				continue;
 			}
 
-			w = r.clone().sub( a );
+			w = r.sub( a );
+			wDotV = w.dot( v );
+			wDotU = w.dot( u );
 
-			s = u.dot( v ) * w.dot( v ) - v.dot( v ) * w.dot( u );
+			s = uDotV * wDotV - vDotV * wDotU;
 			s /= d;
 
-			t = u.dot( v ) * w.dot( u ) - u.dot( u ) * w.dot( v );
+			t = uDotV * wDotU - uDotU * wDotV;
 			t /= d;
 
 			// Intersection of line with triangle found
