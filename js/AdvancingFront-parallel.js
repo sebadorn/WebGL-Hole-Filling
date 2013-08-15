@@ -11,33 +11,35 @@ AdvancingFront.ruleCallbackData = null;
 
 /**
  * Apply AF rule 1 and organise heaps/angles.
+ * @param {THREE.Vector3} vNew The new vertex.
  */
 AdvancingFront.applyRule1 = function( vNew ) {
 	var angle = this.angle;
+	var vp = angle.vertices[0],
+	    v = angle.vertices[1],
+	    vn = angle.vertices[2];
 
 	// Angle has successfully been processed.
 	// Update neighbouring angles.
 	if( vNew ) {
-		this.heap.remove( angle.previous.degree );
-		angle.previous.setVertices( [
-			angle.previous.vertices[0],
-			angle.previous.vertices[1],
-			angle.vertices[2]
-		] );
-		angle.previous.next = angle.next;
-		this.heap.insert( angle.previous.degree, angle.previous );
+		var angleNext = angle.next,
+		    anglePrev = angle.previous;
 
-		this.heap.remove( angle.next.degree );
-		angle.next.setVertices( [
-			angle.vertices[0],
-			angle.next.vertices[1],
-			angle.next.vertices[2]
-		] );
-		angle.next.previous = angle.previous;
-		this.heap.insert( angle.next.degree, angle.next );
+		this.heap.remove( anglePrev.degree );
+		this.heap.remove( angleNext.degree );
+
+		anglePrev.setVertices( [anglePrev.vertices[0], anglePrev.vertices[1], vn] );
+		anglePrev.next = angleNext;
+
+		angleNext.setVertices( [vp, angleNext.vertices[1], angleNext.vertices[2]] );
+		angleNext.previous = anglePrev;
+
+		this.heap.insert( anglePrev.degree, anglePrev );
+		this.heap.insert( angleNext.degree, angleNext );
 	}
 	// It failed, so insert the Angle back in.
 	else {
+		angle.waitForUpdate = true;
 		this.heap.insert( angle.degree, angle );
 	}
 
@@ -47,36 +49,35 @@ AdvancingFront.applyRule1 = function( vNew ) {
 
 /**
  * Apply AF rule 2 and organise heaps/angles.
+ * @param {THREE.Vector3} vNew The new vertex.
  */
 AdvancingFront.applyRule2 = function( vNew ) {
 	var angle = this.angle;
+	var vp = angle.vertices[0],
+	    v = angle.vertices[1],
+	    vn = angle.vertices[2];
 
 	// Angle has successfully been processed.
 	// Update the angle itself and neighbouring angles.
 	if( vNew ) {
-		angle.setVertices( [
-			angle.vertices[0],
-			vNew,
-			angle.vertices[2]
-		] );
+		var angleNext = angle.next,
+		    anglePrev = angle.previous;
 
-		this.heap.remove( angle.previous.degree );
-		angle.previous.setVertices( [
-			angle.previous.vertices[0],
-			angle.previous.vertices[1],
-			vNew
-		] );
-		this.heap.insert( angle.previous.degree, angle.previous );
+		angle.setVertices( [vp, vNew, vn] );
 
-		this.heap.remove( angle.next.degree );
-		angle.next.setVertices( [
-			vNew,
-			angle.next.vertices[1],
-			angle.next.vertices[2]
-		] );
-		this.heap.insert( angle.next.degree, angle.next );
+		this.heap.remove( anglePrev.degree );
+		this.heap.remove( angleNext.degree );
+
+		anglePrev.setVertices( [anglePrev.vertices[0], anglePrev.vertices[1], vNew] );
+		angleNext.setVertices( [vNew, angleNext.vertices[1], angleNext.vertices[2]] );
+
+		this.heap.insert( anglePrev.degree, anglePrev );
+		this.heap.insert( angleNext.degree, angleNext );
 	}
-	// Otherwise don't update the angles and just put it back in.
+	else {
+		angle.waitForUpdate = true;
+	}
+	// Otherwise don't update the Angles.
 	this.heap.insert( angle.degree, angle );
 
 	this.mainEventLoopReceiveVertex( vNew );
@@ -85,39 +86,39 @@ AdvancingFront.applyRule2 = function( vNew ) {
 
 /**
  * Apply AF rule 3 and organise heaps/angles.
+ * @param {THREE.Vector3} vNew The new vertex.
  */
 AdvancingFront.applyRule3 = function( vNew ) {
 	var angle = this.angle;
+	var vp = angle.vertices[0],
+	    v = angle.vertices[1],
+	    vn = angle.vertices[2];
 
 	// Angle has successfully been processed.
 	// Update the angle itself, neighbouring angles and create a new one.
 	if( vNew ) {
-		var newAngle = new Angle( [
-			angle.vertices[1],
-			vNew,
-			angle.vertices[2]
-		] );
+		var angleNext = angle.next,
+		    anglePrev = angle.previous,
+		    newAngle = new Angle( [v, vNew, vn] );
+
+		this.heap.remove( angleNext.degree );
+
 		newAngle.previous = angle;
-		newAngle.next = angle.next;
-		this.heap.insert( newAngle.degree, newAngle );
+		newAngle.next = angleNext;
 
-		this.heap.remove( angle.next.degree );
-		angle.next.setVertices( [
-			vNew,
-			angle.next.vertices[1],
-			angle.next.vertices[2]
-		] );
-		angle.next.previous = newAngle;
-		this.heap.insert( angle.next.degree, angle.next );
-
-		angle.setVertices( [
-			angle.vertices[0],
-			angle.vertices[1],
-			vNew
-		] );
+		angle.setVertices( [vp, v, vNew] );
 		angle.next = newAngle;
+
+		angleNext.setVertices( [vNew, angleNext.vertices[1], angleNext.vertices[2]] );
+		angleNext.previous = newAngle;
+
+		this.heap.insert( newAngle.degree, newAngle );
+		this.heap.insert( angleNext.degree, angleNext );
 	}
-	// Otherwise don't update the angles and just put it back in.
+	else {
+		angle.waitForUpdate = true;
+	}
+	// Otherwise don't update the Angles.
 	this.heap.insert( angle.degree, angle );
 
 	this.mainEventLoopReceiveVertex( vNew );
@@ -126,10 +127,9 @@ AdvancingFront.applyRule3 = function( vNew ) {
 
 /**
  * Check, if the sides of a triangle collide with a face of the filling and/or the whole model.
- * @param  {THREE.Vector3}  v       The vector to check.
- * @param  {THREE.Vector3}  fromA
- * @param  {THREE.Vector3}  fromB
- * @return {boolean}                True, if collision has been found, false otherwise.
+ * @param {THREE.Vector3}  v     The vector to check.
+ * @param {THREE.Vector3}  fromA
+ * @param {THREE.Vector3}  fromB
  */
 AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 	var callback = this.collisionTestCallback.bind( this ),
@@ -357,9 +357,9 @@ AdvancingFront.mainEventLoopReceiveVertex = function( vNew ) {
 /**
  * Apply rule 1 of the advancing front mesh algorithm.
  * Rule 1: Close gaps of angles <= 75°.
- * @param {THREE.Vector3}  vp      Previous vector.
- * @param {THREE.Vector3}  v       Current vector.
- * @param {THREE.Vector3}  vn      Next vector.
+ * @param {THREE.Vector3} vp Previous vector.
+ * @param {THREE.Vector3} v  Current vector.
+ * @param {THREE.Vector3} vn Next vector.
  */
 AdvancingFront.rule1 = function( vp, v, vn ) {
 	this.ruleCallback = this.rule1Callback;

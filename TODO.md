@@ -12,4 +12,3 @@
 * `Feature` Add filling algorithm: Volume based octree
 
 * `Final` Search all "TODO: REMOVE" lines
-* `Final` Complete and correct docs
