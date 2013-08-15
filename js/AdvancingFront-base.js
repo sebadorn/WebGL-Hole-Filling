@@ -262,6 +262,87 @@ var AdvancingFront = {
 	},
 
 
+	// rule1Calc: There isn't anything to calculate.
+
+
+	/**
+	 * Calculate a new vertex for rule 2.
+	 * @param  {THREE.Vector3} vp Previous vector.
+	 * @param  {THREE.Vector3} v  Current vector.
+	 * @param  {THREE.Vector3} vn Next vector.
+	 * @return {THREE.Vector3}    New vector.
+	 */
+	rule2Calc: function( vp, v, vn ) {
+		// To make things easier, we just move the whole thing into the origin
+		// and when we have the new point, we move it back.
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v ),
+		    origin = new THREE.Vector3();
+
+		// Create the plane of the vectors vp and vn
+		// with position vector v.
+		var plane = new Plane( origin, vpClone, vnClone );
+		var adjusted, avLen, vNew;
+
+		// Get a vector on that plane, that lies on half the angle between vp and vn.
+		vNew = plane.getPoint( 1, 1 );
+
+		// Compute the average length of vp and vn.
+		// Then adjust the position of the new vector, so it has this average length.
+		avLen = Utils.getAverageLength( vpClone, vnClone );
+		vNew.setLength( avLen );
+		vNew.add( v );
+
+		return vNew;
+	},
+
+
+	/**
+	 * Calculate a new vertex for rule 3.
+	 * @param  {THREE.Vector3} vp    Previous vector.
+	 * @param  {THREE.Vector3} v     Current vector.
+	 * @param  {THREE.Vector3} vn    Next vector.
+	 * @param  {float}         angle Angle created by these vectors.
+	 * @return {THREE.Vector3}       New vector.
+	 */
+	rule3Calc: function( vp, v, vn, angle ) {
+		var vpClone = vp.clone().sub( v ),
+		    vnClone = vn.clone().sub( v );
+		var halfWay = vnClone.clone().divideScalar( 2 );
+		var cross1, cross2, plane, vNew, vOnPlane;
+
+		cross1 = new THREE.Vector3().crossVectors( vpClone, vnClone );
+		cross1.normalize();
+		cross1.add( halfWay );
+		cross1.add( v );
+
+		cross2 = new THREE.Vector3().crossVectors(
+			cross1.clone().sub( v ).sub( halfWay ),
+			vnClone.clone().sub( halfWay )
+		);
+
+		if( angle < 180.0 ) {
+			cross2.multiplyScalar( -1 );
+		}
+
+		cross2.normalize();
+		cross2.add( v ).add( halfWay );
+
+		plane = new Plane(
+			new THREE.Vector3(),
+			vnClone.clone().sub( halfWay ),
+			cross2.clone().sub( v ).sub( halfWay )
+		);
+		vOnPlane = plane.getPoint( 0, vnClone.length() );
+		vNew = vOnPlane.clone();
+
+		vNew.add( v ).add( halfWay );
+		vNew = Utils.keepNearPlane( v, vn, vNew );
+
+		return vNew;
+	},
+
+
 	/**
 	 * Update the faces of the filling, because the index of a vertex has been changed.
 	 * @param  {THREE.Geometry} filling  The current state of the filling.

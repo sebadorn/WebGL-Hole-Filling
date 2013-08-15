@@ -81,7 +81,7 @@ var CONFIG = {
 		// - "iterative": Fast, but UI freezes until finished
 		// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
 		// - "parallel": ~5-6x slower, but UI stays responsive; uses Web Workers.
-		AF_MODE: "iterative",
+		AF_MODE: "parallel",
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
 		// while "filling" only tests the hole filling.
@@ -89,6 +89,9 @@ var CONFIG = {
 		COLLISION_TEST: "filling",
 		COLOR: 0x87C3EC,
 		LINE_WIDTH: 3,
+		// Update the progress bar every <int> loops.
+		// (No progress bar updates in "iterative" mode.)
+		PROGRESS_UPDATE: 4,
 		SHOW_SOLID: true,
 		SHOW_WIREFRAME: false,
 		// Threshold for the distance between two vertices before they are merged.

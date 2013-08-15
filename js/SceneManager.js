@@ -279,7 +279,7 @@ var SceneManager = {
 		}
 
 		Stopwatch.start( "fill hole (AF)" );
-		AdvancingFront.afmStart( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
+		AdvancingFront.start( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
 	},
 
 

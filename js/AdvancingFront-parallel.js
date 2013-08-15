@@ -10,243 +10,6 @@ AdvancingFront.ruleCallbackData = null;
 
 
 /**
- * Fill the hole using the advancing front algorithm.
- * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
- * @param  {Array<THREE.Line>} hole           The hole described by lines.
- * @param  {float}             mergeThreshold Threshold for merging.
- * @return {THREE.Geometry}                   The generated filling.
- */
-AdvancingFront.afmStart = function( modelGeo, hole, mergeThreshold, callback ) {
-	this.callback = callback;
-
-	this.filling = new THREE.Geometry();
-	this.front = new THREE.Geometry();
-	this.hole = hole;
-	this.mergeThreshold = mergeThreshold;
-
-	this.front.vertices = this.hole.slice( 0 );
-	this.filling.vertices = this.hole.slice( 0 );
-
-	this.front.mergeVertices();
-	this.filling.mergeVertices();
-
-	this.holeIndex = SceneManager.holes.indexOf( this.hole );
-	this.loopCounter = 0;
-	this.modelGeo = modelGeo;
-
-	this.initHeap( this.front );
-
-	var firstMsg = false;
-
-	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
-		firstMsg = {
-			cmd: "prepare",
-			modelF: JSON.stringify( this.modelGeo.faces ),
-			modelV: JSON.stringify( this.modelGeo.vertices )
-		};
-	}
-
-	Stopwatch.start( "init workers" );
-	WorkerManager.createPool( "collision", CONFIG.FILLING.WORKER + 1, firstMsg );
-	Stopwatch.stop( "init workers", true );
-
-	this.mainEventLoop();
-};
-
-
-/**
- * Apply rule 1 of the advancing front mesh algorithm.
- * Rule 1: Close gaps of angles <= 75°.
- * @param {THREE.Vector3}  vp      Previous vector.
- * @param {THREE.Vector3}  v       Current vector.
- * @param {THREE.Vector3}  vn      Next vector.
- */
-AdvancingFront.afRule1 = function( vp, v, vn ) {
-	this.ruleCallback = this.afRule1Callback;
-	this.ruleCallbackData = {
-		vp: vp,
-		v: v,
-		vn: vn
-	};
-	this.isInHole( vp, vn );
-};
-
-
-/**
- * Callback for the collision test.
- * @param {boolean} intersects True, if new vertex intersects with some other part.
- */
-AdvancingFront.afRule1Callback = function( intersects ) {
-	if( !intersects ) {
-		var data = this.ruleCallbackData;
-		var vIndex = this.filling.vertices.indexOf( data.v ),
-		    vnIndex = this.filling.vertices.indexOf( data.vn ),
-		    vpIndex = this.filling.vertices.indexOf( data.vp );
-
-		this.filling.faces.push( new THREE.Face3( vIndex, vpIndex, vnIndex ) );
-
-		// The vector v is not a part of the (moving) hole front anymore.
-		this.front.vertices.splice( this.front.vertices.indexOf( data.v ), 1 );
-	}
-
-	this.applyRule1( !intersects );
-};
-
-
-/**
- * Apply rule 2 of the advancing front mesh algorithm.
- * Rule 2: Create one new vertex if the angle is > 75° and <= 135°.
- * @param {THREE.Vector3} vp Previous vector.
- * @param {THREE.Vector3} v  Current vector.
- * @param {THREE.Vector3} vn Next vector.
- */
-AdvancingFront.afRule2 = function( vp, v, vn ) {
-	// To make things easier, we just move the whole thing into the origin
-	// and when we have the new point, we move it back.
-	var vpClone = vp.clone().sub( v ),
-	    vnClone = vn.clone().sub( v ),
-	    origin = new THREE.Vector3();
-
-	// Create the plane of the vectors vp and vn
-	// with position vector v.
-	var plane = new Plane( origin, vpClone, vnClone );
-	var adjusted, avLen, vNew;
-
-	// Get a vector on that plane, that lies on half the angle between vp and vn.
-	vNew = plane.getPoint( 1, 1 );
-
-	// Compute the average length of vp and vn.
-	// Then adjust the position of the new vector, so it has this average length.
-	avLen = Utils.getAverageLength( vpClone, vnClone );
-	vNew.setLength( avLen );
-	vNew.add( v );
-
-	this.ruleCallback = this.afRule2Callback;
-	this.ruleCallbackData = {
-		vp: vp,
-		v: v,
-		vn: vn,
-		vNew: vNew
-	};
-	this.isInHole( vNew, vp, vn );
-};
-
-
-/**
- * Callback for the collision test.
- * @param {boolean} intersects True, if new vertex intersects with some other part.
- */
-AdvancingFront.afRule2Callback = function( intersects ) {
-	if( !intersects ) {
-		var data = this.ruleCallbackData;
-
-		// New vertex
-		this.filling.vertices.push( data.vNew );
-
-		// New faces for 2 new triangles
-		var len = this.filling.vertices.length;
-		var vpIndex = this.filling.vertices.indexOf( data.vp ),
-		    vIndex = this.filling.vertices.indexOf( data.v ),
-		    vnIndex = this.filling.vertices.indexOf( data.vn );
-
-		this.filling.faces.push( new THREE.Face3( vIndex, vpIndex, len - 1 ) );
-		this.filling.faces.push( new THREE.Face3( vIndex, len - 1, vnIndex ) );
-
-		// Update front
-		var ix = this.front.vertices.indexOf( data.v );
-		this.front.vertices[ix] = data.vNew;
-
-		this.applyRule2( data.vNew );
-	}
-	else {
-		this.applyRule2( false );
-	}
-};
-
-
-/**
- * Apply rule 3 of the advancing front mesh algorithm.
- * Rule 3: Create a new vertex if the angle is > 135°.
- * @param {THREE.Vector3} vp    Previous vector.
- * @param {THREE.Vector3} v     Current vector.
- * @param {THREE.Vector3} vn    Next vector.
- * @param {float}         angle Angle created by these vectors.
- */
-AdvancingFront.afRule3 = function( vp, v, vn, angle ) {
-	var vpClone = vp.clone().sub( v ),
-	    vnClone = vn.clone().sub( v );
-
-	// New vertice
-	var halfWay = vnClone.clone().divideScalar( 2 );
-
-	var cross1 = new THREE.Vector3().crossVectors( vpClone, vnClone );
-	cross1.normalize();
-	cross1.add( halfWay );
-	cross1.add( v );
-
-	var cross2 = new THREE.Vector3().crossVectors(
-		cross1.clone().sub( v ).sub( halfWay ),
-		vnClone.clone().sub( halfWay )
-	);
-	if( angle < 180.0 ) {
-		cross2.multiplyScalar( -1 );
-	}
-	cross2.normalize();
-	cross2.add( v ).add( halfWay );
-
-	var plane = new Plane(
-		new THREE.Vector3(),
-		vnClone.clone().sub( halfWay ),
-		cross2.clone().sub( v ).sub( halfWay )
-	);
-	var vOnPlane = plane.getPoint( 0, vnClone.length() );
-	var vNew = vOnPlane.clone();
-
-	vNew.add( v ).add( halfWay );
-	vNew = Utils.keepNearPlane( v, vn, vNew );
-
-	this.ruleCallback = this.afRule3Callback;
-	this.ruleCallbackData = {
-		vp: vp,
-		v: v,
-		vn: vn,
-		vNew: vNew
-	};
-	this.isInHole( vNew, vp, vn );
-};
-
-
-/**
- * Callback for the collision test.
- * @param {boolean} intersects True, if new vertex intersects with some other part.
- */
-AdvancingFront.afRule3Callback = function( intersects ) {
-	if( !intersects ) {
-		var data = this.ruleCallbackData;
-
-		// New vertex
-		this.filling.vertices.push( data.vNew );
-
-		// New face for the new triangle
-		var len = this.filling.vertices.length;
-		var vnIndex = this.filling.vertices.indexOf( data.vn ),
-		    vIndex = this.filling.vertices.indexOf( data.v );
-
-		this.filling.faces.push( new THREE.Face3( vnIndex, vIndex, len - 1 ) );
-
-		// Update front
-		var ix = this.front.vertices.indexOf( data.v );
-		this.front.vertices.splice( ix + 1, 0, data.vNew );
-
-		this.applyRule3( data.vNew );
-	}
-	else {
-		this.applyRule3( false );
-	}
-};
-
-
-/**
  * Apply AF rule 1 and organise heaps/angles.
  */
 AdvancingFront.applyRule1 = function( vNew ) {
@@ -362,34 +125,14 @@ AdvancingFront.applyRule3 = function( vNew ) {
 
 
 /**
- * Get the rule function for the given angle.
- * @param  {float}    degree Angle in degree.
- * @return {Function}        The function to the rule, or false if none available.
+ * Check, if the sides of a triangle collide with a face of the filling and/or the whole model.
+ * @param  {THREE.Vector3}  v       The vector to check.
+ * @param  {THREE.Vector3}  fromA
+ * @param  {THREE.Vector3}  fromB
+ * @return {boolean}                True, if collision has been found, false otherwise.
  */
-AdvancingFront.getRuleFunctionForAngle = function( degree ) {
-	if( degree <= 75.0 ) {
-		return this.afRule1.bind( this );
-	}
-	else if( degree <= 135.0 ) {
-		return this.afRule2.bind( this );
-	}
-	else if( degree < 180.0 ) {
-		return this.afRule3.bind( this );
-	}
-
-	return false;
-};
-
-
-/**
- * Check, if a vector is inside the hole or has left the boundary.
- * @param  {THREE.Vector3} v     The vector to check.
- * @param  {THREE.Vector3} fromA
- * @param  {THREE.Vector3} fromB
- * @return {boolean}             True, if still inside, false otherwise.
- */
-AdvancingFront.isInHole = function( v, fromA, fromB ) {
-	var callback = this.isInHoleCallback.bind( this ),
+AdvancingFront.collisionTest = function( v, fromA, fromB ) {
+	var callback = this.collisionTestCallback.bind( this ),
 	    data = {
 	    	cmd: "check",
 	    	type: "filling",
@@ -494,7 +237,7 @@ AdvancingFront.isInHole = function( v, fromA, fromB ) {
 /**
  * Callback function for the collision workers.
  */
-AdvancingFront.isInHoleCallback = function( e ) {
+AdvancingFront.collisionTestCallback = function( e ) {
 	if( e.data.intersects ) {
 		this.workerResult = true;
 	}
@@ -505,6 +248,26 @@ AdvancingFront.isInHoleCallback = function( e ) {
 		Stopwatch.stop( "collision" );
 		this.ruleCallback( this.workerResult );
 	}
+};
+
+
+/**
+ * Get the rule function for the given angle.
+ * @param  {float}    degree Angle in degree.
+ * @return {Function}        The function to the rule, or false if none available.
+ */
+AdvancingFront.getRuleFunctionForAngle = function( degree ) {
+	if( degree <= 75.0 ) {
+		return this.rule1.bind( this );
+	}
+	else if( degree <= 135.0 ) {
+		return this.rule2.bind( this );
+	}
+	else if( degree < 180.0 ) {
+		return this.rule3.bind( this );
+	}
+
+	return false;
 };
 
 
@@ -583,9 +346,199 @@ AdvancingFront.mainEventLoopReceiveVertex = function( vNew ) {
 	}
 
 	// Update progress bar
-	if( this.loopCounter % 4 == 0 ) {
+	if( this.loopCounter % CONFIG.FILLING.PROGRESS_UPDATE == 0 ) {
 		UI.updateProgress( 100 - Math.round( this.front.vertices.length / this.hole.length * 100 ) );
 	}
+
+	this.mainEventLoop();
+};
+
+
+/**
+ * Apply rule 1 of the advancing front mesh algorithm.
+ * Rule 1: Close gaps of angles <= 75°.
+ * @param {THREE.Vector3}  vp      Previous vector.
+ * @param {THREE.Vector3}  v       Current vector.
+ * @param {THREE.Vector3}  vn      Next vector.
+ */
+AdvancingFront.rule1 = function( vp, v, vn ) {
+	this.ruleCallback = this.rule1Callback;
+	this.ruleCallbackData = {
+		vp: vp,
+		v: v,
+		vn: vn
+	};
+	this.collisionTest( vp, vn );
+};
+
+
+/**
+ * Callback for the collision test.
+ * @param {boolean} intersects True, if new vertex intersects with some other part.
+ */
+AdvancingFront.rule1Callback = function( intersects ) {
+	if( !intersects ) {
+		var data = this.ruleCallbackData;
+		var vIndexFront = this.front.vertices.indexOf( data.v ),
+		    vIndexFilling = this.filling.vertices.indexOf( data.v ),
+		    vnIndexFilling = this.filling.vertices.indexOf( data.vn ),
+		    vpIndexFilling = this.filling.vertices.indexOf( data.vp );
+
+		this.filling.faces.push( new THREE.Face3( vIndexFilling, vpIndexFilling, vnIndexFilling ) );
+
+		// The vector v is not a part of the (moving) hole front anymore.
+		this.front.vertices.splice( vIndexFront, 1 );
+	}
+
+	this.applyRule1( !intersects );
+};
+
+
+/**
+ * Apply rule 2 of the advancing front mesh algorithm.
+ * Rule 2: Create one new vertex if the angle is > 75° and <= 135°.
+ * @param {THREE.Vector3} vp Previous vector.
+ * @param {THREE.Vector3} v  Current vector.
+ * @param {THREE.Vector3} vn Next vector.
+ */
+AdvancingFront.rule2 = function( vp, v, vn ) {
+	var vNew = this.rule2Calc( vp, v, vn );
+
+	this.ruleCallback = this.rule2Callback;
+	this.ruleCallbackData = {
+		vp: vp,
+		v: v,
+		vn: vn,
+		vNew: vNew
+	};
+	this.collisionTest( vNew, vp, vn );
+};
+
+
+/**
+ * Callback for the collision test.
+ * @param {boolean} intersects True, if new vertex intersects with some other part.
+ */
+AdvancingFront.rule2Callback = function( intersects ) {
+	if( !intersects ) {
+		var data = this.ruleCallbackData;
+
+		// New vertex
+		this.filling.vertices.push( data.vNew );
+
+		// New faces for 2 new triangles
+		var len = this.filling.vertices.length,
+		    vIndexFront = this.front.vertices.indexOf( data.v ),
+		    vpIndexFilling = this.filling.vertices.indexOf( data.vp ),
+		    vIndexFilling = this.filling.vertices.indexOf( data.v ),
+		    vnIndexFilling = this.filling.vertices.indexOf( data.vn );
+
+		this.filling.faces.push( new THREE.Face3( vIndexFilling, vpIndexFilling, len - 1 ) );
+		this.filling.faces.push( new THREE.Face3( vIndexFilling, len - 1, vnIndexFilling ) );
+
+		// Update front
+		this.front.vertices[vIndexFront] = data.vNew;
+
+		this.applyRule2( data.vNew );
+	}
+	else {
+		this.applyRule2( false );
+	}
+};
+
+
+/**
+ * Apply rule 3 of the advancing front mesh algorithm.
+ * Rule 3: Create a new vertex if the angle is > 135°.
+ * @param {THREE.Vector3} vp    Previous vector.
+ * @param {THREE.Vector3} v     Current vector.
+ * @param {THREE.Vector3} vn    Next vector.
+ * @param {float}         angle Angle created by these vectors.
+ */
+AdvancingFront.rule3 = function( vp, v, vn, angle ) {
+	var vNew = this.rule3Calc( vp, v, vn, angle );
+
+	this.ruleCallback = this.rule3Callback;
+	this.ruleCallbackData = {
+		vp: vp,
+		v: v,
+		vn: vn,
+		vNew: vNew
+	};
+	this.collisionTest( vNew, vp, vn );
+};
+
+
+/**
+ * Callback for the collision test.
+ * @param {boolean} intersects True, if new vertex intersects with some other part.
+ */
+AdvancingFront.rule3Callback = function( intersects ) {
+	if( !intersects ) {
+		var data = this.ruleCallbackData;
+
+		// New vertex
+		this.filling.vertices.push( data.vNew );
+
+		// New face for the new triangle
+		var len = this.filling.vertices.length,
+		    vIndexFront = this.front.vertices.indexOf( data.v ),
+		    vnIndexFilling = this.filling.vertices.indexOf( data.vn ),
+		    vIndexFilling = this.filling.vertices.indexOf( data.v );
+
+		this.filling.faces.push( new THREE.Face3( vnIndexFilling, vIndexFilling, len - 1 ) );
+
+		// Update front
+		this.front.vertices.splice( vIndexFront + 1, 0, data.vNew );
+
+		this.applyRule3( data.vNew );
+	}
+	else {
+		this.applyRule3( false );
+	}
+};
+
+
+/**
+ * Fill the hole using the advancing front algorithm.
+ * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
+ * @param  {Array<THREE.Line>} hole           The hole described by lines.
+ * @param  {float}             mergeThreshold Threshold for merging.
+ * @return {THREE.Geometry}                   The generated filling.
+ */
+AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
+	this.callback = callback;
+
+	this.filling = new THREE.Geometry();
+	this.front = new THREE.Geometry();
+	this.hole = hole;
+	this.mergeThreshold = mergeThreshold;
+
+	this.front.vertices = this.hole.slice( 0 );
+	this.filling.vertices = this.hole.slice( 0 );
+
+	this.front.mergeVertices();
+	this.filling.mergeVertices();
+
+	this.holeIndex = SceneManager.holes.indexOf( this.hole );
+	this.loopCounter = 0;
+	this.modelGeo = modelGeo;
+
+	this.initHeap( this.front );
+
+	var firstMsg = false;
+
+	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+		firstMsg = {
+			cmd: "prepare",
+			modelF: JSON.stringify( this.modelGeo.faces ),
+			modelV: JSON.stringify( this.modelGeo.vertices )
+		};
+	}
+
+	Stopwatch.start( "init workers" );
+	WorkerManager.createPool( "collision", CONFIG.FILLING.WORKER + 1, firstMsg );
+	Stopwatch.stop( "init workers", true );
 
 	this.mainEventLoop();
 };
