@@ -7,7 +7,10 @@
  */
 var UI = {
 
+	callbackExport: null,
+	callbackFillHole: null,
 	domDetails: null,
+	fillButton: null,
 	visibleProgress: null,
 
 
@@ -57,6 +60,17 @@ var UI = {
 
 
 	/**
+	 * Disable the fill button.
+	 */
+	disableFillButton: function() {
+		if( this.fillButton.className.indexOf( " disabled" ) < 0 ) {
+			this.fillButton.removeEventListener( "click", this.callbackFillHole, false );
+			this.fillButton.className += " disabled";
+		}
+	},
+
+
+	/**
 	 * Dragover event of import area.
 	 */
 	dragoverOfImport: function( e ) {
@@ -83,21 +97,13 @@ var UI = {
 	init: function() {
 		this.domDetails = document.getElementById( "details" );
 
+		this.callbackExport = this.startExport.bind( this.domDetails.querySelector( ".details-export" ) );
+		this.callbackFillHole = SceneManager.fillHole.bind( SceneManager );
+
+		this.fillButton = document.querySelector( ".fillholeStart" );
+
 		this.syncInterfaceWithConfig();
 		this.REGISTER.registerEvents();
-	},
-
-
-	/**
-	 * Reset detail section.
-	 * @param {DOMElement} detail Detail section to reset/clean.
-	 */
-	resetDetail: function( detail ) {
-		var areas = detail.querySelectorAll( ".detail fieldset" );
-
-		for( var i = 0; i < areas.length; i++ ) {
-			this.cleanOfChildNodes( areas[i] );
-		}
 	},
 
 
@@ -105,19 +111,12 @@ var UI = {
 	 * Reset the interface.
 	 */
 	resetInterface: function() {
-		var details = this.domDetails.querySelectorAll( ".details-collection" ),
-		    detailFieldsets = this.domDetails.querySelectorAll( ".detail fieldset" ),
-		    detailFillHoleNumber = this.domDetails.querySelector( ".detail-fillhole .number" );
-
-		for( var i = 0; i < detailFieldsets.length; i++ ) {
-			this.cleanOfChildNodes( detailFieldsets[i] );
-		}
+		var details = this.domDetails.querySelectorAll( ".details-collection" );
 
 		for( var i = 0; i < details.length; i++ ) {
 			details[i].setAttribute( "hidden", "hidden" );
 		}
 
-		detailFillHoleNumber.textContent = "-";
 		this.visibleProgress = null;
 	},
 
@@ -130,7 +129,8 @@ var UI = {
 		    detailFillHole = this.domDetails.querySelector( ".detail-fillhole" ),
 		    detailHoleInfo = this.domDetails.querySelector( ".detail-holeinfo" ),
 		    index = parseInt( e.target.getAttribute( "data-index" ), 10 );
-		var area, btnFill, infoVertices, merging, number;
+		var area, infoVertices, merging, number;
+
 
 		for( var i = 0, len = children.length; i < len; i++ ) {
 			children[i].className = children[i].className.replace( " active", "" );
@@ -139,21 +139,36 @@ var UI = {
 
 		SceneManager.focusHole( index );
 
+
 		// Detail: Hole Info
 		infoVertices = detailHoleInfo.querySelector( "#holeinfo-vertices" );
 		infoVertices.textContent = SceneManager.holes[index].length;
+
 
 		// Merging threshold
 		merging = document.getElementById( "merge-threshold" );
 		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
 
+
 		// Detail: Fill Hole
 		number = detailFillHole.querySelector( ".caption .number" );
 		number.textContent = index + 1;
 
+
 		// Start button
-		btnFill = detailFillHole.querySelector( ".fillholeStart" );
-		btnFill.setAttribute( "data-fillhole", index );
+		this.fillButton.setAttribute( "data-fillhole", index );
+		this.fillButton.removeEventListener( "click", this.callbackFillHole, false );
+
+		if( e.target.className.indexOf( "filled" ) >= 0 ) {
+			if( this.fillButton.className.indexOf( " disabled" ) < 0 ) {
+				this.fillButton.className += " disabled";
+			}
+		}
+		else {
+			this.fillButton.addEventListener( "click", this.callbackFillHole, false );
+			this.fillButton.className = this.fillButton.className.replace( " disabled", "" );
+		}
+
 
 		// Progress bar
 		if( e.target.className.indexOf( "filled" ) < 0 ) {
@@ -175,11 +190,12 @@ var UI = {
 		    sectionName = detail.querySelector( ".detail-exportname fieldset" ),
 		    sectionExport = detail.querySelector( ".detail-export fieldset" ),
 		    sectionProgress = detail.querySelector( ".detail-exportprogress fieldset" );
-		var defaultName, format, progress, radioPair;
+		var btnExport, defaultName, exportName, format, radioPair;
 
-		this.resetDetail( detail );
 
 		// Export formats
+		this.cleanOfChildNodes( sectionFormat );
+
 		for( var i = 0; i < formats.length; i++ ) {
 			format = formats[i];
 
@@ -194,21 +210,25 @@ var UI = {
 			sectionFormat.appendChild( radioPair.button );
 		}
 
+
 		// Insert name for model
 		defaultName = SceneManager.model.name + "_filled." + CONFIG.EXPORT.DEFAULT_FORMAT.toLowerCase();
 
-		sectionName.appendChild(
-			this.BUILDER.createTextField( defaultName, "export_name" )
-		);
+		exportName = sectionName.querySelector( "#export_name" );
+		exportName.value = defaultName;
+
 
 		// Button to start export
-		sectionExport.appendChild(
-			this.BUILDER.createButton( "Export", this.startExport.bind( detail ) )
-		);
+		btnExport = sectionExport.querySelector( ".button" );
+		btnExport.removeEventListener( "click", this.callbackExport, false );
+		btnExport.addEventListener( "click", this.callbackExport, false );
+
 
 		// Progress
+		this.cleanOfChildNodes( sectionProgress );
 		this.visibleProgress = this.BUILDER.createProgress();
 		sectionProgress.appendChild( this.visibleProgress );
+
 
 		this.hideAllDetails();
 		detail.removeAttribute( "hidden" );
@@ -220,23 +240,23 @@ var UI = {
 	 * @param {Array<THREE.Line>} foundHoles The found holes.
 	 */
 	showDetailHoles: function( foundHoles ) {
-		var d = document,
-		    detail = this.domDetails.querySelector( ".details-holefilling" );
+		var detail = this.domDetails.querySelector( ".details-holefilling" );
 		var sectionFoundHoles = detail.querySelector( ".detail-foundholes fieldset" ),
 		    sectionHoleInfo = detail.querySelector( ".detail-holeinfo fieldset" ),
 		    sectionFillHole = detail.querySelector( ".detail-fillhole fieldset" ),
-		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" ),
-		    selection = d.createElement( "div" );
-		var btnFill, info, infoLabel, merging, progress;
-
-		this.resetDetail( detail );
+		    sectionProgress = detail.querySelector( ".detail-fillprogress fieldset" );
+		var btnFocusHole, callback, holeNumber, holeSelection,
+		    holeVertices, merging, msg;
 
 
 		// Found holes
-		selection.className = "selectContainer foundHoles";
+		holeSelection = sectionFoundHoles.querySelector( ".foundHoles" );
+		this.cleanOfChildNodes( holeSelection );
+
+		msg = sectionFoundHoles.querySelector( ".message" );
 
 		if( foundHoles.length > 0 ) {
-			var btnFocusHole;
+			msg.setAttribute( "hidden", "hidden" );
 
 			for( var i = 0; i < foundHoles.length; i++ ) {
 				btnFocusHole = this.BUILDER.createButton(
@@ -246,48 +266,30 @@ var UI = {
 				btnFocusHole.style.borderLeftColor = "#" + foundHoles[i].material.color.getHexString();
 				btnFocusHole.setAttribute( "data-index", i );
 
-				selection.appendChild( btnFocusHole );
+				holeSelection.appendChild( btnFocusHole );
 			}
-			sectionFoundHoles.appendChild( selection );
+			sectionFoundHoles.appendChild( holeSelection );
 		}
 		else {
-			var msg = d.createElement( "p" );
-			msg.className = "message";
-			msg.textContent = "No holes found."
-
-			sectionFoundHoles.appendChild( msg );
+			msg.removeAttribute( "hidden" );
 		}
 
 
-		// Hole information
-		info = d.createElement( "span" );
-		info.className = "info";
-		info.id = "holeinfo-vertices";
-		info.textContent = "-";
-
-		infoLabel = d.createElement( "label" );
-		infoLabel.textContent = "front vertices";
-
-		sectionHoleInfo.appendChild( info );
-		sectionHoleInfo.appendChild( infoLabel );
+		// Hole info
+		holeVertices = sectionHoleInfo.querySelector( "#holeinfo-vertices" );
+		holeVertices.textContent = "-";
 
 
 		// Fill hole options
-		merging = d.createElement( "input" );
-		merging.type = "number";
-		merging.min = "0.01";
-		merging.step = "0.01";
+		holeNumber = document.querySelector( ".detail-fillhole .number" );
+		holeNumber.textContent = "-";
+
+		merging = sectionFillHole.querySelector( "#merge-threshold" );
 		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
-		merging.id = "merge-threshold";
-
-		btnFill = this.BUILDER.createButton( "Advancing Front", SceneManager.fillHole.bind( SceneManager ) );
-		btnFill.className += " fillholeStart";
-
-		sectionFillHole.appendChild( merging );
-		sectionFillHole.appendChild( btnFill );
 
 
 		// Progress
+		this.cleanOfChildNodes( sectionProgress );
 		this.visibleProgress = this.BUILDER.createProgress();
 		sectionProgress.appendChild( this.visibleProgress );
 
@@ -334,10 +336,12 @@ var UI = {
 
 		// Rendering: Mode
 		if( cfg.MODE == "solid" ) {
-			d.getElementById( "render_solid" ).setAttribute( "checked", "checked" );
+			d.getElementById( "render_solid_model" ).setAttribute( "checked", "checked" );
+			d.getElementById( "render_solid_filling" ).setAttribute( "checked", "checked" );
 		}
 		else if( cfg.MODE == "wireframe" ) {
-			d.getElementById( "render_wireframe" ).setAttribute( "checked", "checked" );
+			d.getElementById( "render_wireframe_model" ).setAttribute( "checked", "checked" );
+			d.getElementById( "render_wireframe_filling" ).setAttribute( "checked", "checked" );
 		}
 
 		// Rendering: Shading
@@ -436,27 +440,6 @@ UI.BUILDER = {
 			radio: input,
 			button: label
 		};
-	},
-
-
-	/**
-	 * Create a text input field.
-	 * @param  {String}     value Initial value of the field.
-	 * @param  {String}     id    ID for the field. (optional)
-	 * @return {HTMLObject}       The created input text field.
-	 */
-	createTextField: function( value, id ) {
-		var text = document.createElement( "input" );
-
-		text.className = "textinput";
-		text.type = "text";
-		text.value = value;
-
-		if( id ) {
-			text.id = id;
-		}
-
-		return text;
 	}
 
 };
@@ -556,8 +539,16 @@ UI.REGISTER = {
 		var radio;
 
 		for( var i = 0; i < modeOptions.length; i++ ) {
-			radio = d.getElementById( "render_" + modeOptions[i] );
-			radio.addEventListener( "change", SceneManager.changeMode.bind( SceneManager ), false );
+			radio = d.getElementById( "render_" + modeOptions[i] + "_model" );
+			radio.addEventListener( "change", function( e ) {
+				SceneManager.changeMode( e, "model" );
+			}.bind( SceneManager ), false );
+		}
+		for( var i = 0; i < modeOptions.length; i++ ) {
+			radio = d.getElementById( "render_" + modeOptions[i] + "_filling" );
+			radio.addEventListener( "change", function( e ) {
+				SceneManager.changeMode( e, "filling" );
+			}.bind( SceneManager ), false );
 		}
 	},
 

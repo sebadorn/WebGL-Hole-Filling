@@ -88,7 +88,7 @@ var CONFIG = {
 		// "all" is really slow.
 		COLLISION_TEST: "filling",
 		COLOR: 0x87C3EC,
-		LINE_WIDTH: 3,
+		LINE_WIDTH: 2,
 		// Update the progress bar every <int> loops.
 		// (No progress bar updates in "iterative" mode.)
 		PROGRESS_UPDATE: 4,

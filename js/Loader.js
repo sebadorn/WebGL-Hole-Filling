@@ -166,7 +166,9 @@ var Loader = {
 		}
 
 		if( CONFIG.CHECK_AND_FIX_FACES ) {
+			Stopwatch.start( "checkAndFixFaces" );
 			geometry = this.checkAndFixFaces( geometry );
+			Stopwatch.stop( "checkAndFixFaces", true );
 		}
 
 		sm.model = sm.geometryToMesh( geometry );

@@ -401,6 +401,10 @@ label.newradio:last-of-type {
 	color: #000000;
 }
 
+.button.disabled {
+	opacity: 0.5;
+}
+
 .textinput {
 	-moz-box-sizing: border-box;
 	     box-sizing: border-box;

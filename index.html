@@ -6,6 +6,12 @@
 	<title>WebGL 3D Print Preparations</title>
 	<link rel="stylesheet" href="screen.css" />
 
+	<script src="js/threeJS/three.min.js"></script>
+	<script src="js/threeJS/loaders/OBJLoader.js"></script>
+	<script src="js/threeJS/loaders/PLYLoader.js"></script>
+	<script src="js/threeJS/loaders/STLLoader.js"></script>
+	<script src="js/threeJS/controls/TrackballControls.js"></script>
+
 	<script src="js/config.js"></script>
 	<script src="js/Init.js"></script>
 	<script src="js/Utils.js"></script>
@@ -23,12 +29,6 @@
 
 	<script src="js/HalfEdge/Mesh.js"></script>
 	<script src="js/HalfEdge/Vertex.js"></script>
-
-	<script src="js/threeJS/three.min.js"></script>
-	<script src="js/threeJS/loaders/OBJLoader.js"></script>
-	<script src="js/threeJS/loaders/PLYLoader.js"></script>
-	<script src="js/threeJS/loaders/STLLoader.js"></script>
-	<script src="js/threeJS/controls/TrackballControls.js"></script>
 
 	<script src="js/setup.js"></script>
 
@@ -63,10 +63,19 @@
 			<legend>Renderer</legend>
 
 			<section>
-				<input class="newradio" type="radio" name="render_mode" id="render_solid" value="solid" />
-				<label class="newradio" for="render_solid">Solid</label>
-				<input class="newradio" type="radio" name="render_mode" id="render_wireframe" value="wireframe" />
-				<label class="newradio" for="render_wireframe">Wireframe</label>
+				<input class="newradio" type="radio" name="render_mode_model" id="render_solid_model" value="solid" />
+				<label class="newradio" for="render_solid_model">Solid</label>
+				<input class="newradio" type="radio" name="render_mode_model" id="render_wireframe_model" value="wireframe" />
+				<label class="newradio" for="render_wireframe_model">Wireframe</label>
+				<span class="description">Model</span>
+			</section>
+
+			<section>
+				<input class="newradio" type="radio" name="render_mode_filling" id="render_solid_filling" value="solid" />
+				<label class="newradio" for="render_solid_filling">Solid</label>
+				<input class="newradio" type="radio" name="render_mode_filling" id="render_wireframe_filling" value="wireframe" />
+				<label class="newradio" for="render_wireframe_filling">Wireframe</label>
+				<span class="description">Filling</span>
 			</section>
 
 			<section>
@@ -166,19 +175,29 @@
 		<!-- found holes -->
 		<li class="detail detail-foundholes">
 			<div class="caption">Found Holes</div>
-			<fieldset></fieldset>
+			<fieldset>
+				<p class="message" hidden>No holes found.</p>
+				<div class="selectContainer foundHoles"></div>
+			</fieldset>
 		</li>
 
 		<!-- hole information -->
 		<li class="detail detail-holeinfo">
 			<div class="caption">Hole Information</div>
-			<fieldset></fieldset>
+			<fieldset>
+				<span class="info" id="holeinfo-vertices">-</span>
+				<label>Front vertices</label>
+			</fieldset>
 		</li>
 
 		<!-- fill hole -->
 		<li class="detail detail-fillhole">
 			<div class="caption">Fill Hole<span class="number">-</span></div>
-			<fieldset></fieldset>
+			<fieldset>
+				<input type="number" min="0.01" step="0.01" id="merge-threshold" />
+				<label>Merging</label>
+				<input type="button" class="button disabled fillholeStart" value="Advancing Front" />
+			</fieldset>
 		</li>
 
 		<!-- progress -->
@@ -202,13 +221,17 @@
 		<!-- name -->
 		<li class="detail detail-exportname">
 			<div class="caption">Name</div>
-			<fieldset></fieldset>
+			<fieldset>
+				<input type="text" class="textinput" id="export_name" />
+			</fieldset>
 		</li>
 
 		<!-- export -->
 		<li class="detail detail-export">
 			<div class="caption">Export</div>
-			<fieldset></fieldset>
+			<fieldset>
+				<input type="button" class="button" value="Export" />
+			</fieldset>
 		</li>
 
 		<!-- progress -->
@@ -220,6 +243,7 @@
 	</ul>
 
 </div>
+
 
 <!-- Worker for use with AdvancingFront-withWorkers.js -->
 <script id="worker-collision" type="javascript/worker">

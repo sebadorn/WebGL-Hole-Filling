@@ -15,7 +15,8 @@ var SceneManager = {
 		camera: true,
 		directional: true
 	},
-	mode: CONFIG.MODE,
+	modeFilling: CONFIG.MODE,
+	modeModel: CONFIG.MODE,
 	model: null,
 	scene: null,
 	shading: CONFIG.SHADING,
@@ -51,35 +52,56 @@ var SceneManager = {
 
 	/**
 	 * Change the mode the model is rendered: Solid or Wireframe.
+	 * @param {String} what "model" or "filling".
 	 */
-	changeMode: function( e ) {
+	changeMode: function( e, what ) {
 		var value = e.target.value;
 
 		if( !e.target.checked || this.model === null ) {
 			return false;
 		}
 
-		switch( value ) {
+		if( what == "model" ) {
+			switch( value ) {
 
-			case "solid":
-				this.model.material.wireframe = false;
-				for( var key in this.fillings ) {
-					this.fillings[key].solid.material.wireframe = false;
-				}
-				break;
+				case "solid":
+					this.model.material.wireframe = false;
+					break;
 
-			case "wireframe":
-				this.model.material.wireframe = true;
-				for( var key in this.fillings ) {
-					this.fillings[key].solid.material.wireframe = true;
-				}
-				break;
+				case "wireframe":
+					this.model.material.wireframe = true;
+					break;
 
-			default:
-				return false;
+				default:
+					return false;
+
+			}
+
+			this.modeModel = value;
+		}
+		else if( what == "filling" ) {
+			switch( value ) {
+
+				case "solid":
+					for( var key in this.fillings ) {
+						this.fillings[key].solid.material.wireframe = false;
+					}
+					break;
+
+				case "wireframe":
+					for( var key in this.fillings ) {
+						this.fillings[key].solid.material.wireframe = true;
+					}
+					break;
+
+				default:
+					return false;
+
+			}
+
+			this.modeFilling = value;
 		}
 
-		this.mode = value;
 		render();
 	},
 
@@ -279,6 +301,7 @@ var SceneManager = {
 		}
 
 		Stopwatch.start( "fill hole (AF)" );
+		UI.disableFillButton();
 		AdvancingFront.start( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
 	},
 
@@ -305,6 +328,7 @@ var SceneManager = {
 		var border = HoleFinding.findBorderEdges( this.model );
 
 		Stopwatch.stop( "find holes", true );
+		Stopwatch.remove( "find holes" );
 
 		if( CONFIG.HOLES.SHOW_LINES ) {
 			for( var i = 0, len = border.lines.length; i < len; i++ ) {
@@ -541,7 +565,8 @@ var SceneManager = {
 				color: CONFIG.FILLING.COLOR,
 				shading: SceneManager.getCurrentShading(),
 				side: THREE.DoubleSide,
-				wireframe: false
+				wireframe: false,
+				wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
 			} );
 			var meshSolid = new THREE.Mesh( filling, materialSolid );
 

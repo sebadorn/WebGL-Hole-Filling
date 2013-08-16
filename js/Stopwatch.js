@@ -20,9 +20,10 @@ var Stopwatch = {
 	 */
 	average: function( identifier, print ) {
 		if( !this.enabled ) { return false; }
+		if( !this.times.hasOwnProperty( identifier ) ) { return false; }
 
-		var time = this.times[identifier];
-		var average = 0.0;
+		var average = 0.0,
+		    time = this.times[identifier];
 
 		for( var i = 0; i < time.total.length; i++ ) {
 			average += time.total[i];
@@ -48,6 +49,15 @@ var Stopwatch = {
 		if( !this.enabled ) { return false; }
 
 		return this.times[identifier];
+	},
+
+
+	/**
+	 * Delete a Stopwatch entry.
+	 * @param {String} identifier Identifier for the entry to delete.
+	 */
+	remove: function( identifier ) {
+		delete this.times[identifier];
 	},
 
 

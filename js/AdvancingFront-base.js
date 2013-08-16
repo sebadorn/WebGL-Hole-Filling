@@ -384,6 +384,7 @@ var AdvancingFront = {
 			"- New faces: " + filling.faces.length
 		);
 		Stopwatch.average( "collision", true );
+		Stopwatch.remove( "collision" );
 
 		if( this.mode == "parallel" ) {
 			WorkerManager.closePool( "collision" );

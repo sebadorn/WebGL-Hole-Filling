@@ -539,6 +539,7 @@ AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
 	Stopwatch.start( "init workers" );
 	WorkerManager.createPool( "collision", CONFIG.FILLING.WORKER + 1, firstMsg );
 	Stopwatch.stop( "init workers", true );
+	Stopwatch.remove( "init workers" );
 
 	this.mainEventLoop();
 };
