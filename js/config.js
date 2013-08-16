@@ -92,7 +92,6 @@ var CONFIG = {
 		// Update the progress bar every <int> loops.
 		// (No progress bar updates in "iterative" mode.)
 		PROGRESS_UPDATE: 4,
-		SHOW_SOLID: true,
 		SHOW_WIREFRAME: false,
 		// Threshold for the distance between two vertices before they are merged.
 		// Has to be positive value.

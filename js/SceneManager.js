@@ -7,7 +7,7 @@
  */
 var SceneManager = {
 
-	fillings: {},
+	fillings: [],
 	holes: [],
 	holeLines: [],
 	lightStatus: {
@@ -83,14 +83,14 @@ var SceneManager = {
 			switch( value ) {
 
 				case "solid":
-					for( var key in this.fillings ) {
-						this.fillings[key].solid.material.wireframe = false;
+					for( var i = 0; i < this.fillings.length; i++ ) {
+						this.fillings[i].solid.material.wireframe = false;
 					}
 					break;
 
 				case "wireframe":
-					for( var key in this.fillings ) {
-						this.fillings[key].solid.material.wireframe = true;
+					for( var i = 0; i < this.fillings.length; i++ ) {
+						this.fillings[i].solid.material.wireframe = true;
 					}
 					break;
 
@@ -140,9 +140,9 @@ var SceneManager = {
 		this.model.material.shading = shading;
 		this.model.geometry.normalsNeedUpdate = true;
 
-		for( var key in this.fillings ) {
-			this.fillings[key].solid.material.shading = shading;
-			this.fillings[key].solid.geometry.normalsNeedUpdate = true;
+		for( var i = 0; i < this.fillings.length; i++ ) {
+			this.fillings[i].solid.material.shading = shading;
+			this.fillings[i].solid.geometry.normalsNeedUpdate = true;
 		}
 
 		this.shading = value;
@@ -169,7 +169,7 @@ var SceneManager = {
 			this.scene.remove( obj );
 		}
 
-		this.fillings = {};
+		this.fillings = [];
 	},
 
 
@@ -396,7 +396,7 @@ var SceneManager = {
 
 		material.shading = this.getCurrentShading();
 		material.side = THREE.DoubleSide;
-		material.wireframe = ( this.mode == "wireframe" );
+		material.wireframe = ( this.modeModel == "wireframe" );
 
 		mesh.material = material;
 
@@ -552,37 +552,39 @@ var SceneManager = {
 		var g = GLOBAL,
 		    model = SceneManager.model;
 
-		if( !this.fillings.hasOwnProperty( holeIndex ) ) {
-			this.fillings[holeIndex] = {
-				solid: false,
-				wireframe: false
-			};
-		}
+		// if( !this.fillings.hasOwnProperty( holeIndex ) ) {
+		// 	this.fillings[holeIndex] = {
+		// 		solid: false,
+		// 		wireframe: false
+		// 	};
+		// }
 
-		// Filling as solid form
-		if( CONFIG.FILLING.SHOW_SOLID ) {
-			var materialSolid = new THREE.MeshPhongMaterial( {
-				color: CONFIG.FILLING.COLOR,
-				shading: SceneManager.getCurrentShading(),
-				side: THREE.DoubleSide,
-				wireframe: false,
-				wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
-			} );
-			var meshSolid = new THREE.Mesh( filling, materialSolid );
+		this.fillings.push( { solid: false, wireframe: false } );
 
-			meshSolid.position.x += model.position.x;
-			meshSolid.position.y += model.position.y;
-			meshSolid.position.z += model.position.z;
 
-			meshSolid.geometry.computeFaceNormals();
-			meshSolid.geometry.computeVertexNormals();
-			meshSolid.geometry.computeBoundingBox();
+		// Filling
+		var materialFilling = new THREE.MeshPhongMaterial( {
+			color: CONFIG.FILLING.COLOR,
+			shading: SceneManager.getCurrentShading(),
+			side: THREE.DoubleSide,
+			wireframe: ( this.modeFilling == "wireframe" ),
+			wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
+		} );
+		var meshFilling = new THREE.Mesh( filling, materialFilling );
 
-			this.fillings[holeIndex].solid = meshSolid;
-			SceneManager.scene.add( meshSolid );
-		}
+		meshFilling.position.x += model.position.x;
+		meshFilling.position.y += model.position.y;
+		meshFilling.position.z += model.position.z;
 
-		// Filling as wireframe
+		meshFilling.geometry.computeFaceNormals();
+		meshFilling.geometry.computeVertexNormals();
+		meshFilling.geometry.computeBoundingBox();
+
+		this.fillings[this.fillings.length - 1].solid = meshFilling;
+		SceneManager.scene.add( meshFilling );
+
+
+		// Extra option: Filling as wireframe (can be used as overlay)
 		if( CONFIG.FILLING.SHOW_WIREFRAME ) {
 			var materialWire = new THREE.MeshBasicMaterial( {
 				color: 0xFFFFFF,
@@ -600,9 +602,10 @@ var SceneManager = {
 			meshWire.geometry.computeVertexNormals();
 			meshWire.geometry.computeBoundingBox();
 
-			this.fillings[holeIndex].wireframe = meshWire;
+			this.fillings[this.fillings.length - 1].wireframe = meshWire;
 			SceneManager.scene.add( meshWire );
 		}
+
 
 		// Draw the (moving) front
 		if( CONFIG.DEBUG.SHOW_FRONT ) {
@@ -661,12 +664,12 @@ var SceneManager = {
 
 		if( lightStatus ) {
 			for( var i = 0; i < len; i++ ) {
-				g.scene.remove( lights[i] );
+				this.scene.remove( lights[i] );
 			}
 		}
 		else {
 			for( var i = 0; i < len; i++ ) {
-				g.scene.add( lights[i] );
+				this.scene.add( lights[i] );
 			}
 		}
 
