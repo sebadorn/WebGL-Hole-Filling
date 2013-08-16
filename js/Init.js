@@ -73,13 +73,19 @@ var Init = {
 	 * Initialize lights. Scene has to be initialized first.
 	 */
 	lights: function() {
-		var g = GLOBAL,
+		var d = document,
+		    g = GLOBAL,
 		    l = CONFIG.LIGHTS,
 		    s = SceneManager.scene;
 		var camPos = CONFIG.CAMERA.POSITION;
-		var ambient, directional, lDir;
+		var ambient, directional, lDir, sectionAmbient, sectionCamera, sectionDirectional;
 
 		// Lighting: Ambient
+		if( l.AMBIENT.length == 0 ) {
+			sectionAmbient = d.getElementById( "light_ambient" );
+			sectionAmbient.parentNode.removeChild( sectionAmbient );
+		}
+
 		for( var i = 0; i < l.AMBIENT.length; i++ ) {
 			ambient = new THREE.AmbientLight( l.AMBIENT[i].color );
 
@@ -87,23 +93,33 @@ var Init = {
 			s.add( ambient );
 		}
 
-		// Lighting: Directional
-		for( var i = 0; i < l.DIRECTIONAL.length; i++ ) {
-			lDir = l.DIRECTIONAL[i];
-			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
-			directional.position.set( lDir.position[0], lDir.position[1], lDir.position[2] );
-
-			g.LIGHTS.DIRECTIONAL.push( directional );
-			s.add( directional );
+		// Lighting: Directional, moves with camera
+		if( l.CAMERA.length == 0 ) {
+			sectionCamera = d.getElementById( "light_camera" );
+			sectionCamera.parentNode.removeChild( sectionCamera );
 		}
 
-		// Lighting: Directional, moves with camera
 		for( var i = 0; i < l.CAMERA.length; i++ ) {
 			lDir = l.CAMERA[i];
 			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
 			directional.position.set( camPos.X, camPos.Y, camPos.Z );
 
 			g.LIGHTS.CAMERA.push( directional );
+			s.add( directional );
+		}
+
+		// Lighting: Directional
+		if( l.DIRECTIONAL.length == 0 ) {
+			sectionDirectional = d.getElementById( "light_directional" );
+			sectionDirectional.parentNode.removeChild( sectionDirectional );
+		}
+
+		for( var i = 0; i < l.DIRECTIONAL.length; i++ ) {
+			lDir = l.DIRECTIONAL[i];
+			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
+			directional.position.set( lDir.position[0], lDir.position[1], lDir.position[2] );
+
+			g.LIGHTS.DIRECTIONAL.push( directional );
 			s.add( directional );
 		}
 	},
