@@ -8,6 +8,7 @@
 var AdvancingFront = {
 
 	callback: null,
+	collisionTestMode: CONFIG.FILLING.COLLISION_TEST,
 	heap: null,
 	hole: null,
 	holeIndex: null,
@@ -340,6 +341,16 @@ var AdvancingFront = {
 		vNew = Utils.keepNearPlane( v, vn, vNew );
 
 		return vNew;
+	},
+
+
+	/**
+	 * Set the mode for the collision test.
+	 * @see UI.registerCollisionTestOptions()
+	 * @param {String} mode "filling" or "all".
+	 */
+	setCollisionTest: function( e, mode ) {
+		this.collisionTestMode = mode;
 	},
 
 

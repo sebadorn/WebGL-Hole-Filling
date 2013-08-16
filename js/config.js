@@ -29,7 +29,7 @@ var CONFIG = {
 		POSITION: {
 			X: 20,
 			Y: 20,
-			Z: 0
+			Z: 20
 		},
 		ZFAR: 2500,
 		ZNEAR: 0.01
@@ -50,7 +50,7 @@ var CONFIG = {
 	CONTROLS: {
 		PAN_SPEED: 0.8,
 		ROT_SPEED: 1.5,
-		ZOOM_SPEED: 1.5
+		ZOOM_SPEED: 2.0
 	},
 
 	// Debug
@@ -81,7 +81,7 @@ var CONFIG = {
 		// - "iterative": Fast, but UI freezes until finished
 		// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
 		// - "parallel": ~5-6x slower, but UI stays responsive; uses Web Workers.
-		AF_MODE: "parallel",
+		AF_MODE: "responsive",
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
 		// while "filling" only tests the hole filling.

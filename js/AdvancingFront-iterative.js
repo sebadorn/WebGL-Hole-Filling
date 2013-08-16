@@ -149,14 +149,14 @@ AdvancingFront.collisionTest = function( front, filling, v, fromA, fromB ) {
 		b = filling.vertices[face.b];
 		c = filling.vertices[face.c];
 
-		if( a == v || b == v || c == v ) {
+		if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
 			continue;
 		}
-		if( a == fromA || b == fromA || c == fromA ) {
+		if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
 			continue;
 		}
 		if( fromB ) {
-			if( a == fromB || b == fromB || c == fromB ) {
+			if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
 				continue;
 			}
 		}
@@ -168,7 +168,7 @@ AdvancingFront.collisionTest = function( front, filling, v, fromA, fromB ) {
 	}
 
 	// Test the whole model (without filling)
-	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+	if( this.collisionTestMode == "all" ) {
 		for( var i = 0, len = this.modelGeo.faces.length; i < len; i++ ) {
 			face = this.modelGeo.faces[i];
 
@@ -176,20 +176,27 @@ AdvancingFront.collisionTest = function( front, filling, v, fromA, fromB ) {
 			b = this.modelGeo.vertices[face.b];
 			c = this.modelGeo.vertices[face.c];
 
-			if( a == v || b == v || c == v ) {
+			if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
 				continue;
 			}
-			if( a == fromA || b == fromA || c == fromA ) {
+			if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
 				continue;
 			}
 			if( fromB ) {
-				if( a == fromB || b == fromB || c == fromB ) {
+				if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
 					continue;
 				}
 			}
 
 			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
 				Stopwatch.stop( "collision" );
+				SceneManager.scene.add( SceneManager.createPoint( a, 0.02, 0xFFAA00, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( b, 0.02, 0xFFAA00, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( c, 0.02, 0xFFAA00, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( v, 0.02, 0x2266AA, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( fromA, 0.02, 0x2266AA, true ) );
+				SceneManager.scene.add( SceneManager.createPoint( fromB, 0.02, 0x2266AA, true ) );
+				throw new Error( "sysexit" );
 				return true;
 			}
 		}

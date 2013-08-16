@@ -80,7 +80,10 @@ var Init = {
 		var camPos = CONFIG.CAMERA.POSITION;
 		var ambient, directional, lDir, sectionAmbient, sectionCamera, sectionDirectional;
 
+
 		// Lighting: Ambient
+
+		// Remove light option if no lights if this type exist
 		if( l.AMBIENT.length == 0 ) {
 			sectionAmbient = d.getElementById( "light_ambient" );
 			sectionAmbient.parentNode.removeChild( sectionAmbient );
@@ -93,7 +96,10 @@ var Init = {
 			s.add( ambient );
 		}
 
+
 		// Lighting: Directional, moves with camera
+
+		// Remove light option if no lights if this type exist
 		if( l.CAMERA.length == 0 ) {
 			sectionCamera = d.getElementById( "light_camera" );
 			sectionCamera.parentNode.removeChild( sectionCamera );
@@ -108,7 +114,10 @@ var Init = {
 			s.add( directional );
 		}
 
+
 		// Lighting: Directional
+
+		// Remove light option if no lights if this type exist
 		if( l.DIRECTIONAL.length == 0 ) {
 			sectionDirectional = d.getElementById( "light_directional" );
 			sectionDirectional.parentNode.removeChild( sectionDirectional );

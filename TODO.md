@@ -4,7 +4,6 @@
 * `Bug` squirrel.obj: Doesn't exit/fill for merge threshold 0.12
 
 * `Improve` Improve afRule3 function
-* `Improve` More config options in UI
 
 * `Feature` Show in-between steps of filling
 * `Feature` Add filling algorithm: Volume based octree

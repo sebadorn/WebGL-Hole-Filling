@@ -162,7 +162,7 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 
 	facesPerWorker = Math.ceil( lenFilling / CONFIG.FILLING.WORKER );
 
-	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+	if( this.collisionTestMode == "all" ) {
 		lenModel = this.modelGeo.faces.length;
 		this.neededWorkerResults *= 2;
 	}
@@ -197,7 +197,7 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 		}
 	}
 
-	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+	if( this.collisionTestMode == "all" ) {
 		if( employedWorkerCounter < CONFIG.FILLING.WORKER ) {
 			this.workerResultCounter += CONFIG.FILLING.WORKER - employedWorkerCounter;
 		}
@@ -528,7 +528,7 @@ AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
 
 	var firstMsg = false;
 
-	if( CONFIG.FILLING.COLLISION_TEST == "all" ) {
+	if( this.collisionTestMode == "all" ) {
 		firstMsg = {
 			cmd: "prepare",
 			modelF: JSON.stringify( this.modelGeo.faces ),

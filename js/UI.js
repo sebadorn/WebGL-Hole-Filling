@@ -351,6 +351,14 @@ var UI = {
 		else if( cfg.SHADING == "flat" ) {
 			d.getElementById( "shading_flat" ).setAttribute( "checked", "checked" );
 		}
+
+		// Hole filling: Collision test
+		if( cfg.FILLING.COLLISION_TEST == "filling" ) {
+			d.getElementById( "collision_test_filling" ).setAttribute( "checked", "checked" );
+		}
+		else if( cfg.FILLING.COLLISION_TEST == "all" ) {
+			d.getElementById( "collision_test_all" ).setAttribute( "checked", "checked" );
+		}
 	},
 
 
@@ -464,6 +472,7 @@ UI.REGISTER = {
 		this.registerModeOptions();
 		this.registerShadingOptions();
 		this.registerEditOptions();
+		this.registerCollisionTestOptions();
 		this.registerCameraReset();
 		this.registerExport();
 	},
@@ -476,6 +485,25 @@ UI.REGISTER = {
 		var buttonResetCamera = document.getElementById( "controls_reset" );
 
 		buttonResetCamera.addEventListener( "click", SceneManager.resetCamera.bind( SceneManager ), false );
+	},
+
+
+	/**
+	 * Listen to events of the collision test options.
+	 */
+	registerCollisionTestOptions: function() {
+		var d = document;
+		var radio;
+
+		radio = d.getElementById( "collision_test_filling" );
+		radio.addEventListener( "change", function( e ) {
+			AdvancingFront.setCollisionTest( e, "filling" );
+		}.bind( AdvancingFront ), false );
+
+		radio = d.getElementById( "collision_test_all" );
+		radio.addEventListener( "change", function( e ) {
+			AdvancingFront.setCollisionTest( e, "all" );
+		}.bind( AdvancingFront ), false );
 	},
 
 
