@@ -306,7 +306,10 @@ var Utils = {
 		    sign = "";
 
 		// Shorten the decimal values a little
-		if( b.length > 6 ) {
+		if( !b ) {
+			b = "";
+		}
+		else if( b.length > 6 ) {
 			b = b.substr( 0, 6 );
 		}
 
@@ -320,7 +323,7 @@ var Utils = {
 		if( a == "0" ) {
 			exp--;
 
-			while( b[0] == "0" ) {
+			while( b.length > 0 && b[0] == "0" ) {
 				exp--;
 				b = b.substr( 1 );
 			}
