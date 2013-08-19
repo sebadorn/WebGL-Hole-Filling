@@ -283,7 +283,7 @@ var AdvancingFront = {
 		// Create the plane of the vectors vp and vn
 		// with position vector v.
 		var plane = new Plane( origin, vpClone, vnClone );
-		var adjusted, avLen, vNew;
+		var avLen, vNew;
 
 		// Get a vector on that plane, that lies on half the angle between vp and vn.
 		vNew = plane.getPoint( 1, 1 );
@@ -321,10 +321,7 @@ var AdvancingFront = {
 			cross1.clone().sub( v ).sub( halfWay ),
 			vnClone.clone().sub( halfWay )
 		);
-
-		if( angle < 180.0 ) {
-			cross2.multiplyScalar( -1 );
-		}
+		cross2.multiplyScalar( -1 );
 
 		cross2.normalize();
 		cross2.add( v ).add( halfWay );
