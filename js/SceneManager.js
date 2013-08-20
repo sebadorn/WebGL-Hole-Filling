@@ -285,7 +285,8 @@ var SceneManager = {
 	fillHole: function( e ) {
 		var g = GLOBAL,
 		    index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 ),
-		    mergeThreshold = parseFloat( document.getElementById( "merge-threshold" ).value, 10 );
+		    mergeThreshold = parseFloat( document.getElementById( "merge-threshold" ).value, 10 ),
+		    workerNumber = parseInt( document.getElementById( "collision-worker" ).value, 10 );
 
 		if( isNaN( index ) ) {
 			console.error( "Not a valid hole index." );
@@ -299,10 +300,14 @@ var SceneManager = {
 			console.error( "Merge threshold not a valid value. Needs to be greater or equal 0.01." );
 			return;
 		}
+		if( isNaN( workerNumber ) || workerNumber < 1 ) {
+			console.error( "Number of worker processes not a valid value. Need to be greater or equal 1. Optimal number equals the number of CPU cores." );
+			return;
+		}
 
 		Stopwatch.start( "fill hole (AF)" );
 		UI.disableFillButton();
-		AdvancingFront.start( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ) );
+		AdvancingFront.start( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ), workerNumber );
 	},
 
 

@@ -359,6 +359,11 @@ var UI = {
 		else if( cfg.FILLING.COLLISION_TEST == "all" ) {
 			d.getElementById( "collision_test_all" ).setAttribute( "checked", "checked" );
 		}
+
+		if( cfg.FILLING.AF_MODE == "parallel" ) {
+			d.getElementById( "collision-worker" ).value = cfg.FILLING.WORKER;
+			d.getElementById( "collision-worker" ).parentNode.removeAttribute( "hidden" );
+		}
 	},
 
 

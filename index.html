@@ -195,10 +195,17 @@
 		<li class="detail detail-collision">
 			<div class="caption">Collision Test</div>
 			<fieldset>
-				<input class="newradio" type="radio" name="collision_test" id="collision_test_filling" value="filling" />
-				<label class="newradio" for="collision_test_filling">Filling</label>
-				<input class="newradio" type="radio" name="collision_test" id="collision_test_all" value="all" />
-				<label class="newradio" for="collision_test_all">All</label>
+				<section hidden>
+					<input type="number" min="1" step="1" value="1" id="collision-worker" />
+					<label title="Number of worker processes" for="collision-worker">Web Worker</label>
+				</section>
+
+				<section>
+					<input class="newradio" type="radio" name="collision_test" id="collision_test_filling" value="filling" />
+					<label class="newradio" for="collision_test_filling">Filling</label>
+					<input class="newradio" type="radio" name="collision_test" id="collision_test_all" value="all" />
+					<label class="newradio" for="collision_test_all">All</label>
+				</section>
 			</fieldset>
 		</li>
 
@@ -208,7 +215,7 @@
 			<fieldset>
 				<section>
 					<input type="number" min="0.01" step="0.01" id="merge-threshold" />
-					<label title="Distance threshold for two vertices before they are merged.">Merging</label>
+					<label title="Distance threshold for two vertices before they are merged." for="merge-threshold">Merging</label>
 				</section>
 
 				<section>

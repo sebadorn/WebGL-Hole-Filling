@@ -504,9 +504,11 @@ AdvancingFront.rule3Callback = function( intersects ) {
  * @param  {THREE.Geometry}    modelGeo       The model to fill the holes in.
  * @param  {Array<THREE.Line>} hole           The hole described by lines.
  * @param  {float}             mergeThreshold Threshold for merging.
+ * @param  {Function}          callback       Function to call after finishing the filling.
+ * @param  {int}               workerNumber   Number of worker processes to use.
  * @return {THREE.Geometry}                   The generated filling.
  */
-AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
+AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback, workerNumber ) {
 	this.callback = callback;
 
 	this.filling = new THREE.Geometry();
@@ -537,7 +539,7 @@ AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
 	}
 
 	Stopwatch.start( "init workers" );
-	WorkerManager.createPool( "collision", CONFIG.FILLING.WORKER + 1, firstMsg );
+	WorkerManager.createPool( "collision", workerNumber, firstMsg );
 	Stopwatch.stop( "init workers", true );
 	Stopwatch.remove( "init workers" );
 
