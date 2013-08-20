@@ -47,7 +47,7 @@ function exportSTL( model, modelName ) {
 	}
 
 	// Name: optional, but not the "solid " at the beginning
-	data += "solid " + modelName + "\n";
+	data += "solid " + modelName.replace( " ", "_" ) + "\n";
 
 	// Faces, normals, vertices
 	for( var i = 0, len = mgFaces.length; i < len; i++ ) {

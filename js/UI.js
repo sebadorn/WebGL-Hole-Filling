@@ -311,7 +311,7 @@ var UI = {
 		var content, download, exportData;
 
 		format = format.value.toLowerCase();
-		exportData = SceneManager.exportModel( format );
+		exportData = SceneManager.exportModel( format, name.value.replace( "." + format, "" ) );
 		content = new Blob( [exportData], { type: "text/plain" } );
 
 		UI.updateProgress( 100 );

@@ -294,8 +294,8 @@ var Utils = {
 
 	/**
 	 * Convert the format of a float into a scientific notiation.
-	 * @param  {float} value The value to convert.
-	 * @return {String}      The scientific notation.
+	 * @param  {float}  value The value to convert.
+	 * @return {String}       The scientific notation.
 	 */
 	floatToScientific: function( value ) {
 		var splitted = value.toString( 10 ).split( "." );
@@ -342,6 +342,10 @@ var Utils = {
 		else {
 			b = a.substr( 1 ) + b;
 			a = a[0];
+		}
+
+		if( b == "" ) {
+			b = "0";
 		}
 
 		return ( sign + a + "." + b + "e" + expSign + exp );

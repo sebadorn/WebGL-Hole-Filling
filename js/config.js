@@ -80,7 +80,7 @@ var CONFIG = {
 		// Which Advancing Front implementation to use:
 		// - "iterative": Fast, but UI freezes until finished
 		// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
-		// - "parallel": ~5-6x slower, but UI stays responsive; uses Web Workers.
+		// - "parallel": ~5-6x slower (depending on number of CPU cores), but UI stays responsive; uses Web Workers
 		AF_MODE: "responsive",
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
