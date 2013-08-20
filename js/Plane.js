@@ -46,8 +46,8 @@ Plane.prototype.getPoint = function( s, t ) {
  * @return {THREE.Vector3}        Point of intersection or false if no intersection.
  */
 Plane.prototype.getIntersection = function( v0, v1 ) {
-	var vStart = v0.clone().normalize(),
-	    vEnd = v1.clone().normalize();
+	var vStart = v0.clone(),
+	    vEnd = v1.clone();
 	var numerator = this.normal.dot( this.p.clone().sub( vStart ) ),
 	    denumerator = this.normal.dot( vEnd.clone().sub( vStart ) );
 

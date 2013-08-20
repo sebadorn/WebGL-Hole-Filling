@@ -7,7 +7,7 @@
  */
 var CONFIG = {
 
-	ALLOWED_FILE_EXTENSIONS: ["obj", "ply", "stl"],
+	ALLOWED_FILE_EXTENSIONS: ["obj", "ply", "stl", "vtk"],
 
 	// Axis
 	AXIS: {

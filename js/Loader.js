@@ -100,6 +100,10 @@ var Loader = {
 				loader = new THREE.STLLoader();
 				break;
 
+			case "vtk":
+				loader = new THREE.VTKLoader();
+				break;
+
 			default:
 				throw new Error( "No loader available for extension " + extension.toUpperCase() + "." );
 
@@ -159,7 +163,13 @@ var Loader = {
 		var content, geometry;
 
 		content = loader.parse( e.target.result );
-		geometry = ( extension == "obj" ) ? content.children[0].geometry : content;
+
+		if( ["obj"].indexOf( extension ) >= 0 ) {
+			geometry = content.children[0].geometry;
+		}
+		else {
+			geometry = content;
+		}
 
 		if( extension == "stl" ) {
 			geometry.mergeVertices();
