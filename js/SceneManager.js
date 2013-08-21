@@ -557,15 +557,7 @@ var SceneManager = {
 		var g = GLOBAL,
 		    model = SceneManager.model;
 
-		// if( !this.fillings.hasOwnProperty( holeIndex ) ) {
-		// 	this.fillings[holeIndex] = {
-		// 		solid: false,
-		// 		wireframe: false
-		// 	};
-		// }
-
 		this.fillings.push( { solid: false, wireframe: false } );
-
 
 		// Filling
 		var materialFilling = new THREE.MeshPhongMaterial( {
@@ -614,11 +606,15 @@ var SceneManager = {
 
 		// Draw the (moving) front
 		if( CONFIG.DEBUG.SHOW_FRONT ) {
+			var debugFront = front.clone();
 			var material = new THREE.LineBasicMaterial( {
-				color: 0x4991E0,
+				color: 0xFFFFFF,
 				linewidth: 5
 			} );
-			var mesh = new THREE.Line( front, material );
+			var mesh;
+
+			debugFront.vertices.push( debugFront.vertices[0] );
+			mesh = new THREE.Line( debugFront, material );
 
 			mesh.position.x += model.position.x;
 			mesh.position.y += model.position.y;

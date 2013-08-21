@@ -156,7 +156,7 @@ var Init = {
 	renderer: function( container ) {
 		var g = GLOBAL;
 
-		g.RENDERER = new THREE.WebGLRenderer();
+		g.RENDERER = new THREE.WebGLRenderer( CONFIG.RENDERER );
 		g.RENDERER.setSize( window.innerWidth, window.innerHeight );
 
 		container.appendChild( g.RENDERER.domElement );

@@ -61,10 +61,10 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		// <int>: stop after x iterations; <false>: stop when finished
-		AF_STOP_AFTER_ITER: 2000,
+		AF_STOP_AFTER_ITER: 240,
 		ENABLE_STOPWATCH: true,
 		// After stopping, show the current front
-		SHOW_FRONT: false,
+		SHOW_FRONT: true,
 		// Show position where vertices have been merged away
 		SHOW_MERGING: false
 	},
@@ -134,6 +134,12 @@ var CONFIG = {
 
 	// Mode: "solid" or "wireframe"
 	MODE: "solid",
+
+	// Options that will be passed to the THREE.WebGLRenderer as is
+	RENDERER: {
+		antialias: true,
+		maxLights: 4
+	},
 
 	// Shading: "flat" or "phong"
 	SHADING: "flat"
