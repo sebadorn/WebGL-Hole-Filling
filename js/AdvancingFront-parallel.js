@@ -143,16 +143,17 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 	    		fromB: fromB
 	    	} )
 	    },
-	    employedWorkerCounter = 0,
 	    lenFilling = this.filling.faces.length,
-	    lenModel = 0;
+	    lenModel = 0,
+	    sendResults = 0,
+	    workerNumber = WorkerManager.getPoolSize( "collision" );
 	var a, b, c, dataMsg, face, facesPerWorker;
 
 	Stopwatch.start( "collision" );
 
 	this.workerResultCounter = 0;
 	this.workerResult = false;
-	this.neededWorkerResults = CONFIG.FILLING.WORKER;
+	this.neededWorkerResults = workerNumber;
 
 	if( lenFilling == 0 ) {
 		Stopwatch.stop( "collision" );
@@ -160,16 +161,29 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 		return;
 	}
 
-	facesPerWorker = Math.ceil( lenFilling / CONFIG.FILLING.WORKER );
+	facesPerWorker = Math.ceil( lenFilling / workerNumber );
 
 	if( this.collisionTestMode == "all" ) {
 		lenModel = this.modelGeo.faces.length;
 		this.neededWorkerResults *= 2;
 	}
 
-	if( lenFilling + lenModel < this.neededWorkerResults ) {
-		this.workerResultCounter = this.neededWorkerResults - 1;
+	if( lenFilling > workerNumber && lenFilling % workerNumber != 0 && lenFilling % facesPerWorker == 0 ) {
+// console.log( lenFilling, workerNumber, facesPerWorker, this.neededWorkerResults );
+		this.collisionTestCallback( false );
+		sendResults++;
 	}
+
+	if( lenFilling < workerNumber ) {
+// console.log( lenFilling, this.neededWorkerResults );
+		// this.neededWorkerResults = lenFilling + lenModel;
+		for( var i = 0; i < workerNumber - lenFilling; i++ ) {
+			this.collisionTestCallback( false );
+			sendResults++;
+		}
+	}
+
+// console.log( lenFilling, facesPerWorker, this.neededWorkerResults );
 
 	for( var i = 0; i < lenFilling; i += facesPerWorker ) {
 		data.faces = [];
@@ -188,22 +202,25 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 		}
 
 		if( data.faces.length == 0 ) {
-			this.workerResultCounter++;
+			console.log( [this.testCounter], "data.faces.length == 0" );
+			this.collisionTestCallback( false );
 		}
 		else {
 			data.faces = JSON.stringify( data.faces );
-			employedWorkerCounter++;
 			WorkerManager.employWorker( "collision", data, callback );
 		}
+		sendResults++;
 	}
 
-	if( this.collisionTestMode == "all" ) {
-		if( employedWorkerCounter < CONFIG.FILLING.WORKER ) {
-			this.workerResultCounter += CONFIG.FILLING.WORKER - employedWorkerCounter;
-		}
+	if( sendResults < workerNumber ) {
+		this.collisionTestCallback( false );
+		sendResults++;
+	}
 
+
+	if( this.collisionTestMode == "all" ) {
 		data.type = "model";
-		facesPerWorker = Math.ceil( lenModel / CONFIG.FILLING.WORKER );
+		facesPerWorker = Math.ceil( lenModel / workerNumber );
 
 		for( var i = 0; i < lenModel; i += facesPerWorker ) {
 			data.faces = [];
@@ -218,14 +235,21 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 			}
 
 			if( data.faces.length == 0 ) {
-				this.workerResultCounter++;
+				this.collisionTestCallback( false );
 			}
 			else {
 				data.faces = JSON.stringify( data.faces );
 				WorkerManager.employWorker( "collision", data, callback );
 			}
+			sendResults++;
 		}
 	}
+
+	if( sendResults < workerNumber ) {
+		this.collisionTestCallback( false );
+		sendResults++;
+	}
+
 
 	if( face == null ) {
 		Stopwatch.stop( "collision" );
@@ -238,14 +262,16 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
  * Callback function for the collision workers.
  */
 AdvancingFront.collisionTestCallback = function( e ) {
-	if( e.data.intersects ) {
+	if( e && e.data.intersects ) {
 		this.workerResult = true;
 	}
 
 	this.workerResultCounter++;
+// console.log( this.workerResultCounter + "/" + this.neededWorkerResults );
 
 	if( this.workerResultCounter == this.neededWorkerResults ) {
 		Stopwatch.stop( "collision" );
+		// console.log( "---" );
 		this.ruleCallback( this.workerResult );
 	}
 };
@@ -322,7 +348,7 @@ AdvancingFront.mainEventLoop = function() {
 			throw new Error( "No rule could be applied. Stopping before entering endless loop." );
 		}
 
-		ruleFunc( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2], this.angle.degree );
+		ruleFunc( this.angle.vertices[0], this.angle.vertices[1], this.angle.vertices[2], this.angle );
 	}
 	else {
 		SceneManager.showFilling( this.front, this.filling );

@@ -303,7 +303,7 @@ var AdvancingFront = {
 	 * @param  {THREE.Vector3} vp    Previous vector.
 	 * @param  {THREE.Vector3} v     Current vector.
 	 * @param  {THREE.Vector3} vn    Next vector.
-	 * @param  {float}         angle Angle created by these vectors.
+	 * @param  {Angle}         angle Angle created by these vectors.
 	 * @return {THREE.Vector3}       New vector.
 	 */
 	rule3Calc: function( vp, v, vn, angle ) {
@@ -335,7 +335,7 @@ var AdvancingFront = {
 		vNew = vOnPlane.clone();
 
 		vNew.add( v ).add( halfWay );
-		vNew = Utils.keepNearPlane( v, vn, vNew );
+		vNew = Utils.keepNearPlane( vNew, [v, vn, angle.previous.vertices[1], angle.next.vertices[1]] );
 
 		return vNew;
 	},

@@ -92,6 +92,16 @@ var WorkerManager = {
 
 
 	/**
+	 * Get the number of workers in a pool.
+	 * @param  {String} identifier Identifier of the pool.
+	 * @return {int}               Number of workers in the pool.
+	 */
+	getPoolSize: function( identifier ) {
+		return this.pool[identifier].length;
+	},
+
+
+	/**
 	 * Employ a worker with a task.
 	 * @param  {String}   identifier Identifier of the pool.
 	 * @param  {Worker}   worker     Worker to employ with the task.

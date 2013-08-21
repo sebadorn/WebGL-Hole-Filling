@@ -11,7 +11,7 @@ var CONFIG = {
 
 	// Axis
 	AXIS: {
-		SHOW: true,
+		SHOW: false,
 		SIZE: 60
 	},
 
@@ -64,7 +64,7 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		// <int>: stop after x iterations; <false>: stop when finished
-		AF_STOP_AFTER_ITER: 2400,
+		AF_STOP_AFTER_ITER: 2000,
 		ENABLE_STOPWATCH: true,
 		// After stopping, show the current front
 		SHOW_FRONT: false,
@@ -135,7 +135,7 @@ var CONFIG = {
 		]
 	},
 
-	// Mode: "solid" or "wireframe"
+	// Mode: "solid", "wireframe" or "mixed"
 	MODE: "solid",
 
 	// Options that will be passed to the THREE.WebGLRenderer as is

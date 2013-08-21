@@ -49,6 +49,7 @@ AdvancingFront.applyRule1 = function( front, filling, angle ) {
  * Apply AF rule 2 and organise heaps/angles.
  * @param  {THREE.Geometry} front   Current front of hole.
  * @param  {THREE.Geometry} filling Current filling of hole.
+ * @param  {Angle}          angle   Current angle to handle.
  * @return {THREE.Vector3}          New vertex.
  */
 AdvancingFront.applyRule2 = function( front, filling, angle ) {
@@ -88,13 +89,14 @@ AdvancingFront.applyRule2 = function( front, filling, angle ) {
  * Apply AF rule 3 and organise heaps/angles.
  * @param  {THREE.Geometry} front   Current front of hole.
  * @param  {THREE.Geometry} filling Current filling of hole.
+ * @param  {Angle}          angle   Current angle to handle.
  * @return {THREE.Vector3}          New vertex.
  */
 AdvancingFront.applyRule3 = function( front, filling, angle ) {
 	var vp = angle.vertices[0],
 	    v = angle.vertices[1],
 	    vn = angle.vertices[2];
-	var vNew = this.rule3( front, filling, vp, v, vn, angle.degree );
+	var vNew = this.rule3( front, filling, vp, v, vn, angle );
 
 	// Angle has successfully been processed.
 	// Update the angle itself, neighbouring angles and create a new one.
@@ -190,13 +192,6 @@ AdvancingFront.collisionTest = function( front, filling, v, fromA, fromB ) {
 
 			if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
 				Stopwatch.stop( "collision" );
-				SceneManager.scene.add( SceneManager.createPoint( a, 0.02, 0xFFAA00, true ) );
-				SceneManager.scene.add( SceneManager.createPoint( b, 0.02, 0xFFAA00, true ) );
-				SceneManager.scene.add( SceneManager.createPoint( c, 0.02, 0xFFAA00, true ) );
-				SceneManager.scene.add( SceneManager.createPoint( v, 0.02, 0x2266AA, true ) );
-				SceneManager.scene.add( SceneManager.createPoint( fromA, 0.02, 0x2266AA, true ) );
-				SceneManager.scene.add( SceneManager.createPoint( fromB, 0.02, 0x2266AA, true ) );
-				throw new Error( "sysexit" );
 				return true;
 			}
 		}
@@ -396,7 +391,6 @@ AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
 
 			if( ruleFunc == false ) {
 				SceneManager.showFilling( front, filling );
-				console.log( this.heap, angle.degree );
 				throw new Error( "No rule could be applied. Stopping before entering endless loop." );
 			}
 

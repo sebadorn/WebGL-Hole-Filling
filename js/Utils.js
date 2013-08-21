@@ -36,6 +36,7 @@ var Utils = {
 		c.add( v ).add( move );
 
 		// Use "the other side of the angle" if it doesn't point inside the hole
+		// TODO: Works most of the time, but not always!
 		if( c.length() < vClone.length() ) {
 			angle = 360.0 - angle;
 		}
@@ -223,6 +224,15 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
+				// SceneManager.scene.add( SceneManager.createPoint( r.add( a ), 0.03, 0xFF0000, true ) );
+				// SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFF0000, true ) );
+				// if( fromB ) {
+				// 	SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFF0000, true ) );
+				// }
+				// SceneManager.scene.add( SceneManager.createLine( a, b, 1, 0xFFFF00, true ) );
+				// SceneManager.scene.add( SceneManager.createLine( b, c, 1, 0xFFFF00, true ) );
+				// SceneManager.scene.add( SceneManager.createLine( c, a, 1, 0xFFFF00, true ) );
+				// throw new Error( "sysexit" );
 				return true;
 			}
 		}
@@ -442,8 +452,8 @@ var Utils = {
 	 * @param  {THREE.Vector3} vNew The newly created vector.
 	 * @return {THREE.Vector3}      Adjusted vector.
 	 */
-	keepNearPlane: function( v, vn, vNew ) {
-		var variance = Utils.calculateVariances( [v, vn] );
+	keepNearPlane: function( vNew, vectors ) {
+		var variance = Utils.calculateVariances( vectors );
 
 		if( variance.x < variance.y ) {
 			if( variance.x < variance.z ) {

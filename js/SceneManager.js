@@ -527,7 +527,6 @@ var SceneManager = {
 			shading: THREE.NoShading
 		} );
 
-		cubeGeometry = new THREE.Geometry();
 		cubeGeometry.vertices.push(
 			// bottom plane
 			bb.min,

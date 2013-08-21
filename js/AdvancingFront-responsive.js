@@ -94,7 +94,7 @@ AdvancingFront.applyRule3 = function( front, filling, angle ) {
 	var vp = angle.vertices[0],
 	    v = angle.vertices[1],
 	    vn = angle.vertices[2];
-	var vNew = this.rule3( front, filling, vp, v, vn, angle.degree );
+	var vNew = this.rule3( front, filling, vp, v, vn, angle );
 
 	// Angle has successfully been processed.
 	// Update the angle itself, neighbouring angles and create a new one.
