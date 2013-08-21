@@ -212,7 +212,7 @@ var Utils = {
 				continue;
 			}
 
-			w = r.sub( a );
+			w = r.clone().sub( a );
 			wDotV = w.dot( v );
 			wDotU = w.dot( u );
 
@@ -224,7 +224,7 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				// SceneManager.scene.add( SceneManager.createPoint( r.add( a ), 0.03, 0xFF0000, true ) );
+				// SceneManager.scene.add( SceneManager.createPoint( r, 0.03, 0xFF0000, true ) );
 				// SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFF0000, true ) );
 				// if( fromB ) {
 				// 	SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFF0000, true ) );

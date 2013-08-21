@@ -12,10 +12,6 @@ function Plane( p, v1, v2 ) {
 	this.v1 = v1.clone();
 	this.v2 = v2.clone();
 
-	this.p.normalize();
-	this.v1.normalize();
-	this.v2.normalize();
-
 	this.normal = new THREE.Vector3().crossVectors(
 		this.v1.clone().sub( this.p ),
 		this.v2.clone().sub( this.p )
@@ -31,8 +27,8 @@ function Plane( p, v1, v2 ) {
  * @return {THREE.Vector3}   Point on the plane.
  */
 Plane.prototype.getPoint = function( s, t ) {
-	var v1s = this.v1.clone().multiplyScalar( s ),
-	    v2t = this.v2.clone().multiplyScalar( t );
+	var v1s = this.v1.clone().sub( this.p ).normalize().multiplyScalar( s ),
+	    v2t = this.v2.clone().sub( this.p ).normalize().multiplyScalar( t );
 
 	return new THREE.Vector3().copy( this.p ).add( v1s ).add( v2t );
 };
@@ -61,5 +57,5 @@ Plane.prototype.getIntersection = function( v0, v1 ) {
 		return false;
 	}
 
-	return v0.clone().add( v1.clone().sub( v0 ).multiplyScalar( r ) );
+	return v0.clone().add( ( v1.clone().sub( v0 ) ).multiplyScalar( r ) );
 };
