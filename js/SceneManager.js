@@ -515,27 +515,64 @@ var SceneManager = {
 
 	/**
 	 * Show the bounding box of the model.
-	 * The bounding box will be centered independent of the model itself.
 	 * @param {THREE.Mesh} model The model.
 	 */
 	renderBoundingBox: function( model ) {
 		var bb = model.geometry.boundingBox,
-		    width = bb.max.x - bb.min.x,
-		    height = bb.max.y - bb.min.y,
-		    depth = bb.max.z - bb.min.z;
-		var cubeGeometry, cubeMesh, material;
+		    cubeGeometry = new THREE.Geometry();
+		var material, mesh;
 
-		material = new THREE.MeshBasicMaterial( {
-			color: CONFIG.BBOX_COLOR,
-			shading: THREE.NoShading,
-			wireframe: true
+		material = new THREE.LineBasicMaterial( {
+			color: CONFIG.BBOX.COLOR,
+			shading: THREE.NoShading
 		} );
 
-		cubeGeometry = new THREE.CubeGeometry( width, height, depth );
-		cubeMesh = new THREE.Mesh( cubeGeometry, material );
-		cubeMesh.position.set( 0, 0, 0 );
+		cubeGeometry = new THREE.Geometry();
+		cubeGeometry.vertices.push(
+			// bottom plane
+			bb.min,
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.min.z ),
 
-		this.scene.add( cubeMesh );
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.min.z ),
+			new THREE.Vector3( bb.max.x, bb.max.y, bb.min.z ),
+
+			new THREE.Vector3( bb.max.x, bb.max.y, bb.min.z ),
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.min.z ),
+
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.min.z ),
+			bb.min,
+
+			// top plane
+			bb.max,
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.max.z ),
+
+			new THREE.Vector3( bb.min.x, bb.min.y, bb.max.z ),
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.max.z ),
+
+			new THREE.Vector3( bb.min.x, bb.min.y, bb.max.z ),
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.max.z ),
+
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.max.z ),
+			bb.max,
+
+			// "pillars" connecting bottom and top
+			bb.min,
+			new THREE.Vector3( bb.min.x, bb.min.y, bb.max.z ),
+
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.min.z ),
+			new THREE.Vector3( bb.max.x, bb.min.y, bb.max.z ),
+
+			new THREE.Vector3( bb.max.x, bb.max.y, bb.min.z ),
+			new THREE.Vector3( bb.max.x, bb.max.y, bb.max.z ),
+
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.min.z ),
+			new THREE.Vector3( bb.min.x, bb.max.y, bb.max.z )
+		);
+
+		mesh = new THREE.Line( cubeGeometry, material, THREE.LinePieces );
+		mesh.position = model.position;
+
+		this.scene.add( mesh );
 	},
 
 

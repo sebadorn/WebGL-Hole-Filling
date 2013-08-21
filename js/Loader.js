@@ -191,7 +191,10 @@ var Loader = {
 
 		sm.clearModels();
 		sm.resetCamera();
-		sm.renderBoundingBox( sm.model );
+
+		if( CONFIG.BBOX.SHOW ) {
+			sm.renderBoundingBox( sm.model );
+		}
 
 		sm.scene.add( sm.model );
 

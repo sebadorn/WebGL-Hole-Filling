@@ -12,11 +12,14 @@ var CONFIG = {
 	// Axis
 	AXIS: {
 		SHOW: true,
-		SIZE: 40
+		SIZE: 60
 	},
 
 	// Bounding Box
-	BBOX_COLOR: 0x37FEFE,
+	BBOX: {
+		COLOR: 0x37FEFE,
+		SHOW: true
+	},
 
 	// Camera. Always looking at (0,0,0)
 	CAMERA: {
@@ -61,10 +64,10 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		// <int>: stop after x iterations; <false>: stop when finished
-		AF_STOP_AFTER_ITER: 240,
+		AF_STOP_AFTER_ITER: 2400,
 		ENABLE_STOPWATCH: true,
 		// After stopping, show the current front
-		SHOW_FRONT: true,
+		SHOW_FRONT: false,
 		// Show position where vertices have been merged away
 		SHOW_MERGING: false
 	},
