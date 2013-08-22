@@ -169,21 +169,17 @@ AdvancingFront.collisionTest = function( v, fromA, fromB ) {
 	}
 
 	if( lenFilling > workerNumber && lenFilling % workerNumber != 0 && lenFilling % facesPerWorker == 0 ) {
-// console.log( lenFilling, workerNumber, facesPerWorker, this.neededWorkerResults );
 		this.collisionTestCallback( false );
 		sendResults++;
 	}
 
 	if( lenFilling < workerNumber ) {
-// console.log( lenFilling, this.neededWorkerResults );
-		// this.neededWorkerResults = lenFilling + lenModel;
 		for( var i = 0; i < workerNumber - lenFilling; i++ ) {
 			this.collisionTestCallback( false );
 			sendResults++;
 		}
 	}
 
-// console.log( lenFilling, facesPerWorker, this.neededWorkerResults );
 
 	for( var i = 0; i < lenFilling; i += facesPerWorker ) {
 		data.faces = [];
@@ -267,11 +263,9 @@ AdvancingFront.collisionTestCallback = function( e ) {
 	}
 
 	this.workerResultCounter++;
-// console.log( this.workerResultCounter + "/" + this.neededWorkerResults );
 
 	if( this.workerResultCounter == this.neededWorkerResults ) {
 		Stopwatch.stop( "collision" );
-		// console.log( "---" );
 		this.ruleCallback( this.workerResult );
 	}
 };
@@ -334,12 +328,7 @@ AdvancingFront.mainEventLoop = function() {
 
 	// Get next angle and apply rule
 	if( this.heap.size() > 0 ) {
-		this.angle = this.heap.removeFirst();
-
-		while( this.angle.waitForUpdate ) {
-			this.heap.insert( this.angle.degree, this.angle );
-			this.angle = this.heap.removeFirst();
-		}
+		this.angle = this.getNextAngle();
 
 		var ruleFunc = this.getRuleFunctionForAngle( this.angle.degree );
 

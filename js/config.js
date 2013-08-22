@@ -64,10 +64,10 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		// <int>: stop after x iterations; <false>: stop when finished
-		AF_STOP_AFTER_ITER: 2000,
+		AF_STOP_AFTER_ITER: 1200,
 		ENABLE_STOPWATCH: true,
 		// After stopping, show the current front
-		SHOW_FRONT: false,
+		SHOW_FRONT: true,
 		// Show position where vertices have been merged away
 		SHOW_MERGING: false
 	},
@@ -84,7 +84,7 @@ var CONFIG = {
 		// - "iterative": Fast, but UI freezes until finished
 		// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
 		// - "parallel": ~5-6x slower (depending on number of CPU cores), but UI stays responsive; uses Web Workers
-		AF_MODE: "parallel",
+		AF_MODE: "responsive",
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
 		// while "filling" only tests the hole filling.
@@ -98,7 +98,10 @@ var CONFIG = {
 		SHOW_WIREFRAME: false,
 		// Threshold for the distance between two vertices before they are merged.
 		// Has to be positive value.
-		THRESHOLD_MERGE: 0.16,
+		THRESHOLD_MERGE: 0.18,
+		// Threshold for correcting the position of a new vertex, judging by the
+		// variance of close vertices. Helps flatten the filling.
+		THRESHOLD_VARIANCE: 0.05,
 		// Number of Web Worker threads
 		// (only relevant if using AdvancingFront-parallel.js)
 		WORKER: 4

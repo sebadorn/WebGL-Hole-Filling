@@ -32,7 +32,7 @@ var Utils = {
 		angle = THREE.Math.radToDeg( vpClone.angleTo( vnClone ) );
 
 		// Get the axis described by the cross product of the vectors building the angle
-		c = new THREE.Vector3().crossVectors( vpClone, vnClone );
+		c = new THREE.Vector3().crossVectors( vpClone, vnClone ).normalize();
 		c.add( v ).add( move );
 
 		// Use "the other side of the angle" if it doesn't point inside the hole
@@ -224,15 +224,6 @@ var Utils = {
 
 			// Intersection of line with triangle found
 			if( s >= 0 && s <= 1 && t >= 0 && t <= 1 && s + t <= 1 ) {
-				// SceneManager.scene.add( SceneManager.createPoint( r, 0.03, 0xFF0000, true ) );
-				// SceneManager.scene.add( SceneManager.createLine( fromA, p, 1, 0xFF0000, true ) );
-				// if( fromB ) {
-				// 	SceneManager.scene.add( SceneManager.createLine( fromB, p, 1, 0xFF0000, true ) );
-				// }
-				// SceneManager.scene.add( SceneManager.createLine( a, b, 1, 0xFFFF00, true ) );
-				// SceneManager.scene.add( SceneManager.createLine( b, c, 1, 0xFFFF00, true ) );
-				// SceneManager.scene.add( SceneManager.createLine( c, a, 1, 0xFFFF00, true ) );
-				// throw new Error( "sysexit" );
 				return true;
 			}
 		}
@@ -453,26 +444,36 @@ var Utils = {
 	 * @return {THREE.Vector3}      Adjusted vector.
 	 */
 	keepNearPlane: function( vNew, vectors ) {
-		var variance = Utils.calculateVariances( vectors );
+		var limit = CONFIG.FILLING.THRESHOLD_VARIANCE,
+		    newV = vNew.clone(),
+		    variance = Utils.calculateVariances( vectors );
 
 		if( variance.x < variance.y ) {
 			if( variance.x < variance.z ) {
-				vNew.x = variance.average.x;
+				if( variance.x < limit ) {
+					newV.x = variance.average.x;
+				}
 			}
 			else {
-				vNew.z = variance.average.z;
+				if( variance.z < limit ) {
+					newV.z = variance.average.z;
+				}
 			}
 		}
 		else {
 			if( variance.y < variance.z ) {
-				vNew.y = variance.average.y;
+				if( variance.y < limit ) {
+					newV.y = variance.average.y;
+				}
 			}
 			else {
-				vNew.z = variance.average.z;
+				if( variance.z < limit ) {
+					newV.z = variance.average.z;
+				}
 			}
 		}
 
-		return vNew;
+		return newV;
 	},
 
 

@@ -645,7 +645,7 @@ var SceneManager = {
 			var debugFront = front.clone();
 			var material = new THREE.LineBasicMaterial( {
 				color: 0xFFFFFF,
-				linewidth: 5
+				linewidth: 4
 			} );
 			var mesh;
 

@@ -104,6 +104,27 @@ var AdvancingFront = {
 
 
 	/**
+	 * Get the next angle to handle.
+	 * @return {Angle} The next angle.
+	 */
+	getNextAngle: function() {
+		var angle = this.heap.removeFirst(),
+		    count = 0;
+
+		while( angle.waitForUpdate ) {
+			this.heap.insert( angle.degree, angle );
+			angle = this.heap.removeFirst();
+
+			if( ++count >= this.heap.size() ) {
+				throw new Error( "No more angles available, that don't need an update." );
+			}
+		}
+
+		return angle;
+	},
+
+
+	/**
 	 * Angle heaps have to be updated if vertices of the front are being merged.
 	 * @param  {THREE.Vector3} vOld The old vertex.
 	 * @param  {THREE.Vector3} vNew The new vertex.
@@ -307,35 +328,23 @@ var AdvancingFront = {
 	 * @return {THREE.Vector3}       New vector.
 	 */
 	rule3Calc: function( vp, v, vn, angle ) {
-		var vpClone = vp.clone().sub( v ),
-		    vnClone = vn.clone().sub( v );
-		var halfWay = vnClone.clone().divideScalar( 2 );
-		var cross1, cross2, plane, vNew, vOnPlane;
+		var vnClone = vn.clone().sub( v ),
+		    vpClone = vp.clone().sub( v );
+		var c, c2, plane, vNew;
 
-		cross1 = new THREE.Vector3().crossVectors( vpClone, vnClone );
-		cross1.normalize();
-		cross1.add( halfWay );
-		cross1.add( v );
+		// Cross vector pointing inside the hole ( well, it should, probably not always the case).
+		c = vnClone.clone().cross( vpClone ).normalize();
 
-		cross2 = new THREE.Vector3().crossVectors(
-			cross1.clone().sub( v ).sub( halfWay ),
-			vnClone.clone().sub( halfWay )
-		);
-		cross2.multiplyScalar( -1 );
+		// Cross vector lying (more-or-less) on the imagined plane of the hole. More-or-less.
+		c2 = c.cross( vnClone ).normalize().add( v );
 
-		cross2.normalize();
-		cross2.add( v ).add( halfWay );
+		// Now it's similar to rule 2.
+		plane = new Plane( new THREE.Vector3(), vnClone, c2.clone().sub( v ) );
 
-		plane = new Plane(
-			new THREE.Vector3(),
-			vnClone.clone().sub( halfWay ),
-			cross2.clone().sub( v ).sub( halfWay )
-		);
-		vOnPlane = plane.getPoint( 0, vnClone.length() );
-		vNew = vOnPlane.clone();
-
-		vNew.add( v ).add( halfWay );
-		vNew = Utils.keepNearPlane( vNew, [v, vn, angle.previous.vertices[1], angle.next.vertices[1]] );
+		vNew = plane.getPoint( 1, 1 );
+		vNew.setLength( vnClone.length() );
+		vNew.add( v );
+		vNew = Utils.keepNearPlane( vNew, [vp, v, vn] );
 
 		return vNew;
 	},

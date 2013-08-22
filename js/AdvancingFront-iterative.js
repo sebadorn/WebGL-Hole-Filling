@@ -380,13 +380,7 @@ AdvancingFront.start = function( modelGeo, hole, mergeThreshold, callback ) {
 
 		// Get next angle and apply rule
 		if( this.heap.size() > 0 ) {
-			angle = this.heap.removeFirst();
-
-			while( angle.waitForUpdate ) {
-				this.heap.insert( angle.degree, angle );
-				angle = this.heap.removeFirst();
-			}
-
+			angle = this.getNextAngle();
 			ruleFunc = this.getRuleFunctionForAngle( angle.degree );
 
 			if( ruleFunc == false ) {
