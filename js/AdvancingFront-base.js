@@ -311,7 +311,7 @@ var AdvancingFront = {
 
 		// Compute the average length of vp and vn.
 		// Then adjust the position of the new vector, so it has this average length.
-		avLen = Utils.getAverageLength( vpClone, vnClone );
+		avLen = Utils.getAverageLength( [vpClone, vnClone] );
 		vNew.setLength( avLen );
 		vNew.add( v );
 

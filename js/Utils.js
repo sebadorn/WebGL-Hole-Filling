@@ -263,37 +263,6 @@ var Utils = {
 
 
 	/**
-	 * Convert a 3D vector to a 2D vector by looking at the previously
-	 * computed variance of relevant points.
-	 * @param  {Object}        variance Variance to consider.
-	 * @param  {THREE.Vector3} v        Vector to flatten.
-	 * @return {THREE.Vector2}          Flattened vector.
-	 */
-	flattenByVariance: function( variance, v ) {
-		var vFlat;
-
-		if( variance.x < variance.y ) {
-			if( variance.x < variance.z ) {
-				vFlat = new THREE.Vector2( v.y, v.z );
-			}
-			else {
-				vFlat = new THREE.Vector2( v.x, v.y );
-			}
-		}
-		else {
-			if( variance.y < variance.z ) {
-				vFlat = new THREE.Vector2( v.x, v.z );
-			}
-			else {
-				vFlat = new THREE.Vector2( v.x, v.y );
-			}
-		}
-
-		return vFlat;
-	},
-
-
-	/**
 	 * Convert the format of a float into a scientific notiation.
 	 * @param  {float}  value The value to convert.
 	 * @return {String}       The scientific notation.
@@ -354,13 +323,18 @@ var Utils = {
 
 
 	/**
-	 * Get the average length of two vectors.
-	 * @param  {THREE.Vector3} vp Vector.
-	 * @param  {THREE.Vector3} vn Vector.
-	 * @return {float}            Average length.
+	 * Get the average length of a list of vectors.
+	 * @param  {Array<THREE.Vector3>} vectors Array of vectors.
+	 * @return {float}                        Average length.
 	 */
-	getAverageLength: function( v, w ) {
-		return ( v.length() + w.length() ) / 2;
+	getAverageLength: function( vectors ) {
+		var length = 0.0;
+
+		for( var i = 0; i < vectors.length; i++ ) {
+			length += vectors[i].length();
+		}
+
+		return ( length / vectors.length );
 	},
 
 

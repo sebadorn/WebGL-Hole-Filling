@@ -75,7 +75,7 @@ var HoleFinding = {
 		    ignoredUnconnected = 0,
 		    lines = [],
 		    points = [];
-		var geometry, line, material, thresholdMerging, v, vertex, vn;
+		var geometry, line, material, v, vertex;
 
 		this.allVisitedBp = [];
 
@@ -103,21 +103,9 @@ var HoleFinding = {
 				}
 
 
-				// New hole, add first vertex
-				holes.push( [model.geometry.vertices[vertex.index]] );
-
-				thresholdMerging = 0.0;
-
-				for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
-					v = geometry.vertices[j];
-					vn = geometry.vertices[( j + 1 ) % lenGV];
-
-					holes[holes.length - 1].push( v );
-					thresholdMerging += v.distanceTo( vn );
-				}
-
-				thresholdMerging /= lenGV;
-				holes[holes.length - 1].thresholdMerging = Math.round( thresholdMerging * 1000 ) / 1000;
+				holes.push( this.geometryToHoleArray( geometry ) );
+				// Add the first vertex of the hole at the beginning
+				holes[holes.length - 1].splice( model.geometry.vertices[vertex.index], 0 );
 
 
 				// Lines
@@ -248,6 +236,33 @@ var HoleFinding = {
 		geometry.vertices.push( model.geometry.vertices[start.index] );
 
 		return geometry;
+	},
+
+
+	/**
+	 * Put the vertices of the geometry into an array and
+	 * calculate a suggestion for the merging threshold.
+	 * @param  {THREE.Geometry} geometry Hole geometry to convert.
+	 * @return {Array}                   The array with the hole vertices and an extra attribute for the merging threshold.
+	 */
+	geometryToHoleArray: function( geometry ) {
+		// We need the per-hole-merging-threshold later for the filling process
+		var hole = [],
+		    thresholdMerging = 0.0;
+		var v, vn;
+
+		for( var i = 0, len = geometry.vertices.length; i < len; i++ ) {
+			v = geometry.vertices[i];
+			vn = geometry.vertices[( i + 1 ) % len];
+
+			hole.push( v );
+			thresholdMerging += v.distanceTo( vn );
+		}
+
+		thresholdMerging /= len;
+		hole.thresholdMerging = Math.round( thresholdMerging * 1000 ) / 1000;
+
+		return hole;
 	}
 
 };
