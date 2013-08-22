@@ -75,7 +75,7 @@ var HoleFinding = {
 		    ignoredUnconnected = 0,
 		    lines = [],
 		    points = [];
-		var geometry, line, material, v, vertex;
+		var geometry, line, material, thresholdMerging, v, vertex, vn;
 
 		this.allVisitedBp = [];
 
@@ -91,6 +91,7 @@ var HoleFinding = {
 			if( this.allVisitedBp.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
 				this.visitedBp = [];
 
+
 				// Find connected border points
 				try {
 					geometry = this.getNeighbouringBorderPoints( model, mesh, vertex );
@@ -101,13 +102,23 @@ var HoleFinding = {
 					continue;
 				}
 
+
 				// New hole, add first vertex
 				holes.push( [model.geometry.vertices[vertex.index]] );
 
+				thresholdMerging = 0.0;
+
 				for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
 					v = geometry.vertices[j];
+					vn = geometry.vertices[( j + 1 ) % lenGV];
+
 					holes[holes.length - 1].push( v );
+					thresholdMerging += v.distanceTo( vn );
 				}
+
+				thresholdMerging /= lenGV;
+				holes[holes.length - 1].thresholdMerging = Math.round( thresholdMerging * 1000 ) / 1000;
+
 
 				// Lines
 				material = new THREE.LineBasicMaterial( {
@@ -119,6 +130,7 @@ var HoleFinding = {
 				line.position = model.position;
 				lines.push( line );
 
+
 				// Points
 				if( CONFIG.HOLES.SHOW_POINTS ) {
 					for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
@@ -126,6 +138,7 @@ var HoleFinding = {
 						points.push( SceneManager.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
+
 
 				this.allVisitedBp = this.allVisitedBp.concat( this.visitedBp );
 			}

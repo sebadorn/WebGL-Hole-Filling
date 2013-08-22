@@ -147,7 +147,7 @@ var UI = {
 
 		// Merging threshold
 		merging = document.getElementById( "merge-threshold" );
-		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
+		merging.value = SceneManager.holes[index].thresholdMerging;
 
 
 		// Detail: Fill Hole
@@ -285,7 +285,7 @@ var UI = {
 		holeNumber.textContent = "-";
 
 		merging = sectionFillHole.querySelector( "#merge-threshold" );
-		merging.value = CONFIG.FILLING.THRESHOLD_MERGE;
+		merging.value = "0.000";
 
 
 		// Progress
@@ -374,6 +374,13 @@ var UI = {
 	updateProgress: function( value ) {
 		this.visibleProgress.value = value;
 		this.visibleProgress.textContent = value + "%";
+
+		if( value == 100 ) {
+			this.visibleProgress.className += " finished";
+		}
+		else {
+			this.visibleProgress.className = this.visibleProgress.className.replace( " finished", "" );
+		}
 	}
 
 };

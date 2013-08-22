@@ -41,9 +41,12 @@ var Init = {
 			cc.ZNEAR,
 			cc.ZFAR
 		);
-		g.CAMERA.position.x = cc.POSITION.X;
-		g.CAMERA.position.y = cc.POSITION.Y;
-		g.CAMERA.position.z = cc.POSITION.Z;
+
+		// Camera position doesn't really matter at this point.
+		// Will get overwritten the moment a model has been loaded.
+		g.CAMERA.position.x = 10;
+		g.CAMERA.position.y = 10;
+		g.CAMERA.position.z = 10;
 	},
 
 
@@ -108,7 +111,6 @@ var Init = {
 		for( var i = 0; i < l.CAMERA.length; i++ ) {
 			lDir = l.CAMERA[i];
 			directional = new THREE.DirectionalLight( lDir.color, lDir.intensity );
-			directional.position.set( camPos.X, camPos.Y, camPos.Z );
 
 			g.LIGHTS.CAMERA.push( directional );
 			s.add( directional );

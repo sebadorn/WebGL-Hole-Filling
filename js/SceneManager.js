@@ -296,8 +296,8 @@ var SceneManager = {
 			console.error( "No hole exists for this index." );
 			return;
 		}
-		if( isNaN( mergeThreshold ) || mergeThreshold < 0.01 ) {
-			console.error( "Merge threshold not a valid value. Needs to be greater or equal 0.01." );
+		if( isNaN( mergeThreshold ) || mergeThreshold < 0.001 ) {
+			console.error( "Merge threshold not a valid value. Needs to be greater or equal 0.001." );
 			return;
 		}
 		if( isNaN( workerNumber ) || workerNumber < 1 ) {
@@ -355,6 +355,20 @@ var SceneManager = {
 
 
 	/**
+	 * Fit the camera position to the model size.
+	 */
+	fitCameraToModel: function() {
+		var bb = this.model.geometry.boundingBox;
+
+		this.resetCamera();
+
+		GLOBAL.CAMERA.position.x = Math.abs( bb.max.x - bb.min.x );
+		GLOBAL.CAMERA.position.y = Math.abs( bb.max.y - bb.min.y );
+		GLOBAL.CAMERA.position.z = Math.abs( bb.max.z - bb.min.z );
+	},
+
+
+	/**
 	 * Focus on the found hole.
 	 * @param {int} index Index of the found hole
 	 */
@@ -374,7 +388,7 @@ var SceneManager = {
 		var bbox = Utils.getBoundingBox( this.holes[index] );
 
 		bbox.center.add( this.model.position );
-		bbox.center.setLength( bbox.center.length() + cfgCam.FOCUS.DISTANCE );
+		bbox.center.setLength( bbox.center.length() * cfgCam.FOCUS.DISTANCE_FACTOR );
 
 		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ),
 		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ),

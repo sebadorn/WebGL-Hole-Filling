@@ -190,7 +190,7 @@ var Loader = {
 		UI.resetInterface();
 
 		sm.clearModels();
-		sm.resetCamera();
+		sm.fitCameraToModel();
 
 		if( CONFIG.BBOX.SHOW ) {
 			sm.renderBoundingBox( sm.model );
