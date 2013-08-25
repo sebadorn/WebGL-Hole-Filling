@@ -11,14 +11,14 @@ var CONFIG = {
 
 	// Axis
 	AXIS: {
-		SHOW: true,
+		SHOW: false,
 		SIZE: 60
 	},
 
 	// Bounding Box
 	BBOX: {
 		COLOR: 0x37FEFE,
-		SHOW: true
+		SHOW: false
 	},
 
 	// Camera. Always looking at (0,0,0)
@@ -60,7 +60,7 @@ var CONFIG = {
 		AF_INVALIDATE_CACHE: true,
 		// The Stopwatch shows how long certain tasks took in the console
 		// <int>: stop after x iterations; <false>: stop when finished
-		AF_STOP_AFTER_ITER: 1400,
+		AF_STOP_AFTER_ITER: 2000,
 		ENABLE_STOPWATCH: true,
 		// After stopping, show the current front
 		SHOW_FRONT: false,
@@ -78,8 +78,8 @@ var CONFIG = {
 	FILLING: {
 		// Which Advancing Front implementation to use:
 		// - "iterative": Fast, but UI freezes until finished
-		// - "responsive": ~5-6x slower, but UI stays responsive (= progress bar updates)
-		// - "parallel": ~5-6x slower (depending on number of CPU cores), but UI stays responsive; uses Web Workers
+		// - "responsive": ~5x slower, but UI stays responsive (= progress bar updates)
+		// - "parallel": ~5x slower (depending on number of CPU cores), but UI stays responsive; uses Web Workers
 		AF_MODE: "parallel",
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
@@ -131,7 +131,7 @@ var CONFIG = {
 		]
 	},
 
-	// Mode: "solid", "wireframe" or "mixed"
+	// Mode: "solid", "wireframe"
 	MODE: "solid",
 
 	// Options that will be passed to the THREE.WebGLRenderer as is

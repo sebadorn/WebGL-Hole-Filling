@@ -336,7 +336,7 @@ var AdvancingFront = {
 		c = vnClone.clone().cross( vpClone ).normalize();
 
 		// Cross vector lying (more-or-less) on the imagined plane of the hole. More-or-less.
-		c2 = c.cross( vnClone ).normalize().add( v );
+		c2 = c.clone().cross( vnClone ).normalize().add( v );
 
 		// Now it's similar to rule 2.
 		plane = new Plane( new THREE.Vector3(), vnClone, c2.clone().sub( v ) );

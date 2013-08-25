@@ -145,6 +145,33 @@ var HoleFinding = {
 
 
 	/**
+	 * Put the vertices of the geometry into an array and
+	 * calculate a suggestion for the merging threshold.
+	 * @param  {THREE.Geometry} geometry Hole geometry to convert.
+	 * @return {Array}                   The array with the hole vertices and an extra attribute for the merging threshold.
+	 */
+	geometryToHoleArray: function( geometry ) {
+		// We need the per-hole-merging-threshold later for the filling process
+		var hole = [],
+		    thresholdMerging = 0.0;
+		var v, vn;
+
+		for( var i = 0, len = geometry.vertices.length; i < len; i++ ) {
+			v = geometry.vertices[i];
+			vn = geometry.vertices[( i + 1 ) % len];
+
+			hole.push( v );
+			thresholdMerging += v.distanceTo( vn );
+		}
+
+		thresholdMerging /= len;
+		hole.thresholdMerging = Math.round( thresholdMerging * 1000 ) / 1000;
+
+		return hole;
+	},
+
+
+	/**
 	 * Get all the connected border points starting from one of the border points.
 	 * Returns one hole in the mesh, if there is at least one.
 	 * @param  {THREE.Mesh}     model  The model to search holes in.
@@ -236,33 +263,6 @@ var HoleFinding = {
 		geometry.vertices.push( model.geometry.vertices[start.index] );
 
 		return geometry;
-	},
-
-
-	/**
-	 * Put the vertices of the geometry into an array and
-	 * calculate a suggestion for the merging threshold.
-	 * @param  {THREE.Geometry} geometry Hole geometry to convert.
-	 * @return {Array}                   The array with the hole vertices and an extra attribute for the merging threshold.
-	 */
-	geometryToHoleArray: function( geometry ) {
-		// We need the per-hole-merging-threshold later for the filling process
-		var hole = [],
-		    thresholdMerging = 0.0;
-		var v, vn;
-
-		for( var i = 0, len = geometry.vertices.length; i < len; i++ ) {
-			v = geometry.vertices[i];
-			vn = geometry.vertices[( i + 1 ) % len];
-
-			hole.push( v );
-			thresholdMerging += v.distanceTo( vn );
-		}
-
-		thresholdMerging /= len;
-		hole.thresholdMerging = Math.round( thresholdMerging * 1000 ) / 1000;
-
-		return hole;
 	}
 
 };
