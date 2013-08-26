@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8" />
+	<title>WebGL 3D Print Preparations</title>
+	<link rel="stylesheet" href="screen.css" />
+
+	<script src="js/threeJS/three.min.js"></script>
+	<script src="js/threeJS/loaders/OBJLoader.js"></script>
+	<script src="js/threeJS/loaders/PLYLoader.js"></script>
+	<script src="js/threeJS/loaders/STLLoader.js"></script>
+	<script src="js/threeJS/loaders/VTKLoader.js"></script>
+	<script src="js/threeJS/controls/TrackballControls.js"></script>
+
+	<script src="js/config.js"></script>
+	<script src="js/Init.js"></script>
+	<script src="js/Utils.js"></script>
+	<script src="js/UI.js"></script>
+	<script src="js/Loader.js"></script>
+	<script src="js/SceneManager.js"></script>
+	<script src="js/WorkerManager.js"></script>
+	<script src="js/HoleFinding.js"></script>
+	<script src="js/AdvancingFront-base.js"></script>
+	<script src="js/Angle.js"></script>
+	<script src="js/Heap.js"></script>
+	<script src="js/Plane.js"></script>
+	<script src="js/Stopwatch.js"></script>
+	<script src="js/export.js"></script>
+
+	<script src="js/HalfEdge/Mesh.js"></script>
+	<script src="js/HalfEdge/Vertex.js"></script>
+
+	<script src="js/setup.js"></script>
+
+	<meta name="author" content="Sebastian Dorn" />
+</head>
+<body>
+
+<div id="container"></div>
+
+
+<ul class="tools">
+
+	<!-- empty -->
+	<li class="tool tool-empty"></li>
+
+	<!-- import -->
+	<li class="tool tool-import">
+		<span class="icon icon-import"></span>
+		<fieldset>
+			<legend>Import</legend>
+
+			<section>
+				<input type="file" id="import_file" />
+			</section>
+		</fieldset>
+	</li>
+
+	<!-- rendering -->
+	<li class="tool tool-render">
+		<span class="icon icon-render"></span>
+		<fieldset>
+			<legend>Renderer</legend>
+
+			<section>
+				<input class="newradio" type="radio" name="render_mode_model" id="render_solid_model" value="solid" />
+				<label class="newradio" for="render_solid_model">Solid</label>
+				<input class="newradio" type="radio" name="render_mode_model" id="render_wireframe_model" value="wireframe" />
+				<label class="newradio" for="render_wireframe_model">Wireframe</label>
+				<span class="description">Model</span>
+			</section>
+
+			<section>
+				<input class="newradio" type="radio" name="render_mode_filling" id="render_solid_filling" value="solid" />
+				<label class="newradio" for="render_solid_filling">Solid</label>
+				<input class="newradio" type="radio" name="render_mode_filling" id="render_wireframe_filling" value="wireframe" />
+				<label class="newradio" for="render_wireframe_filling">Wireframe</label>
+				<span class="description">Filling</span>
+			</section>
+
+			<section>
+				<input class="newradio" type="radio" name="shading" id="shading_flat" value="flat" />
+				<label class="newradio" for="shading_flat">Flat</label>
+				<input class="newradio" type="radio" name="shading" id="shading_phong" value="phong" />
+				<label class="newradio" for="shading_phong">Phong</label>
+				<span class="description">Shading</span>
+			</section>
+
+			<section>
+				<input class="button" type="button" id="controls_reset" value="Reset camera" />
+			</section>
+		</div>
+	</li>
+
+	<!-- lighting -->
+	<li class="tool tool-light">
+		<span class="icon icon-light"></span>
+		<fieldset>
+			<legend>Lighting</legend>
+
+			<section id="light_ambient">
+				<input class="newradio" type="radio" name="light_ambient" id="light_ambient_on" value="on" checked />
+				<label class="newradio" for="light_ambient_on">On</label>
+				<input class="newradio" type="radio" name="light_ambient" id="light_ambient_off" value="off" />
+				<label class="newradio" for="light_ambient_off">Off</label>
+				<span class="description">Ambient</span>
+			</section>
+
+			<section id="light_camera">
+				<input class="newradio" type="radio" name="light_camera" id="light_camera_on" value="on" checked />
+				<label class="newradio" for="light_camera_on">On</label>
+				<input class="newradio" type="radio" name="light_camera" id="light_camera_off" value="off" />
+				<label class="newradio" for="light_camera_off">Off</label>
+				<span class="description">Camera</span>
+			</section>
+
+			<section id="light_directional">
+				<input class="newradio" type="radio" name="light_directional" id="light_directional_on" value="on" checked />
+				<label class="newradio" for="light_directional_on">On</label>
+				<input class="newradio" type="radio" name="light_directional" id="light_directional_off" value="off" />
+				<label class="newradio" for="light_directional_off">Off</label>
+				<span class="description">Directional</span>
+			</section>
+		</fieldset>
+	</li>
+
+	<!-- edit -->
+	<li class="tool tool-edit">
+		<span class="icon icon-edit"></span>
+		<fieldset>
+			<legend>Edit model</legend>
+
+			<section>
+				<input class="button" type="button" id="edit_findedges" value="Find holes" />
+			</section>
+		</div>
+	</li>
+
+	<!-- export -->
+	<li class="tool tool-export">
+		<span class="icon icon-export"></span>
+		<fieldset>
+			<legend>Export</legend>
+
+			<section>
+				<input class="button" type="button" id="export_options" value="Show options" />
+			</section>
+		</fieldset>
+	</li>
+
+	<!-- empty -->
+	<li class="tool tool-empty"></li>
+
+	<!-- about -->
+	<li class="tool tool-about">
+		<span class="icon icon-about"></span>
+		<fieldset>
+			<legend>About</legend>
+			<p>WebGL Framework: <a href="http://threejs.org/">three.js</a></p>
+			<p>Icons: <a href="http://somerandomdude.com/work/iconic/">Iconic Icon Set by Some Random Dude</a></p>
+			<p>Font: <a href="http://opensans.com/">Open Sans</a></p>
+		</fieldset>
+	</li>
+
+</ul>
+
+
+<!-- details for tools -->
+<div class="details" id="details">
+
+
+	<!-- details for hole filling -->
+	<ul class="details-collection details-holefilling" hidden>
+
+		<!-- found holes -->
+		<li class="detail detail-foundholes">
+			<div class="caption">Found Holes</div>
+			<fieldset>
+				<p class="message" hidden>No holes found.</p>
+				<div class="selectContainer foundHoles"></div>
+			</fieldset>
+		</li>
+
+		<!-- hole information -->
+		<li class="detail detail-holeinfo">
+			<div class="caption">Hole Information</div>
+			<fieldset>
+				<span class="info" id="holeinfo-vertices">-</span>
+				<label>Front vertices</label>
+			</fieldset>
+		</li>
+
+		<!-- collision test -->
+		<li class="detail detail-collision">
+			<div class="caption">Collision Test</div>
+			<fieldset>
+				<section hidden>
+					<input type="number" min="1" step="1" value="1" id="collision-worker" />
+					<label title="Number of worker processes" for="collision-worker">Web Worker</label>
+				</section>
+
+				<section>
+					<input class="newradio" type="radio" name="collision_test" id="collision_test_filling" value="filling" />
+					<label class="newradio" for="collision_test_filling">Filling</label>
+					<input class="newradio" type="radio" name="collision_test" id="collision_test_all" value="all" />
+					<label class="newradio" for="collision_test_all">All</label>
+				</section>
+			</fieldset>
+		</li>
+
+		<!-- fill hole -->
+		<li class="detail detail-fillhole">
+			<div class="caption">Fill Hole<span class="number">-</span></div>
+			<fieldset>
+				<section>
+					<input type="number" min="0.001" step="0.01" id="merge-threshold" />
+					<label title="Distance threshold for two vertices before they are merged." for="merge-threshold">Merging</label>
+				</section>
+
+				<section>
+					<input type="button" class="button disabled fillholeStart" value="Advancing Front" />
+				</section>
+			</fieldset>
+		</li>
+
+		<!-- progress -->
+		<li class="detail detail-fillprogress">
+			<div class="caption">Progress</div>
+			<fieldset></fieldset>
+		</li>
+
+	</ul>
+
+
+	<!-- details for export -->
+	<ul class="details-collection details-export" hidden>
+
+		<!-- format -->
+		<li class="detail detail-exportformat">
+			<div class="caption">Format</div>
+			<fieldset></fieldset>
+		</li>
+
+		<!-- name -->
+		<li class="detail detail-exportname">
+			<div class="caption">Name</div>
+			<fieldset>
+				<input type="text" class="textinput" id="export_name" />
+			</fieldset>
+		</li>
+
+		<!-- export -->
+		<li class="detail detail-export">
+			<div class="caption">Export</div>
+			<fieldset>
+				<input type="button" class="button" value="Export" />
+			</fieldset>
+		</li>
+
+		<!-- progress -->
+		<li class="detail detail-exportprogress">
+			<div class="caption">Progress</div>
+			<fieldset></fieldset>
+		</li>
+
+	</ul>
+
+</div>
+
+
+<!-- Worker for use with AdvancingFront-withWorkers.js -->
+<script id="worker-collision" type="javascript/worker">
+	var MODEL_F = null,
+	    MODEL_V = null;
+
+	function checkForCollision( data ) {
+		var dt = JSON.parse( data.test );
+		var faces = JSON.parse( data.faces ),
+		    fromA = new THREE.Vector3( dt.fromA.x, dt.fromA.y, dt.fromA.z ),
+		    fromB = dt.fromB,
+		    v = new THREE.Vector3( dt.v.x, dt.v.y, dt.v.z );
+		var a, b, c, f, v0, v1, v2;
+
+		if( fromB ) {
+			fromB = new THREE.Vector3( dt.fromB.x, dt.fromB.y, dt.fromB.z );
+		}
+
+		if( data.type == "filling" ) {
+			for( var i = 0, len = faces.length; i < len; i++ ) {
+				f = faces[i];
+				a = new THREE.Vector3( f[0].x, f[0].y, f[0].z );
+				b = new THREE.Vector3( f[1].x, f[1].y, f[1].z );
+				c = new THREE.Vector3( f[2].x, f[2].y, f[2].z );
+
+				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+					continue;
+				}
+				if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
+					continue;
+				}
+				if( fromB ) {
+					if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
+						continue;
+					}
+				}
+
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+					return true;
+				}
+			}
+		}
+		else if( data.type == "model" ) {
+			for( var i = 0, len = faces.length; i < len; i++ ) {
+				f = faces[i];
+				v0 = MODEL_V[f[0]];
+				v1 = MODEL_V[f[1]];
+				v2 = MODEL_V[f[2]];
+				a = new THREE.Vector3( v0.x, v0.y, v0.z );
+				b = new THREE.Vector3( v1.x, v1.y, v1.z );
+				c = new THREE.Vector3( v2.x, v2.y, v2.z );
+
+				if( a.equals( v ) || b.equals( v ) || c.equals( v ) ) {
+					continue;
+				}
+				if( a.equals( fromA ) || b.equals( fromA ) || c.equals( fromA ) ) {
+					continue;
+				}
+				if( fromB ) {
+					if( a.equals( fromB ) || b.equals( fromB ) || c.equals( fromB ) ) {
+						continue;
+					}
+				}
+
+				if( Utils.checkIntersectionOfTriangles3D( a, b, c, v, fromA, fromB ) ) {
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
+
+
+	function handleMessages( e ) {
+		switch( e.data.cmd ) {
+
+			case "url":
+				var url = e.data.url + "js/";
+
+				importScripts(
+					url + "threeJS/three.min.js",
+					url + "Plane.js",
+					url + "Utils.js"
+				);
+				break;
+
+			case "prepare":
+				MODEL_F = JSON.parse( e.data.modelF );
+				MODEL_V = JSON.parse( e.data.modelV );
+				break;
+
+			case "check":
+				self.postMessage( {
+					type: "check",
+					intersects: checkForCollision( e.data )
+				} );
+				break;
+
+			case "close":
+				self.close();
+				break;
+
+		}
+	}
+
+	self.addEventListener( "message", handleMessages, false );
+</script>
+
+</body>
+</html>

@@ -190,11 +190,6 @@ header {
 		}
 
 
-header.screenshots {
-
-}
-
-
 header.demo {
 	text-align: center;
 }
@@ -207,6 +202,14 @@ header.demo {
 		letter-spacing: -2px;
 		line-height: 100%;
 		padding: 14px 22px;
+	}
+
+	header.demo .annotation {
+		display: inline-block;
+		font-family: "OpenSans Light Web";
+		margin-left: -264px;
+		margin-right: 20px;
+		vertical-align: middle;
 	}
 
 
@@ -265,9 +268,13 @@ header.about {
 		border: 1px solid #d0d0d0;
 		border-radius: 2px;
 		display: inline-block;
-		height: 200px;
+		height: 178px;
 		margin: 10px;
 		width: 300px;
+	}
+
+	.images a {
+		border: 0;
 	}
 
 
@@ -282,3 +289,4 @@ header.about {
 	-webkit-transform: scale( 1.4 );
 	        transform: scale( 1.4 );
 }
+
