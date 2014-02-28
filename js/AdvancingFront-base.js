@@ -344,7 +344,7 @@ var AdvancingFront = {
 		vNew = plane.getPoint( 1, 1 );
 		vNew.setLength( vnClone.length() );
 		vNew.add( v );
-		vNew = Utils.keepNearPlane( vNew, [vp, v, vn] );
+		vNew = Utils.keepNearPlane( vNew, [vp, v, vn], this.mergeThreshold);
 
 		return vNew;
 	},

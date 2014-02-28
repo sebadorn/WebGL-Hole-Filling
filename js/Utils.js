@@ -417,31 +417,30 @@ var Utils = {
 	 * @param  {THREE.Vector3} vNew The newly created vector.
 	 * @return {THREE.Vector3}      Adjusted vector.
 	 */
-	keepNearPlane: function( vNew, vectors ) {
-		var limit = CONFIG.FILLING.THRESHOLD_VARIANCE,
-		    newV = vNew.clone(),
+	keepNearPlane: function( vNew, vectors, mergeThreshold) {
+		var newV = vNew.clone(),
 		    variance = Utils.calculateVariances( vectors );
 
 		if( variance.x < variance.y ) {
 			if( variance.x < variance.z ) {
-				if( variance.x < limit ) {
+				if( variance.x < mergeThreshold ) {
 					newV.x = variance.average.x;
 				}
 			}
 			else {
-				if( variance.z < limit ) {
+				if( variance.z < mergeThreshold ) {
 					newV.z = variance.average.z;
 				}
 			}
 		}
 		else {
 			if( variance.y < variance.z ) {
-				if( variance.y < limit ) {
+				if( variance.y < mergeThreshold ) {
 					newV.y = variance.average.y;
 				}
 			}
 			else {
-				if( variance.z < limit ) {
+				if( variance.z < mergeThreshold ) {
 					newV.z = variance.average.z;
 				}
 			}
