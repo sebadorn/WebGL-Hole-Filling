@@ -1,5 +1,5 @@
-resources/*/*
+# Directories
+/resources/*/*
 
-# Sublime Text
+# Files
 *.sublime-*
-
