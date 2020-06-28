@@ -1,0 +1,11 @@
+{
+	"-W097": true,
+	"browser": true,
+	"esversion": 10,
+	"globals": {
+		"CONFIG": true,
+		"console": false,
+		"THREE": false,
+		"WebHF": true
+	}
+}

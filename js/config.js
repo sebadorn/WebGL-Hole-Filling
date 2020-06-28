@@ -1,13 +1,12 @@
-"use strict";
+'use strict';
 
 
 /**
  * Global CONFIG object.
- * @type {Object}
  */
-var CONFIG = {
+const CONFIG = {
 
-	ALLOWED_FILE_EXTENSIONS: ["obj", "ply", "stl", "vtk"],
+	ALLOWED_FILE_EXTENSIONS: ['obj', 'ply', 'stl', 'vtk'],
 
 	// Axis
 	AXIS: {
@@ -70,8 +69,8 @@ var CONFIG = {
 
 	// Export of model
 	EXPORT: {
-		DEFAULT_FORMAT: "STL",
-		FORMATS: ["OBJ", "STL"]
+		DEFAULT_FORMAT: 'STL',
+		FORMATS: ['OBJ', 'STL']
 	},
 
 	// The filling to be created
@@ -80,12 +79,12 @@ var CONFIG = {
 		// - "iterative": Fast, but UI freezes until finished
 		// - "responsive": ~5x slower, but UI stays responsive (= progress bar updates)
 		// - "parallel": ~5x slower (depending on number of CPU cores), but UI stays responsive; uses Web Workers
-		AF_MODE: "parallel",
+		AF_MODE: 'parallel',
 		// COLLISION_TEST values: "filling" or "all"
 		// "all" will test to whole mesh for collisions with a newly created point,
 		// while "filling" only tests the hole filling.
 		// "all" is really slow.
-		COLLISION_TEST: "filling",
+		COLLISION_TEST: 'filling',
 		COLOR: 0x87C3EC,
 		LINE_WIDTH: 2,
 		// Update the progress bar every <int> loops.
@@ -132,16 +131,17 @@ var CONFIG = {
 	},
 
 	// Mode: "solid", "wireframe"
-	MODE: "solid",
+	MODE: 'solid',
 
 	// Options that will be passed to the THREE.WebGLRenderer as is
 	RENDERER: {
+		alpha: true,
 		antialias: true,
 		maxLights: 4
 	},
 
 	// Shading: "flat" or "phong"
-	SHADING: "flat"
+	SHADING: 'flat'
 
 };
 
@@ -149,34 +149,34 @@ var CONFIG = {
 
 // Validate CONFIG
 ( function() {
-	var OPTIONS_AF_MODE = ["iterative", "parallel", "responsive"],
-	    OPTIONS_COLLISION_TEST = ["all", "filling"],
-	    OPTIONS_MODE = ["solid", "wireframe"],
-	    OPTIONS_SHADING = ["flat", "phong"];
+	const OPTIONS_AF_MODE = ['iterative', 'parallel', 'responsive'];
+	const OPTIONS_COLLISION_TEST = ['all', 'filling'];
+	const OPTIONS_MODE = ['solid', 'wireframe'];
+	const OPTIONS_SHADING = ['flat', 'phong'];
 
 	if( OPTIONS_AF_MODE.indexOf( CONFIG.FILLING.AF_MODE ) < 0 ) {
-		console.error( "CONFIG.FILLING.AF_MODE: Unknown setting [" + CONFIG.FILLING.AF_MODE + "]." );
+		console.error( `CONFIG.FILLING.AF_MODE: Unknown setting [${ CONFIG.FILLING.AF_MODE }].` );
 	}
 	if( OPTIONS_COLLISION_TEST.indexOf( CONFIG.FILLING.COLLISION_TEST ) < 0 ) {
-		console.error( "CONFIG.FILLING.COLLISION_TEST: Unknown setting [" + CONFIG.FILLING.COLLISION_TEST + "]." );
+		console.error( `CONFIG.FILLING.COLLISION_TEST: Unknown setting [${ CONFIG.FILLING.COLLISION_TEST }].` );
 	}
 	if( OPTIONS_MODE.indexOf( CONFIG.MODE ) < 0 ) {
-		console.error( "CONFIG.MODE: Unknown setting [" + CONFIG.MODE + "]." );
+		console.error( `CONFIG.MODE: Unknown setting [${ CONFIG.MODE }].` );
 	}
 	if( OPTIONS_SHADING.indexOf( CONFIG.SHADING ) < 0 ) {
-		console.error( "CONFIG.SHADING: Unknown setting [" + CONFIG.SHADING + "]." );
+		console.error( `CONFIG.SHADING: Unknown setting [${ CONFIG.SHADING }].` );
 	}
 
-	if( CONFIG.ALLOWED_FILE_EXTENSIONS.length == 0 ) {
+	if( CONFIG.ALLOWED_FILE_EXTENSIONS.length === 0 ) {
 		console.warn( "CONFIG.ALLOWED_FILE_EXTENSIONS: If no file extensions are allowed, it won't be possible to import anything." );
 	}
-	if( CONFIG.HOLES.COLOR.length == 0 ) {
-		console.warn( "CONFIG.HOLES.COLOR: No colors set." );
+	if( CONFIG.HOLES.COLOR.length === 0 ) {
+		console.warn( 'CONFIG.HOLES.COLOR: No colors set.' );
 	}
-	if( CONFIG.LIGHTS.CAMERA.length == 0 && CONFIG.LIGHTS.DIRECTIONAL.length == 0 ) {
+	if( CONFIG.LIGHTS.CAMERA.length === 0 && CONFIG.LIGHTS.DIRECTIONAL.length === 0 ) {
 		console.warn( "CONFIG.LIGHTS: No camera and/or directional light(s) set, you won't see much details." );
 	}
-	if( CONFIG.EXPORT.FORMATS.length == 0 ) {
+	if( CONFIG.EXPORT.FORMATS.length === 0 ) {
 		console.warn( "CONFIG.EXPORT.FORMATS: If no export formats are specified, it won't be possible to export a model." );
 	}
 } )();

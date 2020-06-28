@@ -1,30 +1,31 @@
-"use strict";
+'use strict';
 
 
 /**
  * Load 3D models.
- * @type {Object}
+ * @namespace WebHF.Loader
  */
-var Loader = {
+WebHF.Loader = {
+
 
 	/**
 	 * Remove vertices that are either not part of any face,
 	 * or are (wrongly) connected to themself.
-	 * @param  {THREE.Geometry} geometry The model geomtry to check and fix.
-	 * @return {THREE.Geometry}          The checked and fixed geometry.
+	 * @param  {THREE.Geometry} geometry - The model geometry to check and fix.
+	 * @return {THREE.Geometry} The checked and fixed geometry.
 	 */
-	checkAndFixFaces: function( geometry ) {
-		var facesRemoved = 0,
-		    mesh = new HalfEdgeMesh( geometry ),
-		    remove = [];
-		var f, v;
+	checkAndFixFaces( geometry ) {
+		const mesh = new WebHF.HalfEdgeMesh( geometry );
+		const remove = [];
+
+		let facesRemoved = 0;
 
 		// Find prolematic vertices
-		for( var i = mesh.vertices.length - 1; i >= 0; i-- ) {
-			v = mesh.vertices[i];
+		for( let i = mesh.vertices.length - 1; i >= 0; i-- ) {
+			const v = mesh.vertices[i];
 
 			// Problem: Vertex has at least one connection to itself
-			for( var j = 0, len = v.edges.length; j < len; j++ ) {
+			for( let j = 0, len = v.edges.length; j < len; j++ ) {
 				if( v.edges[j].vertex.index == v.index ) {
 					remove.push( v.index );
 					break;
@@ -33,19 +34,19 @@ var Loader = {
 
 			// Problem: Vertex is just a single, unconnected point,
 			// floating around all alone.
-			if( v.edges.length == 0 ) {
+			if( v.edges.length === 0 ) {
 				remove.push( v.index );
 			}
 		}
 
-		remove.sort( numCompareFunc );
+		remove.sort( ( a, b ) => a - b );
 
 		// Remove them from the model and affected faces
-		for( var i = remove.length - 1; i >= 0; i-- ) {
+		for( let i = remove.length - 1; i >= 0; i-- ) {
 			geometry.vertices.splice( remove[i], 1 );
 
-			for( var j = geometry.faces.length - 1; j >= 0; j-- ) {
-				f = geometry.faces[j];
+			for( let j = geometry.faces.length - 1; j >= 0; j-- ) {
+				const f = geometry.faces[j];
 
 				// Face was built with vertex
 				if( remove[i] == f.a || remove[i] == f.b || remove[i] == f.c ) {
@@ -56,11 +57,11 @@ var Loader = {
 
 				// Vertex index has been removed, so all above it have to be decreased by one.
 				// May also remove faces, if necessary.
-				geometry.faces = Utils.decreaseHigherFaceIndexes( geometry.faces, j, remove[i] );
+				geometry.faces = WebHF.Utils.decreaseHigherFaceIndexes( geometry.faces, j, remove[i] );
 			}
 		}
 
-		console.log( "CHECK_AND_FIX_FACES: Removed " + remove.length + " vertices and " + facesRemoved + " faces." );
+		console.log( 'CHECK_AND_FIX_FACES: Removed ' + remove.length + ' vertices and ' + facesRemoved + ' faces.' );
 
 		return geometry;
 	},
@@ -68,11 +69,11 @@ var Loader = {
 
 	/**
 	 * Get the extension part of a file name.
-	 * @param  {String} filename Name of the file.
-	 * @return {String}          Extension part of the file name.
+	 * @param  {string} filename - Name of the file.
+	 * @return {string} Extension part of the file name.
 	 */
-	getFileExtension: function( filename ) {
-		var extension = filename.split( "." );
+	getFileExtension( filename ) {
+		const extension = filename.split( '.' );
 
 		return extension[extension.length - 1].toLowerCase();
 	},
@@ -80,57 +81,64 @@ var Loader = {
 
 	/**
 	 * Get the loader for the given file type.
-	 * @param  {String}        extension File extension.
-	 * @return {THREE.?Loader}           Loader.
+	 * @param {string}   extension - File extension.
+	 * @param {function} cb
 	 */
-	getLoader: function( extension ) {
-		var loader;
+	getLoader: function( extension, cb ) {
+		let modulePath = './threeJS/loaders/';
+		let className = null;
 
 		switch( extension ) {
-
-			case "obj":
-				loader = new THREE.OBJLoader();
+			case 'obj':
+				modulePath += 'OBJLoader.js';
+				className = 'OBJLoader';
 				break;
 
-			case "ply":
-				loader = new THREE.PLYLoader();
+			case 'ply':
+				modulePath += 'PLYLoader.js';
+				className = 'PLYLoader';
 				break;
 
-			case "stl":
-				loader = new THREE.STLLoader();
+			case 'stl':
+				modulePath += 'STLLoader.js';
+				className = 'STLLoader';
 				break;
 
-			case "vtk":
-				loader = new THREE.VTKLoader();
+			case 'vtk':
+				modulePath += 'VTKLoader.js';
+				className = 'VTKLoader';
 				break;
 
 			default:
-				throw new Error( "No loader available for extension " + extension.toUpperCase() + "." );
-
+				throw new Error( `No loader available for extension ${ extension.toUpperCase() }.` );
 		}
 
-		return loader;
+		/* jshint ignore:start */
+		import( modulePath )
+			.then( module => cb( new module[className]() ) );
+		/* jshint ignore:end */
 	},
 
 
 	/**
 	 * Evaluate and load the model file.
+	 * @param {Event} ev
 	 */
-	loadFile: function( e ) {
-		if( e.target.files.length === 0 ) {
-			console.log( "No file selected." );
+	loadFile( ev ) {
+		if( ev.target.files.length === 0 ) {
+			console.log( 'No file selected.' );
 			return false;
 		}
 
-		var file = e.target.files[0],
-		    extension = this.getFileExtension( file.name );
+		const file = ev.target.files[0];
+		const extension = this.getFileExtension( file.name );
 
 		if( this.validateFileExtension( extension ) ) {
 			this.readFile( file, extension, this.loadModel.bind( this ) );
 		}
 		else {
 			console.error(
-				"Extension of file (." + extension + ") not supported. Supported are:",
+				'Extension of file (.' + extension + ') not supported. Supported are:',
 				CONFIG.ALLOWED_FILE_EXTENSIONS
 			);
 		}
@@ -139,16 +147,17 @@ var Loader = {
 
 	/**
 	 * File has been dropped in the browser.
+	 * @param {Event} ev
 	 */
-	loadFileFromDrop: function( e ) {
-		e.preventDefault();
+	loadFileFromDrop( ev ) {
+		ev.preventDefault();
 
-		if( e.dataTransfer.files.length === 0 ) {
-			console.log( "No file selected" );
+		if( ev.dataTransfer.files.length === 0 ) {
+			console.log( 'No file selected' );
 			return false;
 		}
 
-		var dummyE = { target: { files: e.dataTransfer.files } };
+		const dummyE = { target: { files: ev.dataTransfer.files } };
 
 		this.loadFile( dummyE );
 	},
@@ -156,75 +165,77 @@ var Loader = {
 
 	/**
 	 * Read the model data from the file and load it into the scene.
+	 * @param {Event}  ev
+	 * @param {string} filename
+	 * @param {string} extension
 	 */
-	loadModel: function( e, filename, extension ) {
-		var loader = this.getLoader( extension ),
-		    sm = SceneManager;
-		var content, geometry;
+	loadModel( ev, filename, extension ) {
+		const SM = WebHF.SceneManager;
 
-		content = loader.parse( e.target.result );
+		this.getLoader( extension, loader => {
+			const content = loader.parse( ev.target.result );
+			let bufferGeometry = null;
 
-		if( ["obj"].indexOf( extension ) >= 0 ) {
-			geometry = content.children[0].geometry;
-		}
-		else {
-			geometry = content;
-		}
+			if( extension === 'obj' ) {
+				bufferGeometry = content.children[0].geometry;
+			}
+			else {
+				bufferGeometry = content;
+			}
 
-		if( extension == "stl" ) {
+			let geometry = new THREE.Geometry();
+			geometry.fromBufferGeometry( bufferGeometry );
 			geometry.mergeVertices();
-		}
 
-		if( CONFIG.CHECK_AND_FIX_FACES ) {
-			Stopwatch.start( "checkAndFixFaces" );
-			geometry = this.checkAndFixFaces( geometry );
-			Stopwatch.stop( "checkAndFixFaces", true );
-		}
+			if( CONFIG.CHECK_AND_FIX_FACES ) {
+				WebHF.Stopwatch.start( 'checkAndFixFaces' );
+				geometry = this.checkAndFixFaces( geometry );
+				WebHF.Stopwatch.stop( 'checkAndFixFaces', true );
+			}
 
-		sm.model = sm.geometryToMesh( geometry );
-		sm.model = sm.centerModel( sm.model );
-		sm.model.name = filename.replace( "." + extension, "" );
+			SM.model = SM.geometryToMesh( geometry );
+			SM.model = SM.centerModel( SM.model );
+			SM.model.name = filename.replace( '.' + extension, '' );
 
-		console.log( "Imported: " + filename );
+			console.log( 'Imported: ' + filename );
 
-		UI.resetInterface();
+			WebHF.UI.resetInterface();
 
-		sm.clearModels();
-		sm.fitCameraToModel();
+			SM.clearModels();
+			SM.fitCameraToModel();
 
-		if( CONFIG.BBOX.SHOW ) {
-			sm.renderBoundingBox( sm.model );
-		}
+			if( CONFIG.BBOX.SHOW ) {
+				SM.renderBoundingBox( SM.model );
+			}
 
-		sm.scene.add( sm.model );
+			SM.scene.add( SM.model );
 
-		render();
+			WebHF.render();
+		} );
 	},
 
 
 	/**
 	 * Read the file content.
-	 * @param {Object}   file      The file to read.
-	 * @param {String}   extension The file extension WITHOUT leading dot.
-	 * @param {function} callback  Function to call when data has been read.
+	 * @param {object}   file      - The file to read.
+	 * @param {string}   extension - The file extension WITHOUT leading dot.
+	 * @param {function} callback  - Function to call when data has been read.
 	 */
-	readFile: function( file, extension, callback ) {
-		var reader = new FileReader();
-
-		reader.addEventListener( "load", function( e ) {
-			callback( e, file.name, extension );
-		}, false );
+	readFile( file, extension, callback ) {
+		const reader = new FileReader();
+		reader.addEventListener( 'load', ev => callback( ev, file.name, extension ) );
 		reader.readAsText( file );
 	},
 
 
 	/**
 	 * Check if a file extension has been allowed through the config.
-	 * @param  {String}  extension The file extension WITHOUT leading dot.
-	 * @return {boolean}           True if extension is allowed, false otherwise.
+	 * @param  {string} extension - The file extension WITHOUT leading dot.
+	 * @return {boolean} True if extension is allowed, false otherwise.
 	 */
-	validateFileExtension: function( extension ) {
-		return CONFIG.ALLOWED_FILE_EXTENSIONS.indexOf( extension ) >= 0;
+	validateFileExtension( extension ) {
+		return CONFIG.ALLOWED_FILE_EXTENSIONS.includes( extension );
 	}
+
 
 };
