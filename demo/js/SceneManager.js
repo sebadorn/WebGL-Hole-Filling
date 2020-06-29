@@ -1,23 +1,24 @@
-"use strict";
+'use strict';
 
 
 /**
  * Manipulating the scene (models, lights, camera).
- * @type {Object}
+ * @namespace WebHF.SceneManager
  */
-var SceneManager = {
+WebHF.SceneManager = {
+
 
 	fillings: [],
-	holes: [],
 	holeLines: [],
+	holes: [],
 	lightStatus: {
 		ambient: true,
 		camera: true,
 		directional: true
 	},
 	modeFilling: CONFIG.MODE,
-	modeModel: CONFIG.MODE,
 	model: null,
+	modeModel: CONFIG.MODE,
 	scene: null,
 	shading: CONFIG.SHADING,
 
@@ -26,21 +27,22 @@ var SceneManager = {
 	 * Show coordinate system axis.
 	 * Adds an axis to the scene. Does not call render() function!
 	 */
-	addAxis: function() {
-		var axis = new THREE.AxisHelper( CONFIG.AXIS.SIZE );
+	addAxis() {
+		const axis = new THREE.AxisHelper( CONFIG.AXIS.SIZE );
+		axis.name = 'axis';
 
-		axis.name = "axis";
 		this.scene.add( axis );
 	},
 
 
 	/**
 	 * Center a mesh.
-	 * @param  {THREE.Mesh} mesh The mesh to center.
-	 * @return {THREE.Mesh}      Centered mesh.
+	 * @param  {THREE.Mesh} mesh - The mesh to center.
+	 * @return {THREE.Mesh} Centered mesh.
 	 */
-	centerModel: function( mesh ) {
-		var center = mesh.geometry.boundingBox.center();
+	centerModel( mesh ) {
+		const center = new THREE.Vector3();
+		mesh.geometry.boundingBox.getCenter( center );
 
 		mesh.position.x -= center.x;
 		mesh.position.y -= center.y;
@@ -52,117 +54,110 @@ var SceneManager = {
 
 	/**
 	 * Change the mode the model is rendered: Solid or Wireframe.
-	 * @param {String} what "model" or "filling".
+	 * @param {Event}  ev
+	 * @param {string} what - "model" or "filling".
 	 */
-	changeMode: function( e, what ) {
-		var value = e.target.value;
+	changeMode( ev, what ) {
+		const value = ev.target.value;
 
-		if( !e.target.checked || this.model === null ) {
+		if( !ev.target.checked || this.model === null ) {
 			return false;
 		}
 
-		if( what == "model" ) {
+		if( what === 'model' ) {
 			switch( value ) {
-
-				case "solid":
+				case 'solid':
 					this.model.material.wireframe = false;
 					break;
 
-				case "wireframe":
+				case 'wireframe':
 					this.model.material.wireframe = true;
 					break;
 
 				default:
 					return false;
-
 			}
 
 			this.modeModel = value;
 		}
-		else if( what == "filling" ) {
+		else if( what === 'filling' ) {
 			switch( value ) {
-
-				case "solid":
-					for( var i = 0; i < this.fillings.length; i++ ) {
+				case 'solid':
+					for( let i = 0; i < this.fillings.length; i++ ) {
 						this.fillings[i].solid.material.wireframe = false;
 					}
 					break;
 
-				case "wireframe":
-					for( var i = 0; i < this.fillings.length; i++ ) {
+				case 'wireframe':
+					for( let i = 0; i < this.fillings.length; i++ ) {
 						this.fillings[i].solid.material.wireframe = true;
 					}
 					break;
 
 				default:
 					return false;
-
 			}
 
 			this.modeFilling = value;
 		}
 
-		render();
+		WebHF.render();
 	},
 
 
 	/**
-	 * Change the shading of the material: None, Flat or Phong.
+	 * Change the shading of the material: Flat or Phong.
+	 * @param {Event} ev
 	 */
-	changeShading: function( e ) {
-		var g = GLOBAL,
-		    value = e.target.value;
-		var shading;
-
-		if( !e.target.checked || this.model === null ) {
-			return false;
+	changeShading( ev ) {
+		if( !ev.target.checked || this.model === null ) {
+			return;
 		}
 
+		const value = ev.target.value;
+		let flatShading = true;
+
 		switch( value ) {
-
-			case "none":
-				shading = THREE.NoShading;
+			case 'flat':
+				flatShading = true;
 				break;
 
-			case "flat":
-				shading = THREE.FlatShading;
-				break;
-
-			case "phong":
-				shading = THREE.SmoothShading;
+			case 'phong':
+				flatShading = false;
 				break;
 
 			default:
-				return false;
-
+				return;
 		}
 
-		this.model.material.shading = shading;
+		this.model.material.flatShading = flatShading;
+		this.model.material.needsUpdate = true;
+
 		this.model.geometry.normalsNeedUpdate = true;
 
-		for( var i = 0; i < this.fillings.length; i++ ) {
-			this.fillings[i].solid.material.shading = shading;
+		for( let i = 0; i < this.fillings.length; i++ ) {
+			this.fillings[i].solid.material.flatShading = flatShading;
+			this.fillings[i].solid.material.needsUpdate = true;
+
 			this.fillings[i].solid.geometry.normalsNeedUpdate = true;
 		}
 
 		this.shading = value;
-		render();
+		WebHF.render();
 	},
 
 
 	/**
 	 * Clear the scene (except for the lights, camera and axis).
 	 */
-	clearModels: function() {
-		var obj;
-
-		for( var i = this.scene.children.length - 1; i >= 0; i-- ) {
-			obj = this.scene.children[i];
+	clearModels() {
+		for( let i = this.scene.children.length - 1; i >= 0; i-- ) {
+			let obj = this.scene.children[i];
 
 			if( obj instanceof THREE.Light || obj instanceof THREE.Camera ) {
 				continue;
 			}
-			if( obj.name == "axis" ) {
+			if( obj.name === 'axis' ) {
 				continue;
 			}
 
@@ -176,21 +171,20 @@ var SceneManager = {
 	/**
 	 * Create an optical representation of a cross vector.
 	 * Creates a point and a line.
-	 * @param  {THREE.Vector3} vp            Previous vector.
-	 * @param  {THREE.Vector3} v             Center vector of the angle.
-	 * @param  {THREE.Vector3} vn            Next vector.
-	 * @param  {float}         size          Size of the point.
-	 * @param  {hexadecimal}   color         Color for the objects.
-	 * @param  {boolean}       moveWithModel Adjust position with the currently loaded model.
-	 * @return {Object}                      Point and line for the cross vector.
+	 * @param  {THREE.Vector3}   vp            - Previous vector.
+	 * @param  {THREE.Vector3}   v             - Center vector of the angle.
+	 * @param  {THREE.Vector3}   vn            - Next vector.
+	 * @param  {number}          size          - Size of the point.
+	 * @param  {(number|string)} color         - Color for the objects.
+	 * @param  {boolean}         moveWithModel - Adjust position with the currently loaded model.
+	 * @return {object} Point and line for the cross vector.
 	 */
-	createCrossVector: function( vp, v, vn, size, color, moveWithModel ) {
-		var cross = new THREE.Vector3();
-		var line, point;
-
+	createCrossVector( vp, v, vn, size, color, moveWithModel ) {
+		let cross = new THREE.Vector3();
 		cross = cross.crossVectors( vp.clone().sub( v ), vn.clone().sub( v ) ).add( v );
-		point = this.createPoint( cross, size, color, moveWithModel );
-		line = this.createLine( v, cross, 1, color, moveWithModel );
+
+		const point = this.createPoint( cross, size, color, moveWithModel );
+		const line = this.createLine( v, cross, 1, color, moveWithModel );
 
 		return {
 			point: point,
@@ -201,19 +195,19 @@ var SceneManager = {
 
 	/**
 	 * Create a line from a starting to an end point.
-	 * @param  {THREE.Vector3} from          Start point.
-	 * @param  {THREE.Vector3} to            End point.
-	 * @param  {float}         width         Line width of the line.
-	 * @param  {hexadecimal}   color         Color of the line.
-	 * @param  {boolean}       moveWithModel If true, move the line to the position of the model.
-	 * @return {THREE.Line}                  A THREE.Line object.
+	 * @param  {THREE.Vector3}   start         - Start point.
+	 * @param  {THREE.Vector3}   end           - End point.
+	 * @param  {number}          width         - Line width of the line.
+	 * @param  {(number|string)} color         - Color of the line.
+	 * @param  {boolean}         moveWithModel - If true, move the line to the position of the model.
+	 * @return {THREE.Line} A THREE.Line object.
 	 */
-	createLine: function( from, to, width, color, moveWithModel ) {
-		var geo = new THREE.Geometry(),
-		    material = new THREE.LineBasicMaterial( { linewidth: width, color: color } );
+	createLine( start, end, width, color, moveWithModel ) {
+		const material = new THREE.LineBasicMaterial( { linewidth: width, color: color } );
 
-		geo.vertices.push( from.clone().add( this.model.position ) );
-		geo.vertices.push( to.clone().add( this.model.position ) );
+		const geo = new THREE.Geometry();
+		geo.vertices.push( start.clone().add( this.model.position ) );
+		geo.vertices.push( end.clone().add( this.model.position ) );
 
 		return new THREE.Line( geo, material );
 	},
@@ -221,22 +215,25 @@ var SceneManager = {
 
 	/**
 	 * Create a sphere mesh.
-	 * @param  {Dictionary}  position      Position of the sphere.
-	 * @param  {float}       size          Radius of the sphere.
-	 * @param  {hexadecimal} color         Color of the sphere.
-	 * @param  {boolean}     moveWithModel If true, move the point to the position of the model.
+	 * @param  {object}          position      - Position of the sphere.
+	 * @param  {object}          position.x
+	 * @param  {object}          position.y
+	 * @param  {object}          position.z
+	 * @param  {number}          size          - Radius of the sphere.
+	 * @param  {(number|string)} color         - Color of the sphere.
+	 * @param  {boolean}         moveWithModel - If true, move the point to the position of the model.
 	 * @return {THREE.Mesh}
 	 */
-	createPoint: function( position, size, color, moveWithModel ) {
-		var material = new THREE.MeshBasicMaterial( { color: color } );
-		var mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
+	createPoint( position, size, color, moveWithModel ) {
+		const material = new THREE.MeshBasicMaterial( { color: color } );
+		const mesh = new THREE.Mesh( new THREE.SphereGeometry( size ), material );
 
 		mesh.position.x = position.x;
 		mesh.position.y = position.y;
 		mesh.position.z = position.z;
 
 		if( moveWithModel ) {
-			var gmp = this.model.position;
+			const gmp = this.model.position;
 
 			mesh.position.x += gmp.x;
 			mesh.position.y += gmp.y;
@@ -249,31 +246,29 @@ var SceneManager = {
 
 	/**
 	 * Export the model.
-	 * @param  {String} format    Name of the format to use.
-	 * @param  {String} modelName Name for the model. (optional)
-	 * @return {String}           Exported model data.
+	 * @param  {string}  format     - Name of the format to use.
+	 * @param  {?string} modelName - Name for the model.
+	 * @return {string} Exported model data.
 	 */
-	exportModel: function( format, modelName ) {
-		var exportData;
+	exportModel( format, modelName ) {
+		let exportData = null;
 
-		Stopwatch.start( "export" );
+		WebHF.Stopwatch.start( 'export' );
 
 		switch( format ) {
-
-			case "obj":
-				exportData = exportOBJ( this.model );
+			case 'obj':
+				exportData = WebHF.Export.saveOBJ( this.model );
 				break;
 
-			case "stl":
-				exportData = exportSTL( this.model, modelName );
+			case 'stl':
+				exportData = WebHF.Export.saveSTL( this.model, modelName );
 				break;
 
 			default:
-				throw new Error( "Unknown export format: " + format );
-
+				throw new Error( 'Unknown export format: ' + format );
 		}
 
-		Stopwatch.stop( "export", true );
+		WebHF.Stopwatch.stop( 'export', true );
 
 		return exportData;
 	},
@@ -281,118 +276,130 @@ var SceneManager = {
 
 	/**
 	 * Start the hole filling.
+	 * @param {Event} ev
 	 */
-	fillHole: function( e ) {
-		var g = GLOBAL,
-		    index = parseInt( e.target.getAttribute( "data-fillhole" ), 10 ),
-		    mergeThreshold = parseFloat( document.getElementById( "merge-threshold" ).value, 10 ),
-		    workerNumber = parseInt( document.getElementById( "collision-worker" ).value, 10 );
+	fillHole( ev ) {
+		const index = parseInt( ev.target.getAttribute( 'data-fillhole' ), 10 );
+		const mergeThreshold = parseFloat( document.getElementById( 'merge-threshold' ).value, 10 );
+		const workerNumber = parseInt( document.getElementById( 'collision-worker' ).value, 10 );
 
 		if( isNaN( index ) ) {
-			console.error( "Not a valid hole index." );
-			return;
-		}
-		if( this.holes.length <= index ) {
-			console.error( "No hole exists for this index." );
-			return;
-		}
-		if( isNaN( mergeThreshold ) || mergeThreshold < 0.001 ) {
-			console.error( "Merge threshold not a valid value. Needs to be greater or equal 0.001." );
-			return;
-		}
-		if( isNaN( workerNumber ) || workerNumber < 1 ) {
-			console.error( "Number of worker processes not a valid value. Need to be greater or equal 1. Optimal number equals the number of CPU cores." );
+			console.error( 'Not a valid hole index.' );
 			return;
 		}
 
-		Stopwatch.start( "fill hole (AF)" );
-		UI.disableFillButton();
-		AdvancingFront.start( this.model.geometry, this.holes[index], mergeThreshold, this.mergeWithFilling.bind( this ), workerNumber );
+		if( this.holes.length <= index ) {
+			console.error( 'No hole exists for this index.' );
+			return;
+		}
+
+		if( isNaN( mergeThreshold ) || mergeThreshold < 0.001 ) {
+			console.error( 'Merge threshold not a valid value. Needs to be greater or equal 0.001.' );
+			return;
+		}
+
+		if( isNaN( workerNumber ) || workerNumber < 1 ) {
+			console.error( 'Number of worker processes not a valid value. Need to be greater or equal 1. Optimal number equals the number of CPU cores.' );
+			return;
+		}
+
+		WebHF.Stopwatch.start( 'fill hole (AF)' );
+		WebHF.UI.disableFillButton();
+
+		WebHF.AdvancingFront.start(
+			this.model.geometry,
+			this.holes[index],
+			mergeThreshold,
+			this.mergeWithFilling.bind( this ),
+			workerNumber
+		);
 	},
 
 
 	/**
 	 * Show the border edges of the model.
 	 */
-	findHoles: function() {
+	findHoles() {
 		if( this.model == null ) {
-			console.error( "No model loaded." );
+			console.error( 'No model loaded.' );
 			return;
 		}
 
 		// Remove old hole outlines
 		if( this.holeLines.length > 0 ) {
-			for( var i = 0, len = this.holeLines.length; i < len; i++ ) {
+			for( let i = 0, len = this.holeLines.length; i < len; i++ ) {
 				this.scene.remove( this.holeLines[i] );
 			}
 		}
+
 		this.holeLines = [];
 
-		Stopwatch.start( "find holes" );
+		WebHF.Stopwatch.start( 'find holes' );
 
-		var border = HoleFinding.findBorderEdges( this.model );
+		const border = WebHF.HoleFinding.findBorderEdges( this.model );
 
-		Stopwatch.stop( "find holes", true );
-		Stopwatch.remove( "find holes" );
+		WebHF.Stopwatch.stop( 'find holes', true );
+		WebHF.Stopwatch.remove( 'find holes' );
 
 		if( CONFIG.HOLES.SHOW_LINES ) {
-			for( var i = 0, len = border.lines.length; i < len; i++ ) {
+			for( let i = 0, len = border.lines.length; i < len; i++ ) {
 				this.scene.add( border.lines[i] );
 			}
+
 			this.holeLines = border.lines;
 		}
 
 		// @see HoleFinding.findBorderEdges() for
 		// use of CONFIG.HOLES.SHOW_POINTS
-		for( var i = 0, len = border.points.length; i < len; i++ ) {
+		for( let i = 0, len = border.points.length; i < len; i++ ) {
 			this.scene.add( border.points[i] );
 		}
-		render();
+
+		WebHF.render();
 
 		this.holes = border.holes;
-		UI.showDetailHoles( border.lines );
+		WebHF.UI.showDetailHoles( border.lines );
 	},
 
 
 	/**
 	 * Fit the camera position to the model size.
 	 */
-	fitCameraToModel: function() {
-		var bb = this.model.geometry.boundingBox;
+	fitCameraToModel() {
+		const bb = this.model.geometry.boundingBox;
 
 		this.resetCamera();
 
-		GLOBAL.CAMERA.position.x = Math.abs( bb.max.x - bb.min.x );
-		GLOBAL.CAMERA.position.y = Math.abs( bb.max.y - bb.min.y );
-		GLOBAL.CAMERA.position.z = Math.abs( bb.max.z - bb.min.z );
+		WebHF.camera.position.x = Math.abs( bb.max.x - bb.min.x );
+		WebHF.camera.position.y = Math.abs( bb.max.y - bb.min.y );
+		WebHF.camera.position.z = Math.abs( bb.max.z - bb.min.z );
 	},
 
 
 	/**
 	 * Focus on the found hole.
-	 * @param {int} index Index of the found hole
+	 * @param {number} index - Index of the found hole
 	 */
-	focusHole: function( index ) {
-		var cfgCam = CONFIG.CAMERA,
-		    g = GLOBAL;
+	focusHole( index ) {
+		const cfgCam = CONFIG.CAMERA;
 
 		if( isNaN( index ) ) {
-			console.error( "Not a valid hole index." );
+			console.error( 'Not a valid hole index.' );
 			return;
 		}
+
 		if( this.holes.length <= index ) {
-			console.error( "No hole exists for this index." );
+			console.error( 'No hole exists for this index.' );
 			return;
 		}
 
-		var bbox = Utils.getBoundingBox( this.holes[index] );
-
+		const bbox = WebHF.Utils.getBoundingBox( this.holes[index] );
 		bbox.center.add( this.model.position );
 		bbox.center.setLength( bbox.center.length() * cfgCam.FOCUS.DISTANCE_FACTOR );
 
-		var stepX = ( bbox.center.x - GLOBAL.CAMERA.position.x ),
-		    stepY = ( bbox.center.y - GLOBAL.CAMERA.position.y ),
-		    stepZ = ( bbox.center.z - GLOBAL.CAMERA.position.z );
+		let stepX = ( bbox.center.x - WebHF.camera.position.x );
+		let stepY = ( bbox.center.y - WebHF.camera.position.y );
+		let stepZ = ( bbox.center.z - WebHF.camera.position.z );
 
 		if( cfgCam.FOCUS.STEPS > 0 ) {
 			stepX /= cfgCam.FOCUS.STEPS;
@@ -406,19 +413,17 @@ var SceneManager = {
 
 	/**
 	 * Prepare the model as mesh.
-	 * @param  {THREE.Geometry} geometry Geometry of the model.
-	 * @return {THREE.Mesh}              Model as mesh.
+	 * @param  {THREE.Geometry} geometry - Geometry of the model.
+	 * @return {THREE.Mesh} Model as mesh.
 	 */
-	geometryToMesh: function( geometry ) {
-		var material = new THREE.MeshPhongMaterial(),
-		    mesh = new THREE.Mesh( geometry );
-
-		material.shading = this.getCurrentShading();
+	geometryToMesh( geometry ) {
+		const material = new THREE.MeshPhongMaterial();
+		material.flatShading = this.isFlatShading();
 		material.side = THREE.DoubleSide;
-		material.wireframe = ( this.modeModel == "wireframe" );
+		material.wireframe = ( this.modeModel == 'wireframe' );
 
+		const mesh = new THREE.Mesh( geometry );
 		mesh.material = material;
-
 		mesh.geometry.computeFaceNormals();
 		mesh.geometry.computeVertexNormals();
 		mesh.geometry.computeBoundingBox();
@@ -429,23 +434,18 @@ var SceneManager = {
 
 	/**
 	 * Get the current shading type.
-	 * @return {int} THREE.NoShading, THREE.FlatShading or THREE.SmoothShading.
+	 * @return {boolean}
 	 */
-	getCurrentShading: function() {
+	isFlatShading() {
 		switch( this.shading ) {
+			case 'flat':
+				return true;
 
-			case "none":
-				return THREE.NoShading;
-
-			case "flat":
-				return THREE.FlatShading;
-
-			case "phong":
-				return THREE.SmoothShading;
-
-			default:
+			case 'phong':
 				return false;
 
+			default:
+				return true;
 		}
 	},
 
@@ -453,7 +453,7 @@ var SceneManager = {
 	/**
 	 * Initialize the scene.
 	 */
-	init: function() {
+	init() {
 		this.scene = new THREE.Scene();
 
 		// Axis
@@ -465,51 +465,50 @@ var SceneManager = {
 
 	/**
 	 * Merge the model with the new filling.
-	 * @param {THREE.Geometry} filling The filling to merge into the model.
+	 * @param {THREE.Geometry} filling   - The filling to merge into the model.
+	 * @param {number}         holeIndex
 	 */
-	mergeWithFilling: function( filling, holeIndex ) {
-		var gm = this.model;
-
-		THREE.GeometryUtils.merge( gm.geometry, filling );
-
+	mergeWithFilling( filling, holeIndex ) {
+		const gm = this.model;
+		gm.geometry.merge( filling );
 		gm.geometry.mergeVertices();
 		gm.geometry.computeFaceNormals();
 		gm.geometry.computeVertexNormals();
 		gm.geometry.computeBoundingBox();
 
-		UI.checkHoleFinished( holeIndex );
-		UI.updateProgress( 100 );
+		WebHF.UI.checkHoleFinished( holeIndex );
+		WebHF.UI.updateProgress( 100 );
 
-		Stopwatch.stop( "fill hole (AF)", true );
+		WebHF.Stopwatch.stop( 'fill hole (AF)', true );
 	},
 
 
 	/**
 	 * Move the camera lights to the camera position.
-	 * @param {Event} e Change event fired by THREE.TrackballControls
+	 * @param {Event} ev - Change event fired by THREE.TrackballControls
 	 */
-	moveCameraLights: function( e ) {
-		var lights = GLOBAL.LIGHTS.CAMERA,
-		    pos = e.target.object.position.clone();
+	moveCameraLights( ev ) {
+		const lights = WebHF.lights.camera;
+		const pos = ev.target.object.position.clone();
 
-		for( var i = 0, len = lights.length; i < len; i++ ) {
-			lights[i].position = pos;
+		for( let i = 0, len = lights.length; i < len; i++ ) {
+			lights[i].position.copy( pos );
 		}
 	},
 
 
 	/**
 	 * Move the camera (more-or-less) fluently to a position.
-	 * @param {float} stepX Step length in X direction.
-	 * @param {float} stepY Step length in Y direction.
-	 * @param {float} stepZ Step length in Z direction.
-	 * @param {int}   count Counter to know when to stop.
+	 * @param {number} stepX - Step length in X direction.
+	 * @param {number} stepY - Step length in Y direction.
+	 * @param {number} stepZ - Step length in Z direction.
+	 * @param {number} count - Counter to know when to stop.
 	 */
-	moveCameraToPosition: function( stepX, stepY, stepZ, count ) {
-		GLOBAL.CAMERA.position.x += stepX;
-		GLOBAL.CAMERA.position.y += stepY;
-		GLOBAL.CAMERA.position.z += stepZ;
-		render();
+	moveCameraToPosition( stepX, stepY, stepZ, count ) {
+		WebHF.camera.position.x += stepX;
+		WebHF.camera.position.y += stepY;
+		WebHF.camera.position.z += stepZ;
+		WebHF.render();
 
 		count++;
 
@@ -519,7 +518,7 @@ var SceneManager = {
 		else {
 			setTimeout(
 				function() {
-					SceneManager.moveCameraToPosition( stepX, stepY, stepZ, count );
+					WebHF.SceneManager.moveCameraToPosition( stepX, stepY, stepZ, count );
 				},
 				CONFIG.CAMERA.FOCUS.TIMEOUTS
 			);
@@ -529,14 +528,13 @@ var SceneManager = {
 
 	/**
 	 * Show the bounding box of the model.
-	 * @param {THREE.Mesh} model The model.
+	 * @param {THREE.Mesh} model - The model.
 	 */
-	renderBoundingBox: function( model ) {
-		var bb = model.geometry.boundingBox,
-		    cubeGeometry = new THREE.Geometry();
-		var material, mesh;
+	renderBoundingBox( model ) {
+		const bb = model.geometry.boundingBox;
+		const cubeGeometry = new THREE.Geometry();
 
-		material = new THREE.LineBasicMaterial( {
+		const material = new THREE.LineBasicMaterial( {
 			color: CONFIG.BBOX.COLOR,
 			shading: THREE.NoShading
 		} );
@@ -582,7 +580,7 @@ var SceneManager = {
 			new THREE.Vector3( bb.min.x, bb.max.y, bb.max.z )
 		);
 
-		mesh = new THREE.Line( cubeGeometry, material, THREE.LinePieces );
+		const mesh = new THREE.Line( cubeGeometry, material, THREE.LinePieces );
 		mesh.position = model.position;
 
 		this.scene.add( mesh );
@@ -592,32 +590,32 @@ var SceneManager = {
 	/**
 	 * Reset the camera settings.
 	 */
-	resetCamera: function() {
-		GLOBAL.CONTROLS.reset();
+	resetCamera() {
+		WebHF.controls.reset();
 	},
 
 
 	/**
 	 * Render the finished hole filling.
 	 * Create a mesh from the computed data and render it.
-	 * @param {THREE.Geometry} front   Front of the hole.
-	 * @param {THREE.Geometry} filling Filling of the hole.
+	 * @param {THREE.Geometry} front     - Front of the hole.
+	 * @param {THREE.Geometry} filling   - Filling of the hole.
+	 * @param {number}         holeIndex
 	 */
-	showFilling: function( front, filling, holeIndex ) {
-		var g = GLOBAL,
-		    model = SceneManager.model;
+	showFilling( front, filling, holeIndex ) {
+		const model = WebHF.SceneManager.model;
 
 		this.fillings.push( { solid: false, wireframe: false } );
 
 		// Filling
-		var materialFilling = new THREE.MeshPhongMaterial( {
+		const materialFilling = new THREE.MeshPhongMaterial( {
 			color: CONFIG.FILLING.COLOR,
-			shading: SceneManager.getCurrentShading(),
+			flatShading: WebHF.SceneManager.isFlatShading(),
 			side: THREE.DoubleSide,
 			wireframe: ( this.modeFilling == "wireframe" ),
 			wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
 		} );
-		var meshFilling = new THREE.Mesh( filling, materialFilling );
+		const meshFilling = new THREE.Mesh( filling, materialFilling );
 
 		meshFilling.position.x += model.position.x;
 		meshFilling.position.y += model.position.y;
@@ -628,18 +626,18 @@ var SceneManager = {
 		meshFilling.geometry.computeBoundingBox();
 
 		this.fillings[this.fillings.length - 1].solid = meshFilling;
-		SceneManager.scene.add( meshFilling );
+		WebHF.SceneManager.scene.add( meshFilling );
 
 
 		// Extra option: Filling as wireframe (can be used as overlay)
 		if( CONFIG.FILLING.SHOW_WIREFRAME ) {
-			var materialWire = new THREE.MeshBasicMaterial( {
+			const materialWire = new THREE.MeshBasicMaterial( {
 				color: 0xFFFFFF,
 				side: THREE.DoubleSide,
 				wireframe: true,
 				wireframeLinewidth: CONFIG.FILLING.LINE_WIDTH
 			} );
-			var meshWire = new THREE.Mesh( filling, materialWire );
+			const meshWire = new THREE.Mesh( filling, materialWire );
 
 			meshWire.position.x += model.position.x;
 			meshWire.position.y += model.position.y;
@@ -650,81 +648,82 @@ var SceneManager = {
 			meshWire.geometry.computeBoundingBox();
 
 			this.fillings[this.fillings.length - 1].wireframe = meshWire;
-			SceneManager.scene.add( meshWire );
+			WebHF.SceneManager.scene.add( meshWire );
 		}
 
 
 		// Draw the (moving) front
 		if( CONFIG.DEBUG.SHOW_FRONT ) {
-			var debugFront = front.clone();
-			var material = new THREE.LineBasicMaterial( {
+			const material = new THREE.LineBasicMaterial( {
 				color: 0xFFFFFF,
 				linewidth: 4
 			} );
-			var mesh;
 
+			const debugFront = front.clone();
 			debugFront.vertices.push( debugFront.vertices[0] );
-			mesh = new THREE.Line( debugFront, material );
+
+			const mesh = new THREE.Line( debugFront, material );
 
 			mesh.position.x += model.position.x;
 			mesh.position.y += model.position.y;
 			mesh.position.z += model.position.z;
 
-			SceneManager.scene.add( mesh );
+			WebHF.SceneManager.scene.add( mesh );
 		}
 
-		render();
+		WebHF.render();
 	},
 
 
 	/**
 	 * Switch the light on or off.
+	 * @param {Event} ev
 	 */
-	toggleLight: function( e ) {
-		var g = GLOBAL,
-		    lightType = e.target.name;
-		var lights, lightStatus;
+	toggleLight( ev ) {
+		const lightType = ev.target.name;
+
+		let lights = null;
+		let lightStatus = null;
 
 		switch( lightType ) {
-
-			case "light_ambient":
-				lights = g.LIGHTS.AMBIENT;
+			case 'light_ambient':
+				lights = WebHF.lights.ambient;
 				lightStatus = this.lightStatus.ambient;
 				this.lightStatus.ambient = !lightStatus;
 				break;
 
-			case "light_camera":
-				lights = g.LIGHTS.CAMERA;
+			case 'light_camera':
+				lights = WebHF.lights.camera;
 				lightStatus = this.lightStatus.camera;
 				this.lightStatus.camera = !lightStatus;
 				break;
 
-			case "light_directional":
-				lights = g.LIGHTS.DIRECTIONAL;
+			case 'light_directional':
+				lights = WebHF.lights.directional;
 				lightStatus = this.lightStatus.directional;
 				this.lightStatus.directional = !lightStatus;
 				break;
 
 			default:
-				console.error( "Unknown light type: " + lightType );
+				console.error( 'Unknown light type: ' + lightType );
 				return;
-
 		}
 
-		var len = lights.length;
+		const len = lights.length;
 
 		if( lightStatus ) {
-			for( var i = 0; i < len; i++ ) {
+			for( let i = 0; i < len; i++ ) {
 				this.scene.remove( lights[i] );
 			}
 		}
 		else {
-			for( var i = 0; i < len; i++ ) {
+			for( let i = 0; i < len; i++ ) {
 				this.scene.add( lights[i] );
 			}
 		}
 
-		render();
+		WebHF.render();
 	}
+
 
 };

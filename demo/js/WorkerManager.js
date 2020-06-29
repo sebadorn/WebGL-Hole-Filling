@@ -1,67 +1,108 @@
-"use strict";
+'use strict';
 
 
 /**
  * Create and use pools of Web Workers for parallization.
- * @type {Object}
+ * @namespace WebHF.WorkerManager
  */
-var WorkerManager = {
+WebHF.WorkerManager = {
+
 
 	pool: {},
 	queue: {},
 
 
 	/**
-	 * Close a pool of workers.
-	 * @param {String} identifier Identifier for the pool to close.
+	 * Employ a worker with a task.
+	 * @private
+	 * @param {string}   id     - Identifier of the pool.
+	 * @param {Worker}   worker - Worker to employ with the task.
+	 * @param {object}   data   - Data to send to the worker.
+	 * @param {function} cb     - Callback function to call after completing the task.
 	 */
-	closePool: function( identifier ) {
-		if( !this.pool.hasOwnProperty( identifier ) ) {
-			console.error( "WorkerManager: No pool with identifer " + identifer + "." );
+	_useWorker( id, worker, data, cb ) {
+		worker.isFree = false;
+
+		const workerCallback = function( ev ) {
+			worker.removeEventListener( 'message', workerCallback );
+			worker.isFree = true;
+
+			if( WebHF.WorkerManager.queue[id].length > 0 ) {
+				const q = WebHF.WorkerManager.queue[id].splice( 0, 1 )[0];
+				WebHF.WorkerManager.employWorker( id, q.data, q.callback );
+			}
+
+			cb( ev );
+		};
+
+		worker.addEventListener( 'message', workerCallback );
+		worker.postMessage( data );
+	},
+
+
+	/**
+	 * Close a pool of workers.
+	 * @param {string} id - Identifier for the pool to close.
+	 */
+	closePool( id ) {
+		if( !this.pool.hasOwnProperty( id ) ) {
+			console.error( `WorkerManager: No pool with identifer ${ id }.` );
 			return false;
 		}
 
-		if( this.queue[identifier].length > 0 ) {
-			console.error( "WorkerManager: Queue for " + identifier + " is not empty!" );
+		if( this.queue[id].length > 0 ) {
+			console.error( `WorkerManager: Queue for ${ id } is not empty!` );
 			return false;
 		}
 
-		for( var i = 0; i < this.pool[identifier].length; i++ ) {
-			this.pool[identifier][i].postMessage( { cmd: "close" } );
+		const pool = this.pool[id];
+
+		for( let i = 0; i < pool.length; i++ ) {
+			pool[i].postMessage( { cmd: 'close' } );
 		}
 	},
 
 
 	/**
 	 * Create a worker pool.
-	 * @param {String} identifier Identifier for the pool.
-	 * @param {int}    number     Number of workers in the pool.
-	 * @param {Object} firstMsg   Initial data to send to each worker. (optional)
+	 * @param {string} id       - Identifier for the pool.
+	 * @param {number} number   - Number of workers in the pool.
+	 * @param {object} firstMsg - Initial data to send to each worker. (optional)
 	 */
-	createPool: function( identifier, number, firstMsg ) {
-		var blob = new Blob(
-			[document.getElementById( "worker-" + identifier ).textContent],
-			{ type: "application/javascript" }
-		);
-		var workerBlobURL = window.URL.createObjectURL( blob ),
-		    msgURL = {
-		    	cmd: "url",
-		    	url: GLOBAL.URL
-		    };
-		var worker;
+	createPool( id, number, firstMsg, cb ) {
+		let url = window.location.href;
+		url = url.replace( window.location.hash, '' );
+		url = url.replace( /index\.htm(l?)$/i, '' );
 
-		this.pool[identifier] = [];
-		this.queue[identifier] = [];
+		const onLoad = code => {
+			const blob = new Blob( [code], { type: 'application/javascript' } );
+			const workerBlobURL = window.URL.createObjectURL( blob );
+			const msgURL = {
+				cmd: 'url',
+				url: url
+			};
 
-		for( var i = 0; i < number; i++ ) {
-			worker = new Worker( workerBlobURL );
-			worker.isFree = true;
-			worker.postMessage( msgURL );
-			if( firstMsg ) {
-				worker.postMessage( firstMsg );
+			this.pool[id] = [];
+			this.queue[id] = [];
+
+			for( let i = 0; i < number; i++ ) {
+				const worker = new Worker( workerBlobURL );
+				worker.isFree = true;
+				worker.postMessage( msgURL );
+
+				if( firstMsg ) {
+					worker.postMessage( firstMsg );
+				}
+
+				this.pool[id].push( worker );
 			}
-			this.pool[identifier].push( worker );
-		}
+
+			cb();
+		};
+
+		fetch( `./js/workers/${ id }.js` )
+			.then( res => res.text() )
+			.then( onLoad );
 	},
 
 
@@ -69,62 +110,36 @@ var WorkerManager = {
 	 * Give a worker of a pool a task. If no worker is available,
 	 * the task will be added to a queue and processed when a
 	 * worker becomes available.
-	 * @param  {String}   identifier Identifier of the pool to use.
-	 * @param  {Object}   data       Data to send to the worker.
-	 * @param  {Function} callback   Callback function to call after completing the task.
+	 * @param  {string}   id   - Identifier of the pool to use.
+	 * @param  {object}   data - Data to send to the worker.
+	 * @param  {function} cb   - Callback function to call after completing the task.
 	 */
-	employWorker: function( identifier, data, callback ) {
-		var workers = this.pool[identifier];
+	employWorker( id, data, cb ) {
+		const workers = this.pool[id];
 
-		for( var i = 0; i < workers.length; i++ ) {
+		for( let i = 0; i < workers.length; i++ ) {
 			if( workers[i].isFree ) {
-				this._useWorker( identifier, workers[i], data, callback );
+				this._useWorker( id, workers[i], data, cb );
 				return;
 			}
 		}
 
 		// No worker available; add to queue
-		this.queue[identifier].push( {
+		this.queue[id].push( {
 			data: data,
-			callback: callback
+			callback: cb
 		} );
 	},
 
 
 	/**
 	 * Get the number of workers in a pool.
-	 * @param  {String} identifier Identifier of the pool.
-	 * @return {int}               Number of workers in the pool.
+	 * @param  {string} id - Identifier of the pool.
+	 * @return {number} Number of workers in the pool.
 	 */
-	getPoolSize: function( identifier ) {
-		return this.pool[identifier].length;
-	},
-
-
-	/**
-	 * Employ a worker with a task.
-	 * @param  {String}   identifier Identifier of the pool.
-	 * @param  {Worker}   worker     Worker to employ with the task.
-	 * @param  {Object}   data       Data to send to the worker.
-	 * @param  {Function} callback   Callback function to call after completing the task.
-	 */
-	_useWorker: function( identifier, worker, data, callback ) {
-		worker.isFree = false;
-
-		var workerCallback = function( e ) {
-			worker.removeEventListener( "message", workerCallback, false );
-			worker.isFree = true;
-
-			if( WorkerManager.queue[identifier].length > 0 ) {
-				var q = WorkerManager.queue[identifier].splice( 0, 1 )[0];
-				WorkerManager.employWorker( identifier, q.data, q.callback );
-			}
-
-			callback( e );
-		};
-
-		worker.addEventListener( "message", workerCallback, false );
-		worker.postMessage( data );
+	getPoolSize( id ) {
+		return this.pool[id].length;
 	}
+
 
 };

@@ -1,43 +1,101 @@
+/* open-sans-300 - latin */
 @font-face {
-	font-family: "OpenSans Web";
-	font-weight: normal;
-	font-style: normal;
-	src: url( "open-sans/OpenSans-Regular.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 300;
+  src: local('Open Sans Light'), local('OpenSans-Light'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-300.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-300.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
+/* open-sans-300italic - latin */
 @font-face {
-	font-family: "OpenSans Web";
-	font-weight: normal;
-	font-style: italic;
-	src: url( "open-sans/OpenSans-Italic.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 300;
+  src: local('Open Sans Light Italic'), local('OpenSans-LightItalic'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-300italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-300italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
+/* open-sans-regular - latin */
 @font-face {
-	font-family: "OpenSans Web";
-	font-weight: bold;
-	font-style: italic;
-	src: url( "open-sans/OpenSans-SemiboldItalic.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Open Sans Regular'), local('OpenSans-Regular'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-regular.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-regular.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
+/* open-sans-italic - latin */
 @font-face {
-	font-family: "OpenSans Web";
-	font-weight: bold;
-	font-style: normal;
-	src: url( "open-sans/OpenSans-Semibold.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 400;
+  src: local('Open Sans Italic'), local('OpenSans-Italic'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
+/* open-sans-600 - latin */
 @font-face {
-	font-family: "OpenSans Light Web";
-	font-weight: normal;
-	font-style: normal;
-	src: url( "open-sans/OpenSans-Light.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: local('Open Sans SemiBold'), local('OpenSans-SemiBold'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-600.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-600.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
+/* open-sans-600italic - latin */
 @font-face {
-	font-family: "OpenSans Light Web";
-	font-weight: normal;
-	font-style: italic;
-	src: url( "open-sans/OpenSans-LightItalic.ttf" ) format( "truetype" );
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 600;
+  src: local('Open Sans SemiBold Italic'), local('OpenSans-SemiBoldItalic'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-600italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-600italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+/* open-sans-700 - latin */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Open Sans Bold'), local('OpenSans-Bold'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-700.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-700.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+/* open-sans-700italic - latin */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 700;
+  src: local('Open Sans Bold Italic'), local('OpenSans-BoldItalic'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-700italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-700italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+/* open-sans-800 - latin */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: normal;
+  font-weight: 800;
+  src: local('Open Sans ExtraBold'), local('OpenSans-ExtraBold'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-800.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-800.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
+}
+
+/* open-sans-800italic - latin */
+@font-face {
+  font-family: 'Open Sans';
+  font-style: italic;
+  font-weight: 800;
+  src: local('Open Sans ExtraBold Italic'), local('OpenSans-ExtraBoldItalic'),
+       url('demo/fonts/open-sans/open-sans-v17-latin-800italic.woff2') format('woff2'), /* Chrome 26+, Opera 23+, Firefox 39+ */
+       url('demo/fonts/open-sans/open-sans-v17-latin-800italic.woff') format('woff'); /* Chrome 6+, Firefox 3.6+, IE 9+, Safari 5.1+ */
 }
 
 
@@ -49,13 +107,17 @@
 html {
 	background-image: -webkit-radial-gradient( circle farthest-corner at center top, #FFFFFF 0%, #D8DFE9 100% );
 	background-image:         radial-gradient( circle farthest-corner at center top, #FFFFFF 0%, #D8DFE9 100% );
+	height: 100%;
 	min-height: 100%;
 }
 
 body {
 	color: #202020;
-	font-family: "OpenSans Web", sans-serif;
+	display: flex;
+	flex-direction: column;
+	font-family: "Open Sans", sans-serif;
 	font-size: 22px;
+	height: 100%;
 }
 
 a {
@@ -135,7 +197,7 @@ p {
 /* Specific site elements */
 /* ---------------------- */
 
-header {
+header, section {
 	-moz-box-sizing: border-box;
 	     box-sizing: border-box;
 	color: #ffffff;
@@ -147,9 +209,8 @@ header {
 
 	header.introduction h1 {
 		display: inline-block;
-		font-family: "OpenSans Light Web";
 		font-size: 64px;
-		font-weight: normal;
+		font-weight: 300;
 		letter-spacing: -2px;
 		line-height: 100%;
 		margin-bottom: 16px;
@@ -161,11 +222,12 @@ header {
 		border-left: 2px solid #ffffff;
 		display: inline-block;
 		font-size: 22px;
+		margin-left: 6px;
 		max-width: 600px;
 		padding-left: 40px;
 	}
 
-	header .download {
+	section .download {
 		top: 0;
 		left: 160px;
 		position: absolute;
@@ -182,6 +244,7 @@ header {
 			font-size: 70%;
 			margin-right: 8px;
 			padding: 8px 14px;
+			text-decoration: underline;
 		}
 
 		.download a:hover {
@@ -190,47 +253,47 @@ header {
 		}
 
 
-header.demo {
+section.demo {
 	text-align: center;
 }
 
-	header.demo a.button {
+	section.demo a.button {
 		display: inline-block;
-		font-family: "OpenSans Light Web";
 		font-size: 64px;
-		font-weight: normal;
+		font-weight: 300;
 		letter-spacing: -2px;
 		line-height: 100%;
 		padding: 14px 22px;
 	}
 
-	header.demo .annotation {
+	section.demo .annotation {
 		display: inline-block;
-		font-family: "OpenSans Light Web";
+		font-weight: 300;
 		margin-left: -264px;
 		margin-right: 20px;
 		vertical-align: middle;
 	}
 
 
-header.about {
+section.about {
 	border-top: 3px solid transparent;
+	flex-grow: 1;
 	padding-bottom: 10px;
 	padding-top: 9px;
 	text-align: right;
 }
 
-	header.about p {
+	section.about p {
 		color: #f0f0f0;
 		font-size: 70%;
 		font-style: italic;
 	}
 
-	header.about a {
+	section.about a {
 		color: #f0f0f0;
 	}
 
-	header.about a:hover {
+	section.about a:hover {
 		border-bottom-color: transparent;
 	}
 

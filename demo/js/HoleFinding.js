@@ -1,11 +1,12 @@
-"use strict";
+'use strict';
 
 
 /**
  * Class for finding the holes.
- * @type {Object}
+ * @namespace WebHF.HoleFinding
  */
-var HoleFinding = {
+WebHF.HoleFinding = {
+
 
 	allVisitedBp: null,
 	visitedBp: null,
@@ -15,34 +16,36 @@ var HoleFinding = {
 	 * Decide the next vertex from the available edges. Do so by choosing
 	 * the direction with the smallest angle. This assures for multi border
 	 * points that we stay inside the hole and not cross over to another hole.
-	 * @param  {Array<THREE.Vector3>} gv    The vertices of the hole so far.
-	 * @param  {THREE.Vector3}        vPrev The previous vector.
-	 * @param  {Vertex}               bp    The current border point.
-	 * @param  {THREE.Mesh}           model The model we search holes in.
-	 * @return {Vertex}                     The next vertex to follow.
+	 * @param  {THREE.Vector3[]} gv    - The vertices of the hole so far.
+	 * @param  {THREE.Vector3}   vPrev - The previous vector.
+	 * @param  {Vertex}          bp    - The current border point.
+	 * @param  {THREE.Mesh}      model - The model we search holes in.
+	 * @return {Vertex} The next vertex to follow.
 	 */
-	decideNextVertexByAngle: function( gv, vPrev, bp, model ) {
-		var alreadyVisited = 0,
-		    mgv = model.geometry.vertices,
-		    nextRoute = {
-		    	angle: 360.0,
-		    	index: -1
-		    },
-		    v = mgv[bp.index];
-		var angle, ix, vNext;
+	decideNextVertexByAngle( gv, vPrev, bp, model ) {
+		const mgv = model.geometry.vertices;
+		const nextRoute = {
+			angle: 360.0,
+			index: -1
+	    };
+		const v = mgv[bp.index];
 
-		for( var i = 0; i < bp.edges.length; i++ ) {
-			ix = bp.edges[i].vertex.index;
-			vNext = mgv[ix];
+		let alreadyVisited = 0;
 
-			if( !bp.edges[i].isBorderEdge()
-					|| gv.indexOf( vNext ) >= 0
-					|| this.allVisitedBp.indexOf( ix ) >= 0 ) {
+		for( let i = 0; i < bp.edges.length; i++ ) {
+			const ix = bp.edges[i].vertex.index;
+			const vNext = mgv[ix];
+
+			if(
+				!bp.edges[i].isBorderEdge() ||
+				gv.includes( vNext ) ||
+				this.allVisitedBp.includes( ix )
+			) {
 				alreadyVisited++;
 				continue;
 			}
 
-			angle = Utils.calculateAngle( vPrev, v, vNext, model.position );
+			const angle = WebHF.Utils.calculateAngle( vPrev, v, vNext, model.position );
 
 			if( angle < nextRoute.angle ) {
 				nextRoute.angle = angle;
@@ -51,11 +54,11 @@ var HoleFinding = {
 		}
 
 		// This multi border point has no more edges to offer, so mark him as visited.
-		if( alreadyVisited == bp.edges.length - 1 ) {
+		if( alreadyVisited === bp.edges.length - 1 ) {
 			this.visitedBp.push( bp.index );
 		}
 
-		if( nextRoute.index == -1 ) {
+		if( nextRoute.index === -1 ) {
 			throw new Error( "Couldn't find edge to follow from multi border point." );
 		}
 
@@ -68,72 +71,69 @@ var HoleFinding = {
 	 * @param  {THREE.Mesh} model  The model to find holes in.
 	 * @return {Object}            Arrays of lines and points, depending on configuration.
 	 */
-	findBorderEdges: function( model ) {
-		var mesh = new HalfEdgeMesh( model.geometry );
-		var colors = CONFIG.HOLES.COLOR,
-		    holes = [],
-		    ignoredUnconnected = 0,
-		    lines = [],
-		    points = [];
-		var geometry, line, material, v, vertex;
+	findBorderEdges( model ) {
+		const COLORS = CONFIG.HOLES.COLOR;
+		const mesh = new WebHF.HalfEdgeMesh( model.geometry );
+		const holes = [];
+		const lines = [];
+		const points = [];
+
+		let ignoredUnconnected = 0;
 
 		this.allVisitedBp = [];
 
-		for( var i = 0, lenMV = mesh.vertices.length; i < lenMV; i++ ) {
-			vertex = mesh.vertices[i];
+		for( let i = 0, lenMV = mesh.vertices.length; i < lenMV; i++ ) {
+			const vertex = mesh.vertices[i];
 
 			// Ignore vertices without any connections/edges
-			if( vertex.edges.length == 0 ) {
+			if( vertex.edges.length === 0 ) {
 				ignoredUnconnected++;
 				continue;
 			}
 
-			if( this.allVisitedBp.indexOf( vertex.index ) < 0 && vertex.isBorderPoint() ) {
+			if( !this.allVisitedBp.includes( vertex.index ) && vertex.isBorderPoint() ) {
 				this.visitedBp = [];
 
+				let geometry = null;
 
 				// Find connected border points
 				try {
 					geometry = this.getNeighbouringBorderPoints( model, mesh, vertex );
 				}
 				catch( err ) {
-					console.error( err.name + ": " + err.message );
-					console.warn( "Skipping hole." );
+					console.error( err.name + ': ' + err.message );
+					console.warn( 'Skipping hole.' );
 					continue;
 				}
-
 
 				holes.push( this.geometryToHoleArray( geometry ) );
 				// Add the first vertex of the hole at the beginning
 				holes[holes.length - 1].splice( model.geometry.vertices[vertex.index], 0 );
 
-
 				// Lines
-				material = new THREE.LineBasicMaterial( {
-					color: colors[lines.length % colors.length],
+				const material = new THREE.LineBasicMaterial( {
+					color: COLORS[lines.length % COLORS.length],
 					linewidth: CONFIG.HOLES.LINE_WIDTH
 				} );
 
-				line = new THREE.Line( geometry, material );
-				line.position = model.position;
+				const line = new THREE.Line( geometry, material );
+				line.position.copy( model.position );
 				lines.push( line );
-
 
 				// Points
 				if( CONFIG.HOLES.SHOW_POINTS ) {
-					for( var j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
-						v = geometry.vertices[j];
-						points.push( SceneManager.createPoint( v, 0.02, 0xA1DA42, true ) );
+					for( let j = 0, lenGV = geometry.vertices.length; j < lenGV; j++ ) {
+						const v = geometry.vertices[j];
+						points.push( WebHF.SceneManager.createPoint( v, 0.02, 0xA1DA42, true ) );
 					}
 				}
-
 
 				this.allVisitedBp = this.allVisitedBp.concat( this.visitedBp );
 			}
 		}
 
 		if( ignoredUnconnected > 0 ) {
-			console.warn( "Ignored " + ignoredUnconnected + " vertices, because they were not part of any edge." );
+			console.warn( 'Ignored ' + ignoredUnconnected + ' vertices, because they were not part of any edge.' );
 		}
 
 		return {
@@ -147,18 +147,19 @@ var HoleFinding = {
 	/**
 	 * Put the vertices of the geometry into an array and
 	 * calculate a suggestion for the merging threshold.
-	 * @param  {THREE.Geometry} geometry Hole geometry to convert.
-	 * @return {Array}                   The array with the hole vertices and an extra attribute for the merging threshold.
+	 * @param  {THREE.Geometry} geometry - Hole geometry to convert.
+	 * @return {object[]} The array with the hole vertices and an extra attribute for the merging threshold.
 	 */
-	geometryToHoleArray: function( geometry ) {
+	geometryToHoleArray( geometry ) {
 		// We need the per-hole-merging-threshold later for the filling process
-		var hole = [],
-		    thresholdMerging = 0.0;
-		var v, vn;
+		const hole = [];
+		const len = geometry.vertices.length;
 
-		for( var i = 0, len = geometry.vertices.length; i < len; i++ ) {
-			v = geometry.vertices[i];
-			vn = geometry.vertices[( i + 1 ) % len];
+		let thresholdMerging = 0.0;
+
+		for( let i = 0; i < len; i++ ) {
+			const v = geometry.vertices[i];
+			const vn = geometry.vertices[( i + 1 ) % len];
 
 			hole.push( v );
 			thresholdMerging += v.distanceTo( vn );
@@ -174,32 +175,35 @@ var HoleFinding = {
 	/**
 	 * Get all the connected border points starting from one of the border points.
 	 * Returns one hole in the mesh, if there is at least one.
-	 * @param  {THREE.Mesh}     model  The model to search holes in.
-	 * @param  {Vertex}         start  Starting vertex.
-	 * @return {THREE.Geometry}        Geometry of a hole.
+	 * @param  {THREE.Mesh}     model  - The model to search holes in.
+	 * @param  {Vertex}         start  - Starting vertex.
+	 * @return {THREE.Geometry} Geometry of a hole.
 	 */
-	getNeighbouringBorderPoints: function( model, mesh, start ) {
-		var bp = start,
-		    geometry = new THREE.Geometry(),
-		    mgv = model.geometry.vertices;
-		var angle, angleAverage, v, vPrev;
+	getNeighbouringBorderPoints( model, mesh, start ) {
+		const geometry = new THREE.Geometry();
+		const mgv = model.geometry.vertices;
+
+		let bp = start;
+		let v = null;
 
 		while( true ) {
-			vPrev = v;
+			const vPrev = v;
 			v = mgv[bp.index];
 
 			if( !bp.isBorderPoint() ) {
 				break;
 			}
-			if( !bp.isMultiBorderPoint() && geometry.vertices.indexOf( v ) >= 0 ) {
+
+			if( !bp.isMultiBorderPoint() && geometry.vertices.includes( v ) ) {
 				break;
 			}
-			if( this.allVisitedBp.indexOf( bp.index ) >= 0 ) {
+
+			if( this.allVisitedBp.includes( bp.index ) ) {
 				break;
 			}
 
 			// Hole completed
-			if( vPrev != null && bp == start ) {
+			if( vPrev !== null && bp == start ) {
 				break;
 			}
 
@@ -212,19 +216,19 @@ var HoleFinding = {
 			if( bp.isMultiBorderPoint() ) {
 				// In order to find the right edge, we need a previous vertex
 				// as reference point. No previous point is bad ...
-				if( vPrev == null ) {
+				if( vPrev === null ) {
 					// ... but if the vertex has a firstEdge, we can use that!
-					if( bp.firstEdge == null ) {
+					if( bp.firstEdge === null ) {
 						break;
 					}
 					// As long as the point hasn't already been visited.
-					else if( this.visitedBp.indexOf( bp.firstEdge.vertex.index ) >= 0 ) {
+					else if( this.visitedBp.includes( bp.firstEdge.vertex.index ) ) {
 						break;
 					}
 				}
 
 				// No previous point for reference, but a firstEdge to use.
-				if( vPrev == null ) {
+				if( vPrev === null ) {
 					bp = bp.firstEdge.vertex;
 				}
 				// Otherwise decide the edge to follow by angle comparison.
@@ -248,15 +252,15 @@ var HoleFinding = {
 		// Add the starting point of the hole. (We didn't do that until now.)
 		geometry.vertices.splice( 0, 0, mgv[start.index] );
 
-		if( geometry.vertices.length == 1 ) {
+		if( geometry.vertices.length === 1 ) {
 			throw new Error( "Hole has only 1 vertex. Which isn't really a hole." );
 		}
 
 		// Check if it is really a hole and not the outline of an existing triangle.
-		angleAverage = Utils.calculateAngleAverage( geometry.vertices, model.position );
+		const angleAverage = WebHF.Utils.calculateAngleAverage( geometry.vertices, model.position );
 
 		if( angleAverage >= 180.0 ) {
-			throw new Error( "Found hole is not a hole, but the outline of an existing triangle." );
+			throw new Error( 'Found hole is not a hole, but the outline of an existing triangle.' );
 		}
 
 		// Add first vertex again to complete the hole.
@@ -264,5 +268,6 @@ var HoleFinding = {
 
 		return geometry;
 	}
+
 
 };
