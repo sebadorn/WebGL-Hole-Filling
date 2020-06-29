@@ -70,7 +70,9 @@ WebHF.WorkerManager = {
 	 * @param {object} firstMsg - Initial data to send to each worker. (optional)
 	 */
 	createPool( id, number, firstMsg, cb ) {
-		let url = window.location.href.replace( window.location.hash, '' );
+		let url = window.location.href;
+		url = url.replace( window.location.hash, '' );
+		url = url.replace( /index\.htm(l?)$/i, '' );
 
 		const onLoad = code => {
 			const blob = new Blob( [code], { type: 'application/javascript' } );

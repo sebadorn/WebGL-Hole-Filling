@@ -2,4 +2,4 @@
 
 A WebGL project about finding and filling holes in 3D models.
 
-Uses [three.js](http://threejs.org/).
+Uses [three.js](https://threejs.org/).
